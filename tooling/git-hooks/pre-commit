@@ -1,0 +1,8 @@
+#!/bin/sh
+# 커밋 전: staged 파일 비밀값 스캔 (CLAUDE.md §7.7)
+node tooling/scripts/비밀값_스캔.mjs --staged
+if [ $? -ne 0 ]; then
+  echo "pre-commit 차단: 비밀값 패턴 발견. 제거 후 다시 커밋하세요."
+  exit 1
+fi
+exit 0

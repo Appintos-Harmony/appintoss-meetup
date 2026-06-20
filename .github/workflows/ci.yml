@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: 문서·링크·작업지시서·비밀값 검증
+        run: node tooling/scripts/검증_전체.mjs
+  # 앱 코드(apps/packages) 추가 후 아래를 활성화한다.
+  # build-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: '24' }
+  #     - run: corepack enable && pnpm install --frozen-lockfile
+  #     - run: pnpm -r lint && pnpm -r typecheck && pnpm -r test && pnpm -r build

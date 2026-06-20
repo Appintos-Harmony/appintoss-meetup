@@ -1,0 +1,11 @@
+#!/bin/sh
+# push 전: 기본 브랜치(main) 직접 push 차단 (CLAUDE.md §16)
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo "pre-push 차단: main 직접 push 금지. feat/*·fix/* 브랜치와 PR을 사용하세요."
+      exit 1
+      ;;
+  esac
+done
+exit 0
