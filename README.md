@@ -42,7 +42,8 @@
 `작업지시서(Ready)` → 구현(Claude 또는 Codex) → **다른 AI 독립검토** → Claude·Codex 토론·합의 → **사람 승인** → 자동 커밋
 
 - **합의가 사는 곳:** `산출물/09_AI개발파이프라인/독립검토서/`(REVIEW-…) + `산출물/00_프로젝트관리/의사결정_기록.md`(DL-…).
-- **커밋:** 자동(conventional 메시지, `feat/*`·`fix/*` 브랜치). **푸시:** 사람 허락, `main` 직접 push 금지(PR).
+- **브랜치:** 작업은 `feature/fix/chore/docs/TASK-…` 브랜치 → `develop` 병합(독립검토 후). `main` 직접 작업 금지(부트스트랩 1회만 예외), `main` 병합은 이상혁 승인+검증+독립검토서. 정본: `.claude/rules/git.md`.
+- **커밋:** 자동(conventional 메시지). 헬퍼 `커밋.mjs`는 `--path`로 파일 명시 스테이징(`--all`은 옵트인). **푸시:** 사람 허락, `main` 직접 push 금지(PR).
 
 ## 5. 검증 (커밋·제출 전)
 ```
