@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="86" y1="70" x2="528" y2="548" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A1428"/>
+      <stop offset="0.58" stop-color="#0D1B35"/>
+      <stop offset="1" stop-color="#102341"/>
+    </linearGradient>
+    <radialGradient id="ambient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(300 286) rotate(90) scale(238)">
+      <stop offset="0" stop-color="#2D5C8D" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#173457" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#0C1930" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="blue" x1="236" y1="172" x2="369" y2="261" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#79C9FF"/>
+      <stop offset="0.52" stop-color="#5AA7FF"/>
+      <stop offset="1" stop-color="#3D78FF"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="151" y1="342" x2="286" y2="435" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#77E8D4"/>
+      <stop offset="0.55" stop-color="#4ED7BC"/>
+      <stop offset="1" stop-color="#29C5A4"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="329" y1="304" x2="458" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8AD5FF"/>
+      <stop offset="0.52" stop-color="#69B9F8"/>
+      <stop offset="1" stop-color="#4E93EE"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#020714" flood-opacity="0.42"/>
+    </filter>
+    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <clipPath id="clip">
+      <rect x="28" y="28" width="544" height="544" rx="132"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="28" y="28" width="544" height="544" rx="132" fill="url(#bg)"/>
+  </g>
+  <g clip-path="url(#clip)">
+    <rect x="28" y="28" width="544" height="544" rx="132" fill="url(#ambient)"/>
+
+    <!-- restrained background geometry -->
+    <circle cx="300" cy="310" r="167" fill="none" stroke="#83B9E5" stroke-width="2" stroke-opacity="0.08"/>
+    <circle cx="300" cy="310" r="145" fill="none" stroke="#70A7D8" stroke-width="1.5" stroke-opacity="0.10"/>
+
+    <!-- subtle conversation cue -->
+    <g opacity="0.25">
+      <path d="M103 160C103 135 123 115 148 115H226C251 115 271 135 271 160V190C271 215 251 235 226 235H171L143 260L149 235H148C123 235 103 215 103 190V160Z" fill="#17314F" stroke="#69AFE5" stroke-width="3.5"/>
+      <circle cx="158" cy="175" r="6.5" fill="#7CC5F5"/>
+      <circle cx="187" cy="175" r="6.5" fill="#7CC5F5"/>
+      <circle cx="216" cy="175" r="6.5" fill="#7CC5F5"/>
+    </g>
+
+    <!-- subtle calendar cue -->
+    <g opacity="0.24">
+      <rect x="382" y="383" width="132" height="116" rx="30" fill="#12313E" stroke="#66D9C4" stroke-width="3.5"/>
+      <path d="M383 420H513" stroke="#66D9C4" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="409" y="369" width="12" height="31" rx="6" fill="#6FE0CC"/>
+      <rect x="475" y="369" width="12" height="31" rx="6" fill="#6FE0CC"/>
+      <circle cx="414" cy="447" r="6.5" fill="#72DDCA"/>
+      <circle cx="448" cy="447" r="6.5" fill="#72DDCA"/>
+      <circle cx="482" cy="447" r="6.5" fill="#72DDCA"/>
+      <circle cx="414" cy="476" r="6.5" fill="#72DDCA"/>
+      <circle cx="448" cy="476" r="6.5" fill="#72DDCA"/>
+    </g>
+
+    <!-- soft color glows beneath the people -->
+    <circle cx="300" cy="200" r="66" fill="#4B8DFF" opacity="0.11" filter="url(#softGlow)"/>
+    <circle cx="195" cy="384" r="66" fill="#43D3B4" opacity="0.10" filter="url(#softGlow)"/>
+    <circle cx="405" cy="384" r="66" fill="#66B7F8" opacity="0.10" filter="url(#softGlow)"/>
+
+    <!-- three people forming a compact circle -->
+    <path d="M213.4 237.4A113 113 0 0 1 386.6 237.4" fill="none" stroke="url(#blue)" stroke-width="50" stroke-linecap="round"/>
+    <path d="M406.2 271.4A113 113 0 0 1 319.6 421.3" fill="none" stroke="url(#sky)" stroke-width="50" stroke-linecap="round"/>
+    <path d="M280.4 421.3A113 113 0 0 1 193.8 271.4" fill="none" stroke="url(#mint)" stroke-width="50" stroke-linecap="round"/>
+
+    <!-- central negative space -->
+    <circle cx="300" cy="310" r="70" fill="#0C1930"/>
+    <circle cx="300" cy="310" r="69" fill="none" stroke="#8CB9DA" stroke-width="2" stroke-opacity="0.24"/>
+
+    <!-- connection points -->
+    <circle cx="398" cy="253" r="7.5" fill="#C5E0F5"/>
+    <circle cx="300" cy="423" r="7.5" fill="#C9E5F5"/>
+    <circle cx="202" cy="253" r="7.5" fill="#BFE9DD"/>
+
+    <!-- heads -->
+    <circle cx="300" cy="163" r="34" fill="url(#blue)"/>
+    <circle cx="427.3" cy="383.5" r="33" fill="url(#sky)"/>
+    <circle cx="172.7" cy="383.5" r="33" fill="url(#mint)"/>
+
+    <!-- restrained highlights -->
+    <circle cx="289" cy="151" r="8.5" fill="#C7E9FF" fill-opacity="0.55"/>
+    <circle cx="416" cy="372" r="8.5" fill="#D2EEFF" fill-opacity="0.52"/>
+    <circle cx="161" cy="372" r="8.5" fill="#D1FFF3" fill-opacity="0.52"/>
+  </g>
+
+  <rect x="29.5" y="29.5" width="541" height="541" rx="130.5" fill="none" stroke="#4C6B91" stroke-width="3" stroke-opacity="0.42"/>
+</svg>

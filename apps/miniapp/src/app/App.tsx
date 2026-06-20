@@ -21,10 +21,21 @@ function realGen(): ServiceGen {
   };
 }
 
+function Splash() {
+  return (
+    <div className="splash">
+      <img src="/logo.svg" alt="소모임 밋업 로고" />
+      <div className="s-name">소모임 밋업</div>
+      <div className="s-tag">초대 코드로 여는 우리들의 모임</div>
+    </div>
+  );
+}
+
 type View = { name: 'home' } | { name: 'create' } | { name: 'detail'; id: string };
 
 export function App() {
   const service = useMemo(() => createMeetupService(createLocalStorageRepository(), realGen()), []);
+  const [showSplash, setShowSplash] = useState(true);
   const [userKey, setUserKey] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [nickInput, setNickInput] = useState('');
@@ -33,11 +44,18 @@ export function App() {
   const reload = () => setTick((t) => t + 1);
 
   useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1450);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
     getUserKey().then((k) => {
       setUserKey(k);
       setNickname(service.getProfile(k) ?? null);
     });
   }, [service]);
+
+  if (showSplash) return <Splash />;
 
   if (!userKey) {
     return (
