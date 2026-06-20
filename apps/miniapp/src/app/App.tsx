@@ -5,7 +5,7 @@ import { createMeetupService, type ServiceGen } from '../domains/meetup/service'
 import { Home } from './views/Home';
 import { CreateMeetup } from './views/CreateMeetup';
 import { MeetupDetail } from './views/MeetupDetail';
-import { s, theme } from './styles';
+import { Screen, AppBar, Card, Field, Button, BottomBar } from './ui';
 
 // 실제 id/초대코드/시각 생성기(불순 경계). 도메인은 이를 주입받아 순수하게 유지된다.
 function realGen(): ServiceGen {
@@ -41,51 +41,55 @@ export function App() {
 
   if (!userKey) {
     return (
-      <div style={s.app}>
-        <div style={s.container}>불러오는 중…</div>
-      </div>
+      <Screen>
+        <div className="content c-sub">불러오는 중…</div>
+      </Screen>
     );
   }
 
   if (!nickname) {
     return (
-      <div style={s.app}>
-        <div style={s.container}>
-          <h1 style={s.title}>소모임 밋업</h1>
-          <p style={s.sub}>가입·로그인 없이 시작해요. 닉네임만 정해주세요.</p>
-          <div style={s.card}>
-            <label style={s.label}>닉네임</label>
-            <input style={s.input} value={nickInput} onChange={(e) => setNickInput(e.target.value)} placeholder="예: 도둑잡는철수" />
-            <div style={{ height: 12 }} />
-            <button
-              style={{ ...s.primaryBtn, opacity: nickInput.trim() ? 1 : 0.5 }}
-              disabled={!nickInput.trim()}
-              onClick={() => {
-                service.setProfile(userKey, nickInput);
-                setNickname(nickInput.trim());
-              }}
-            >
-              시작하기
-            </button>
-          </div>
+      <Screen>
+        <div className="content fade">
+          <h1 className="t-display">소모임 밋업</h1>
+          <p className="t-body c-sub" style={{ marginTop: 2 }}>
+            가입·로그인 없이 시작해요.
+            <br />
+            닉네임만 정하면 끝이에요.
+          </p>
+          <Card>
+            <Field label="닉네임">
+              <input className="input" value={nickInput} onChange={(e) => setNickInput(e.target.value)} placeholder="예: 도둑잡는철수" maxLength={16} />
+            </Field>
+          </Card>
         </div>
-      </div>
+        <BottomBar>
+          <Button
+            disabled={!nickInput.trim()}
+            onClick={() => {
+              service.setProfile(userKey, nickInput);
+              setNickname(nickInput.trim());
+            }}
+          >
+            시작하기
+          </Button>
+        </BottomBar>
+      </Screen>
     );
   }
 
   return (
-    <div style={s.app}>
-      <header style={{ ...s.container, paddingBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <strong style={{ color: theme.blue, fontSize: 18, cursor: 'pointer' }} onClick={() => setView({ name: 'home' })}>
-          소모임 밋업
-        </strong>
-        <span style={s.sub}>{nickname}</span>
-      </header>
-      <div style={s.container}>
+    <Screen>
+      <AppBar
+        title="소모임 밋업"
+        right={<span className="me">{nickname}</span>}
+        onTitle={() => setView({ name: 'home' })}
+      />
+      <div className="content fade" key={view.name + ('id' in view ? view.id : '')}>
         {view.name === 'home' && <Home service={service} userKey={userKey} onCreate={() => setView({ name: 'create' })} onOpen={(id) => setView({ name: 'detail', id })} />}
         {view.name === 'create' && <CreateMeetup service={service} userKey={userKey} onDone={(id) => setView({ name: 'detail', id })} onBack={() => setView({ name: 'home' })} />}
         {view.name === 'detail' && <MeetupDetail service={service} userKey={userKey} nickname={nickname} meetupId={view.id} onBack={() => setView({ name: 'home' })} reload={reload} />}
       </div>
-    </div>
+    </Screen>
   );
 }

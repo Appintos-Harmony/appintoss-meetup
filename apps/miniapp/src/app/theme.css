@@ -1,0 +1,120 @@
+/* 소모임 밋업 — TDS 정렬 디자인 시스템(핸드크래프트). 토큰·컴포넌트·모션.
+   운영 전환 시 @toss/tds-colors·TDS 컴포넌트로 매핑(피그마_디자인인계서). */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+:root {
+  --blue: #3182f6;        /* TDS blue500 */
+  --blue-pressed: #1b64da;
+  --blue-weak: #e8f1fe;
+  --bg: #f2f4f6;          /* grey100 */
+  --surface: #ffffff;
+  --text: #191f28;        /* grey900 */
+  --text-2: #4e5968;      /* grey700 */
+  --sub: #8b95a1;         /* grey500 */
+  --line: #e5e8eb;        /* grey200 */
+  --green: #15803d;
+  --red: #f04452;         /* TDS red */
+  --r-card: 20px;
+  --r-btn: 14px;
+  --r-field: 12px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-up: 0 -1px 8px rgba(0, 0, 0, 0.05);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body {
+  font-family: Pretendard, -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 레이아웃 */
+.screen { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
+.content { padding: 16px 20px 96px; }
+.appbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; padding: 0 20px;
+  background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.appbar .brand { color: var(--blue); font-size: 18px; font-weight: 800; letter-spacing: -0.02em; cursor: pointer; }
+.appbar .me { color: var(--sub); font-size: 13px; font-weight: 600; }
+
+/* 타이포 */
+.t-display { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 4px 0 4px; }
+.t-title { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+.t-heading { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.t-body { font-size: 15px; line-height: 1.55; }
+.t-cap { font-size: 13px; }
+.c-sub { color: var(--sub); }
+.c-2 { color: var(--text-2); }
+
+/* 카드 */
+.card { background: var(--surface); border-radius: var(--r-card); padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.section-label { font-size: 13px; font-weight: 700; color: var(--sub); margin: 18px 4px 8px; }
+
+/* 버튼 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: none; border-radius: var(--r-btn); font-family: inherit; font-weight: 700;
+  cursor: pointer; transition: transform 0.12s ease, background 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+.btn-lg { height: 52px; font-size: 16px; width: 100%; }
+.btn-md { height: 44px; font-size: 14px; padding: 0 16px; }
+.btn-sm { height: 34px; font-size: 13px; padding: 0 14px; border-radius: 10px; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:active { background: var(--blue-pressed); }
+.btn-ghost { background: var(--bg); color: var(--text); }
+.btn-weak { background: var(--blue-weak); color: var(--blue); }
+.btn-danger-weak { background: #fdecec; color: var(--red); }
+
+/* 하단 고정 CTA */
+.bottombar {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
+  width: 100%; max-width: 480px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line); box-shadow: var(--shadow-up);
+}
+
+/* 배지(pill) */
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.badge-blue { background: var(--blue-weak); color: var(--blue); }
+.badge-grey { background: #f2f4f6; color: var(--sub); }
+.badge-green { background: #e7f6ec; color: var(--green); }
+.badge-red { background: #fdecec; color: var(--red); }
+
+/* 입력 */
+.field { margin-bottom: 14px; }
+.field > label { display: block; font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+.input, .textarea {
+  width: 100%; box-sizing: border-box; padding: 13px 14px;
+  border: 1px solid var(--line); border-radius: var(--r-field);
+  font-family: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease; outline: none;
+}
+.input:focus, .textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.15); }
+.textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+
+/* 리스트 행 */
+.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tap { cursor: pointer; transition: background 0.15s ease; border-radius: var(--r-card); }
+.tap:active { background: #fafbfc; }
+
+/* 빈/로딩 */
+.empty { text-align: center; padding: 28px 12px; color: var(--sub); }
+.empty .emoji { font-size: 32px; }
+.skeleton { background: linear-gradient(90deg, #eef1f4 25%, #f6f8fa 37%, #eef1f4 63%); background-size: 400% 100%; animation: shimmer 1.3s ease infinite; border-radius: 10px; }
+
+/* 모션 */
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fade { animation: fadeUp 0.22s ease both; }
+.hint { color: var(--red); font-size: 13px; margin: 6px 2px 0; }
+.code-chip { font-size: 16px; font-weight: 800; color: var(--blue); letter-spacing: 0.06em; }

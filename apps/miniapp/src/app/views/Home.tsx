@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import type { MeetupService } from '../../domains/meetup/service';
 import { remainingCapacity } from '../../domains/meetup/logic';
-import { s, theme } from '../styles';
-import { MeetupBadge, fmtDate } from './common';
+import { Card, Field, Button, BottomBar, MeetupBadge, Empty, fmtDate } from '../ui';
 
 interface Props {
   service: MeetupService;
@@ -27,35 +26,42 @@ export function Home({ service, userKey, onCreate, onOpen }: Props) {
   }
 
   return (
-    <div>
-      <button style={s.primaryBtn} onClick={onCreate}>+ 모임 만들기</button>
-      <div style={{ height: 12 }} />
-      <div style={s.card}>
-        <label style={s.label}>초대 코드로 입장</label>
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <input style={{ ...s.input, marginTop: 0 }} value={code} onChange={(e) => setCode(e.target.value)} placeholder="예: ABC123" />
-          <button style={{ ...s.ghostBtn, whiteSpace: 'nowrap' }} onClick={enter}>입장</button>
-        </div>
-        {err && <p style={{ color: theme.danger, fontSize: 13, margin: '6px 0 0' }}>{err}</p>}
-      </div>
+    <>
+      <Card>
+        <Field label="초대 코드로 입장">
+          <div className="row" style={{ gap: 8 }}>
+            <input className="input" style={{ flex: 1 }} value={code} onChange={(e) => setCode(e.target.value)} placeholder="예: ABC123" />
+            <Button variant="weak" size="md" onClick={enter} style={{ whiteSpace: 'nowrap' }}>입장</Button>
+          </div>
+        </Field>
+        {err && <p className="hint">{err}</p>}
+      </Card>
 
-      <h2 style={{ fontSize: 15, color: theme.sub, margin: '16px 4px 8px' }}>내 모임</h2>
+      <div className="section-label">내 모임</div>
       {meetups.length === 0 && (
-        <div style={s.card}>
-          <p style={{ ...s.sub, margin: 0 }}>아직 모임이 없어요. 만들거나 초대 코드로 입장해 보세요.</p>
-        </div>
+        <Card>
+          <Empty emoji="🗓️">
+            아직 모임이 없어요.
+            <br />
+            만들거나 초대 코드로 입장해 보세요.
+          </Empty>
+        </Card>
       )}
       {meetups.map((m) => (
-        <div key={m.id} style={{ ...s.card, cursor: 'pointer' }} onClick={() => onOpen(m.id)}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong>{m.title}</strong>
+        <Card key={m.id} onClick={() => onOpen(m.id)}>
+          <div className="row">
+            <strong className="t-heading">{m.title}</strong>
             <MeetupBadge status={m.status} />
           </div>
-          <p style={{ ...s.sub, margin: '4px 0 0' }}>
+          <p className="t-cap c-sub" style={{ margin: '6px 0 0' }}>
             {fmtDate(m.startAt)} · {m.area} · 남은자리 {remainingCapacity(m, service.participationsFor(m.id))}/{m.capacity}
           </p>
-        </div>
+        </Card>
       ))}
-    </div>
+
+      <BottomBar>
+        <Button onClick={onCreate}>+ 모임 만들기</Button>
+      </BottomBar>
+    </>
   );
 }
