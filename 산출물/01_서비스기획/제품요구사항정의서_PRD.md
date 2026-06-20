@@ -2,7 +2,7 @@
 status: Draft
 owner: 이상혁
 reviewers: [곽소정, 김민혁, 양록빈]
-last_updated: 2026-06-20
+last_updated: 2026-06-21
 related_requirements: []
 related_adrs: []
 ---
