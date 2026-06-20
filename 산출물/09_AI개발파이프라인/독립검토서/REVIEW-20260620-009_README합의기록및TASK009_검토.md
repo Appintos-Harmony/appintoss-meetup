@@ -5,8 +5,9 @@ id: REVIEW-20260620-009
 related_task: TASK-20260620-009
 review_agent: Codex
 human_reviewer: 이상혁
-reviewed_commit: Not Available (git initialized, no commits yet on main)
-status: Draft
+reviewed_commit: pre-commit working tree (baseline de049d7)
+resolved_commit: 804dc54 (README 범위·합의 반영)
+status: Final
 ```
 
 ## 판정

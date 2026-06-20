@@ -6,8 +6,10 @@ related_task: TASK-20260620-010_브랜치전략및커밋헬퍼_작업지시서
 review_agent: Codex
 human_reviewer: 이상혁
 reviewed_commit: 3943db9
-status: Final
+status: Superseded
 ```
+
+> **Superseded** — 정본: [REVIEW-20260620-012_pathspec재검토.md](REVIEW-20260620-012_pathspec재검토.md) (@5cfa779). 본 문서는 @3943db9(커밋 전) 시점 검토로 보존용이다.
 
 ## 판정
 
