@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@toss/tds-mobile';
 import { getUserKey, setNickname } from '../lib/identity';
 
 export function Onboarding({ onDone }: { onDone: (nickname: string) => void }) {
@@ -32,9 +33,9 @@ export function Onboarding({ onDone }: { onDone: (nickname: string) => void }) {
         </div>
       </div>
       <div style={{ padding: 20 }}>
-        <button className="btn" disabled={!name.trim() || busy} onClick={start}>
+        <Button display="full" size="xlarge" disabled={!name.trim() || busy} loading={busy} onClick={start}>
           시작하기
-        </button>
+        </Button>
       </div>
     </div>
   );

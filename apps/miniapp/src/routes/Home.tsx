@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
+import { Button } from '@toss/tds-mobile';
 import type { Route } from '../App';
 import { listSongs, deleteSong, type Song } from '../lib/storage';
 
@@ -56,16 +57,14 @@ export function Home({
           </div>
         )}
 
-        <button className="btn" style={{ marginTop: 16 }} onClick={() => go('studio')}>
-          스튜디오 열기
-        </button>
-        <button
-          className="btn"
-          style={{ marginTop: 10, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--shadow)' }}
-          onClick={() => go('settings')}
-        >
-          설정
-        </button>
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Button display="full" size="large" onClick={() => go('studio')}>
+            스튜디오 열기
+          </Button>
+          <Button display="full" size="large" variant="weak" color="dark" onClick={() => go('settings')}>
+            설정
+          </Button>
+        </div>
       </div>
     </>
   );
