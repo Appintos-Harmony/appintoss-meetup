@@ -7,12 +7,41 @@ export type Chord = 'C' | 'Am' | 'F' | 'G';
 
 export const CHORDS: Chord[] = ['C', 'Am', 'F', 'G'];
 
-const CHORD_NOTES: Record<Chord, string[]> = {
+// 코드(C/Am/F/G…) → 음 배열. 멜로디 개별음(C4 등)은 그대로 단일음으로 재생.
+const CHORD_NOTES: Record<string, string[]> = {
   C: ['C4', 'E4', 'G4'],
-  Am: ['A3', 'C4', 'E4'],
+  Cm: ['C4', 'Eb4', 'G4'],
+  C7: ['C4', 'E4', 'G4', 'Bb4'],
+  Cm7: ['C4', 'Eb4', 'G4', 'Bb4'],
+  D: ['D4', 'F#4', 'A4'],
+  Dm: ['D4', 'F4', 'A4'],
+  D7: ['D4', 'F#4', 'A4', 'C5'],
+  Dm7: ['D4', 'F4', 'A4', 'C5'],
+  E: ['E3', 'G#3', 'B3'],
+  Em: ['E3', 'G3', 'B3'],
+  E7: ['E3', 'G#3', 'B3', 'D4'],
+  Em7: ['E3', 'G3', 'B3', 'D4'],
   F: ['F3', 'A3', 'C4'],
+  Fm: ['F3', 'Ab3', 'C4'],
+  F7: ['F3', 'A3', 'C4', 'Eb4'],
+  Fm7: ['F3', 'Ab3', 'C4', 'Eb4'],
   G: ['G3', 'B3', 'D4'],
+  Gm: ['G3', 'Bb3', 'D4'],
+  G7: ['G3', 'B3', 'D4', 'F4'],
+  Gm7: ['G3', 'Bb3', 'D4', 'F4'],
+  A: ['A3', 'C#4', 'E4'],
+  Am: ['A3', 'C4', 'E4'],
+  A7: ['A3', 'C#4', 'E4', 'G4'],
+  Am7: ['A3', 'C4', 'E4', 'G4'],
+  B: ['B3', 'D#4', 'F#4'],
+  Bm: ['B3', 'D4', 'F#4'],
+  B7: ['B3', 'D#4', 'F#4', 'A4'],
+  Bm7: ['B3', 'D4', 'F#4', 'A4'],
 };
+
+function notesFor(v: string): string[] {
+  return CHORD_NOTES[v] ?? [v];
+}
 
 let synth: Tone.PolySynth | null = null;
 let timbre: Timbre = 'acoustic';
@@ -54,11 +83,12 @@ export function getTimbre(): Timbre {
   return timbre;
 }
 
-export function chordOn(chord: Chord): void {
-  synth?.triggerAttack(CHORD_NOTES[chord]);
+// chord(C/Am…) 또는 개별음(C4) 모두 재생.
+export function chordOn(v: string): void {
+  synth?.triggerAttack(notesFor(v));
 }
-export function chordOff(chord: Chord): void {
-  synth?.triggerRelease(CHORD_NOTES[chord]);
+export function chordOff(v: string): void {
+  synth?.triggerRelease(notesFor(v));
 }
 export function allOff(): void {
   synth?.releaseAll();
@@ -80,8 +110,8 @@ export function playClick(accent: boolean, time?: number): void {
 export const TIMBRES: Timbre[] = ['acoustic', 'electric', 'synthbass'];
 
 export interface Voice {
-  on(chord: Chord): void;
-  off(chord: Chord): void;
+  on(v: string): void;
+  off(v: string): void;
   dispose(): void;
 }
 
@@ -91,10 +121,10 @@ export function createVoice(t: Timbre): Voice {
   let dead = false;
   return {
     on: (c) => {
-      if (!dead) s.triggerAttack(CHORD_NOTES[c]);
+      if (!dead) s.triggerAttack(notesFor(c));
     },
     off: (c) => {
-      if (!dead) s.triggerRelease(CHORD_NOTES[c]);
+      if (!dead) s.triggerRelease(notesFor(c));
     },
     dispose: () => {
       if (dead) return;

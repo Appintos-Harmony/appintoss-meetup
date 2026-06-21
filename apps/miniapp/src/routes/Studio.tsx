@@ -42,9 +42,9 @@ import { getNickname } from '../lib/identity';
 
 type Phase = 'idle' | 'countin' | 'recording';
 type Input = 'touch' | 'gesture';
+type PlayMode = 'chord' | 'melody';
 type Sheet = 'timbre' | 'receive' | null;
 
-// 코드별 강조색 + 기능(로마숫자, C장조 기준)
 const ACCENT: Record<Chord, [string, string]> = {
   C: ['#3182f6', '#1b64da'],
   Am: ['#8b5cf6', '#7c3aed'],
@@ -53,13 +53,18 @@ const ACCENT: Record<Chord, [string, string]> = {
 };
 const ROMAN: Record<Chord, string> = { C: 'I', Am: 'vi', F: 'IV', G: 'V' };
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
+// 멜로디 한 옥타브(도~도) + 계이름
+const MELODY: [string, string][] = [
+  ['C4', '도'], ['D4', '레'], ['E4', '미'], ['F4', '파'], ['G4', '솔'], ['A4', '라'], ['B4', '시'], ['C5', '도'],
+];
 const TIMBRE_LABEL: Record<Timbre, string> = { acoustic: '어쿠스틱 피아노', electric: '일렉트릭', synthbass: '신스 베이스' };
 const TIMBRE_EMOJI: Record<Timbre, string> = { acoustic: '🎹', electric: '🎸', synthbass: '🎵' };
 
 export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | null }) {
   const [ready, setReady] = useState(false);
-  const [active, setActive] = useState<Chord | null>(null);
+  const [active, setActive] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
+  const [playMode, setPlayMode] = useState<PlayMode>('chord');
   const [metroOn, setMetroOn] = useState(false);
   const [beat, setBeat] = useState(-1);
   const [hasTake, setHasTake] = useState(false);
@@ -79,7 +84,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const recordStartRef = useRef(0);
   const phaseRef = useRef<Phase>('idle');
   phaseRef.current = phase;
-  const soundingRef = useRef<Chord | null>(null);
+  const soundingRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef(0);
@@ -142,23 +147,23 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     return msToTick((transportSeconds() - recordStartRef.current) * 1000);
   }
 
-  function applyChord(next: Chord | null) {
+  function applyChord(next: string | null) {
     if (soundingRef.current === next) return;
     if (soundingRef.current) chordOff(soundingRef.current);
     if (next) chordOn(next);
     soundingRef.current = next;
   }
 
-  function downChord(chord: Chord, source: Source) {
-    stateRef.current = chordReducer(stateRef.current, { type: 'down', chord, source, tick: curTick(), nowMs: performance.now() });
-    const a = stateRef.current.activeChord as Chord | null;
+  function downChord(value: string, source: Source) {
+    stateRef.current = chordReducer(stateRef.current, { type: 'down', chord: value, source, tick: curTick(), nowMs: performance.now() });
+    const a = stateRef.current.activeChord;
     applyChord(a);
     setActive(a);
   }
 
   function upChord(source: Source) {
     stateRef.current = chordReducer(stateRef.current, { type: 'up', source, tick: curTick(), nowMs: performance.now() });
-    const a = stateRef.current.activeChord as Chord | null;
+    const a = stateRef.current.activeChord;
     applyChord(a);
     setActive(a);
   }
@@ -253,8 +258,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     soundingRef.current = null;
     for (const ev of stateRef.current.events) {
       window.setTimeout(() => {
-        if (ev.phase === 'on') chordOn(ev.chord as Chord);
-        else chordOff(ev.chord as Chord);
+        if (ev.phase === 'on') chordOn(ev.chord);
+        else chordOff(ev.chord);
       }, tickToMs(ev.tick));
     }
   }
@@ -277,8 +282,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
           const ms = tickToMs(ev.tick);
           if (ms > maxMs) maxMs = ms;
           window.setTimeout(() => {
-            if (ev.phase === 'on') voices[i].on(ev.chord as Chord);
-            else voices[i].off(ev.chord as Chord);
+            if (ev.phase === 'on') voices[i].on(ev.chord);
+            else voices[i].off(ev.chord);
           }, ms);
         }
       });
@@ -313,7 +318,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     }
   }
 
-  // 합주 받기 → 바텀시트로 확인
   async function receive() {
     let sess: Session;
     try {
@@ -354,11 +358,11 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     }
   }
 
+  const busy = phase !== 'idle';
   const recording = phase === 'recording';
   const countin = phase === 'countin';
-  const busy = phase !== 'idle';
   const countdown = BEATS_PER_BAR - (beat < 0 ? 0 : beat);
-  const statusText = camMsg || (countin ? `카운트인 ${countdown}` : recording ? '녹음 중' : !ready ? '코드를 누르면 소리가 켜져요' : '준비됐어요');
+  const statusText = camMsg || (countin ? `카운트인 ${countdown}` : recording ? '녹음 중' : !ready ? '눌러서 소리 켜기' : '준비됐어요');
 
   const ctrlBtn = (bg: string, color: string, shadow = 'var(--e2)'): CSSProperties => ({ flex: 1, background: bg, color, boxShadow: shadow });
 
@@ -372,11 +376,19 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
       </div>
 
       <div className="content">
-        {/* 입력 세그먼트 */}
+        {/* 연주법 세그먼트 */}
         <div className="segment">
-          <button className="seg" data-on={input === 'touch'} onClick={selectTouch}>👆 터치</button>
-          <button className="seg" data-on={input === 'gesture'} onClick={selectGesture}>👋 제스처</button>
+          <button className="seg" data-on={playMode === 'chord'} onClick={() => setPlayMode('chord')}>🎸 코드</button>
+          <button className="seg" data-on={playMode === 'melody'} onClick={() => { selectTouch(); setPlayMode('melody'); }}>🎹 멜로디</button>
         </div>
+
+        {/* 입력 세그먼트 (코드 모드만) */}
+        {playMode === 'chord' && (
+          <div className="segment" style={{ marginTop: 8 }}>
+            <button className="seg" data-on={input === 'touch'} onClick={selectTouch}>👆 터치</button>
+            <button className="seg" data-on={input === 'gesture'} onClick={selectGesture}>👋 제스처</button>
+          </div>
+        )}
 
         {/* 상태 + 박자 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 24, marginTop: 14 }}>
@@ -393,8 +405,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
           {TIMBRE_EMOJI[timbre]} {TIMBRE_LABEL[timbre]} ▾
         </button>
 
-        {/* 제스처 카메라 (항상 마운트) */}
-        <div style={{ display: input === 'gesture' ? 'block' : 'none', position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)' }}>
+        {/* 코드 모드 — 제스처 카메라(항상 마운트) */}
+        <div style={{ display: playMode === 'chord' && input === 'gesture' ? 'block' : 'none', position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)' }}>
           <video ref={videoRef} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
           <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
             {CHORDS.map((c, i) => (
@@ -406,8 +418,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
           </div>
         </div>
 
-        {/* 터치 패드 */}
-        {input === 'touch' && (
+        {/* 코드 모드 — 터치 패드 */}
+        {playMode === 'chord' && input === 'touch' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
             {CHORDS.map((c) => (
               <button
@@ -421,6 +433,38 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
               >
                 <span className="pad-sub">{ROMAN[c]}</span>
                 {c}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* 멜로디 모드 — 피아노 건반 */}
+        {playMode === 'melody' && (
+          <div style={{ display: 'flex', gap: 6, marginTop: 14, height: 220 }}>
+            {MELODY.map(([note, solfa]) => (
+              <button
+                key={note}
+                onPointerDown={() => void ensureAudio().then(() => downChord(note, 'touch'))}
+                onPointerUp={() => upChord('touch')}
+                onPointerLeave={() => active === note && upChord('touch')}
+                style={{
+                  flex: 1,
+                  border: 0,
+                  borderRadius: '6px 6px 14px 14px',
+                  background: active === note ? 'linear-gradient(180deg, #3182f6, #1b64da)' : 'linear-gradient(180deg, #ffffff, #eef1f4)',
+                  color: active === note ? '#fff' : 'var(--key-dark)',
+                  boxShadow: active === note ? 'var(--e-inset)' : 'var(--e2)',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                  paddingBottom: 14,
+                  fontWeight: 800,
+                  fontSize: 15,
+                  transition: 'all .08s var(--ease)',
+                  touchAction: 'manipulation',
+                }}
+              >
+                {solfa}
               </button>
             ))}
           </div>
@@ -455,8 +499,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
               </div>
               {hasTake && !busy && <button className="chip" onClick={overdub}>⬆ 얹기</button>}
             </div>
-
-            {/* 트랙 아바타 */}
             {sessionTracks.length > 0 && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {sessionTracks.map((t, i) => (
@@ -469,7 +511,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
                 ))}
               </div>
             )}
-
             <button className="btn" style={{ background: jamming ? 'var(--coral)' : 'var(--blue)' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
               {jamming ? '■ 합주 정지' : `🎶 합주 듣기 (트랙 ${sessionTracks.length})`}
             </button>
