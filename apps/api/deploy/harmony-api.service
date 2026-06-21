@@ -1,0 +1,21 @@
+[Unit]
+Description=Harmony Jam API (node:sqlite, no deps)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/harmony-api
+Environment=PORT=8080
+Environment=DB_PATH=/opt/harmony-api/data/harmony.db
+ExecStart=/usr/bin/node /opt/harmony-api/server.mjs
+Restart=on-failure
+RestartSec=3
+User=harmony
+Group=harmony
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/harmony-api/data
+
+[Install]
+WantedBy=multi-user.target
