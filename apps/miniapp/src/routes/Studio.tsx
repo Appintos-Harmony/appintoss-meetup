@@ -1,6 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Route } from '../App';
-import { CHORDS, type Chord, unlockAudio, chordOn, chordOff, allOff, createVoice, TIMBRES, type Voice } from '../audio/engine';
+import {
+  CHORDS,
+  type Chord,
+  type Timbre,
+  unlockAudio,
+  chordOn,
+  chordOff,
+  allOff,
+  setTimbre as engineSetTimbre,
+  getTimbre,
+  createVoice,
+  TIMBRES,
+  type Voice,
+} from '../audio/engine';
 import { chordReducer, initialChordState, type ChordState, type Source } from '../audio/chordReducer';
 import {
   BEATS_PER_BAR,
@@ -14,13 +28,33 @@ import {
 } from '../audio/transport';
 import { saveSong, newSongId, listSongs, type Song } from '../lib/storage';
 import { initHandTracking, startCamera, stopCamera, detect } from '../audio/gesture';
-import { createSession, getSession, addTrack, copyText, readClipboardCode, PRELOAD, type SessionTrack } from '../lib/share';
+import {
+  createSession,
+  getSession,
+  addTrack,
+  copyText,
+  readClipboardCode,
+  PRELOAD,
+  type Session,
+  type SessionTrack,
+} from '../lib/share';
 import { getNickname } from '../lib/identity';
 
-// Phase 0~3 통합 스튜디오: 터치/제스처 입력(세그먼트, 동시 바인딩 금지) + 메트로놈 + 카운트인 +
-// tick clock + 이벤트 녹음/재생 + 로컬 저장. 제스처는 검증 스파이크 로직을 라이트 셸에 이식.
 type Phase = 'idle' | 'countin' | 'recording';
 type Input = 'touch' | 'gesture';
+type Sheet = 'timbre' | 'receive' | null;
+
+// 코드별 강조색 + 기능(로마숫자, C장조 기준)
+const ACCENT: Record<Chord, [string, string]> = {
+  C: ['#3182f6', '#1b64da'],
+  Am: ['#8b5cf6', '#7c3aed'],
+  F: ['#15c47e', '#0fa968'],
+  G: ['#ff6b6b', '#ee5253'],
+};
+const ROMAN: Record<Chord, string> = { C: 'I', Am: 'vi', F: 'IV', G: 'V' };
+const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
+const TIMBRE_LABEL: Record<Timbre, string> = { acoustic: '어쿠스틱 피아노', electric: '일렉트릭', synthbass: '신스 베이스' };
+const TIMBRE_EMOJI: Record<Timbre, string> = { acoustic: '🎹', electric: '🎸', synthbass: '🎵' };
 
 export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | null }) {
   const [ready, setReady] = useState(false);
@@ -37,6 +71,9 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const [trackCount, setTrackCount] = useState(0);
   const [sessionTracks, setSessionTracks] = useState<SessionTrack[]>([]);
   const [jamming, setJamming] = useState(false);
+  const [timbre, setTimbreState] = useState<Timbre>(() => getTimbre());
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const [pending, setPending] = useState<Session | null>(null);
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -64,7 +101,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     };
   }, []);
 
-  // 홈에서 곡 열기 → 이벤트 복구.
   useEffect(() => {
     if (loaded) {
       stateRef.current = { ...initialChordState, events: loaded.events };
@@ -72,7 +108,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     }
   }, [loaded]);
 
-  // 합주 세션 폴링(1.5s) — 다른 사람의 '얹기'를 자동 반영(실시간 아님).
   useEffect(() => {
     if (!sessionCode) return;
     let alive = true;
@@ -84,7 +119,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
           setSessionTracks(s.tracks);
         }
       } catch {
-        // 오프라인/프리로드(DEMO01) 세션은 폴링 무시
+        // 오프라인/프리로드 세션은 폴링 무시
       }
     };
     void tick();
@@ -107,7 +142,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     return msToTick((transportSeconds() - recordStartRef.current) * 1000);
   }
 
-  // 오디오를 reducer의 activeChord에 동기화 — 같은 코드 재트리거 방지(제스처 매 프레임 호출 대비).
   function applyChord(next: Chord | null) {
     if (soundingRef.current === next) return;
     if (soundingRef.current) chordOff(soundingRef.current);
@@ -116,31 +150,19 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   }
 
   function downChord(chord: Chord, source: Source) {
-    stateRef.current = chordReducer(stateRef.current, {
-      type: 'down',
-      chord,
-      source,
-      tick: curTick(),
-      nowMs: performance.now(),
-    });
+    stateRef.current = chordReducer(stateRef.current, { type: 'down', chord, source, tick: curTick(), nowMs: performance.now() });
     const a = stateRef.current.activeChord as Chord | null;
     applyChord(a);
     setActive(a);
   }
 
   function upChord(source: Source) {
-    stateRef.current = chordReducer(stateRef.current, {
-      type: 'up',
-      source,
-      tick: curTick(),
-      nowMs: performance.now(),
-    });
+    stateRef.current = chordReducer(stateRef.current, { type: 'up', source, tick: curTick(), nowMs: performance.now() });
     const a = stateRef.current.activeChord as Chord | null;
     applyChord(a);
     setActive(a);
   }
 
-  // 제스처 인식 루프(편 손=지속, 주먹/없음=멈춤). 같은 코드면 reducer가 무시.
   function loop() {
     const v = videoRef.current;
     if (v && v.readyState >= 2) {
@@ -173,7 +195,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     } catch {
       stopGestureLoop();
       setInput('touch');
-      setCamMsg('카메라를 쓸 수 없어 터치로 연주해요.');
+      setCamMsg('카메라를 쓸 수 없어 터치로 연주해요');
     }
   }
 
@@ -182,6 +204,16 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     upChord('gesture');
     setInput('touch');
     setCamMsg('');
+  }
+
+  function chooseTimbre(t: Timbre) {
+    void ensureAudio().then(() => {
+      engineSetTimbre(t);
+      setTimbreState(t);
+      chordOn('C');
+      window.setTimeout(() => chordOff('C'), 600);
+      setSheet(null);
+    });
   }
 
   async function toggleMetro() {
@@ -227,7 +259,6 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     }
   }
 
-  // 합주 합쳐듣기: 세션의 모든 트랙을 트랙별 음색으로 동시 재생.
   function stopJam() {
     voicesRef.current.forEach((v) => v.dispose());
     voicesRef.current = [];
@@ -237,9 +268,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   function playSession() {
     void ensureAudio().then(() => {
       stopJam();
-      const tracks = sessionTracks.length
-        ? sessionTracks
-        : [{ owner: '나', events: stateRef.current.events, createdAt: 0 }];
+      const tracks = sessionTracks.length ? sessionTracks : [{ owner: '나', events: stateRef.current.events, createdAt: 0 }];
       const voices = tracks.map((_, i) => createVoice(TIMBRES[i % TIMBRES.length]));
       voicesRef.current = voices;
       let maxMs = 0;
@@ -263,24 +292,18 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     if (!events.length) return;
     const name = `내 곡 ${listSongs().length + 1}`;
     saveSong({ id: newSongId(), name, bpm: BPM, events, createdAt: Date.now() });
-    setToast(`'${name}' 저장됨`);
-    window.setTimeout(() => setToast(''), 1800);
+    flashToast(`'${name}' 저장됨`);
   }
 
   function flashToast(msg: string) {
     setToast(msg);
-    window.setTimeout(() => setToast(''), 2200);
+    window.setTimeout(() => setToast(''), 2000);
   }
 
   async function share() {
     if (!stateRef.current.events.length) return;
     try {
-      const code = await createSession({
-        name: '하모니 합주',
-        bpm: BPM,
-        owner: getNickname() || '익명',
-        events: stateRef.current.events,
-      });
+      const code = await createSession({ name: '하모니 합주', bpm: BPM, owner: getNickname() || '익명', events: stateRef.current.events });
       setSessionCode(code);
       setSessionTracks([{ owner: getNickname() || '익명', events: stateRef.current.events, createdAt: Date.now() }]);
       const ok = await copyText(code);
@@ -290,26 +313,35 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     }
   }
 
+  // 합주 받기 → 바텀시트로 확인
   async function receive() {
-    let sess;
+    let sess: Session;
     try {
       const code = await readClipboardCode();
       sess = code ? await getSession(code) : PRELOAD;
     } catch {
       sess = PRELOAD;
     }
-    const base = sess.tracks[0];
-    if (!base) {
+    if (!sess.tracks[0]) {
       flashToast('받을 트랙이 없어요');
       return;
     }
+    setPending(sess);
+    setSheet('receive');
+  }
+
+  function confirmReceive() {
+    if (!pending) return;
+    const base = pending.tracks[0];
     stateRef.current = { ...initialChordState, events: base.events };
     setHasTake(true);
-    setSessionCode(sess.code);
+    setSessionCode(pending.code);
     setBaseOwner(base.owner);
-    setTrackCount(sess.tracks.length);
-    setSessionTracks(sess.tracks);
-    flashToast(`${base.owner}님 트랙 받음 — 들어보고 얹어보세요`);
+    setTrackCount(pending.tracks.length);
+    setSessionTracks(pending.tracks);
+    setSheet(null);
+    setPending(null);
+    flashToast(`${base.owner}님 트랙을 얹을 준비 완료`);
   }
 
   async function overdub() {
@@ -324,232 +356,181 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
 
   const recording = phase === 'recording';
   const countin = phase === 'countin';
+  const busy = phase !== 'idle';
   const countdown = BEATS_PER_BAR - (beat < 0 ? 0 : beat);
+  const statusText = camMsg || (countin ? `카운트인 ${countdown}` : recording ? '녹음 중' : !ready ? '코드를 누르면 소리가 켜져요' : '준비됐어요');
 
-  const segBtn = (on: boolean) => ({
-    flex: 1,
-    border: 0,
-    borderRadius: 12,
-    padding: '10px 0',
-    fontWeight: 700,
-    fontSize: 15,
-    background: on ? 'var(--blue)' : 'transparent',
-    color: on ? '#fff' : 'var(--sub)',
-  });
+  const ctrlBtn = (bg: string, color: string, shadow = 'var(--e2)'): CSSProperties => ({ flex: 1, background: bg, color, boxShadow: shadow });
 
   return (
     <>
       <div className="appbar">
         스튜디오
-        <span
-          className="c-sub"
-          style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 400 }}
-          onClick={() => go('home')}
-        >
+        <span className="c-sub" style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 500 }} onClick={() => go('home')}>
           홈
         </span>
       </div>
+
       <div className="content">
-        {/* 입력 세그먼트(현재 입력 상태 — 동시 바인딩 금지) */}
-        <div style={{ display: 'flex', gap: 4, padding: 4, background: 'var(--bg)', borderRadius: 14 }}>
-          <button style={segBtn(input === 'touch')} onClick={selectTouch}>👆 터치</button>
-          <button style={segBtn(input === 'gesture')} onClick={selectGesture}>👋 제스처</button>
+        {/* 입력 세그먼트 */}
+        <div className="segment">
+          <button className="seg" data-on={input === 'touch'} onClick={selectTouch}>👆 터치</button>
+          <button className="seg" data-on={input === 'gesture'} onClick={selectGesture}>👋 제스처</button>
         </div>
 
-        {/* 상태/박자 표시 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 28, marginTop: 12 }}>
-          <div style={{ display: 'flex', gap: 6 }}>
+        {/* 상태 + 박자 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 24, marginTop: 14 }}>
+          <div style={{ display: 'flex', gap: 7 }}>
             {Array.from({ length: BEATS_PER_BAR }).map((_, i) => (
-              <span
-                key={i}
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: beat === i ? 'var(--blue)' : 'var(--line)',
-                  transition: 'background .05s',
-                }}
-              />
+              <span key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: beat === i ? 'var(--blue)' : 'var(--line-2)', transform: beat === i ? 'scale(1.3)' : 'none', transition: 'all .08s var(--ease)' }} />
             ))}
           </div>
-          <span className="t-cap c-sub">
-            {camMsg
-              ? camMsg
-              : countin
-                ? `카운트인 ${countdown}`
-                : recording
-                  ? '녹음 중'
-                  : !ready
-                    ? '코드를 누르면 소리가 켜져요'
-                    : '준비됨'}
-          </span>
+          <span className="t-cap c-sub" style={{ fontWeight: recording ? 700 : 400, color: recording ? 'var(--coral)' : undefined }}>{statusText}</span>
         </div>
 
-        {/* 제스처 카메라 (항상 마운트 — 터치 모드선 숨김, ref 유지) */}
-        <div
-          style={{
-            display: input === 'gesture' ? 'block' : 'none',
-            position: 'relative',
-            marginTop: 12,
-            borderRadius: 20,
-            overflow: 'hidden',
-            background: '#000',
-            aspectRatio: '4 / 3',
-          }}
-        >
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
-          />
+        {/* 음색 칩 */}
+        <button className="chip" style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setSheet('timbre')}>
+          {TIMBRE_EMOJI[timbre]} {TIMBRE_LABEL[timbre]} ▾
+        </button>
+
+        {/* 제스처 카메라 (항상 마운트) */}
+        <div style={{ display: input === 'gesture' ? 'block' : 'none', position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)' }}>
+          <video ref={videoRef} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
           <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
             {CHORDS.map((c, i) => (
-              <div
-                key={c}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'center',
-                  paddingBottom: 14,
-                  borderRight: i < 3 ? '1px solid rgba(255,255,255,.25)' : 'none',
-                  background: active === c ? 'rgba(49,130,246,.4)' : 'transparent',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: 24,
-                  textShadow: '0 1px 3px rgba(0,0,0,.6)',
-                }}
-              >
-                {c}
+              <div key={c} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 16, borderRight: i < 3 ? '1px solid rgba(255,255,255,.18)' : 'none', background: active === c ? `${ACCENT[c][0]}66` : 'transparent', color: '#fff', transition: 'background .1s' }}>
+                <span style={{ fontSize: 11, opacity: 0.7, fontWeight: 700 }}>{ROMAN[c]}</span>
+                <span style={{ fontSize: 26, fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,.6)' }}>{c}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 터치 4코드 패드 */}
+        {/* 터치 패드 */}
         {input === 'touch' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
             {CHORDS.map((c) => (
               <button
                 key={c}
+                className="pad"
+                data-on={active === c}
+                style={{ ['--accent' as string]: ACCENT[c][0], ['--accent-d' as string]: ACCENT[c][1] } as CSSProperties}
                 onPointerDown={() => void ensureAudio().then(() => downChord(c, 'touch'))}
                 onPointerUp={() => upChord('touch')}
                 onPointerLeave={() => active === c && upChord('touch')}
-                style={{
-                  aspectRatio: '1',
-                  border: 0,
-                  borderRadius: 20,
-                  fontSize: 34,
-                  fontWeight: 800,
-                  background: active === c ? 'var(--blue)' : 'var(--surface)',
-                  color: active === c ? '#fff' : 'var(--key-dark)',
-                  boxShadow: active === c ? 'var(--shadow-press)' : 'var(--shadow)',
-                  transition: 'transform .06s, background .06s',
-                  transform: active === c ? 'scale(.97)' : 'none',
-                }}
               >
+                <span className="pad-sub">{ROMAN[c]}</span>
                 {c}
               </button>
             ))}
           </div>
         )}
 
-        {/* 컨트롤 */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <button
-            className="btn"
-            style={{
-              flex: 1,
-              background: metroOn ? 'var(--blue)' : 'var(--surface)',
-              color: metroOn ? '#fff' : 'var(--text)',
-              boxShadow: metroOn ? 'var(--shadow-press)' : 'var(--shadow)',
-            }}
-            onClick={toggleMetro}
-          >
+        {/* 트랜스포트 */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          <button className="btn" style={ctrlBtn(metroOn ? 'var(--blue)' : 'var(--surface)', metroOn ? '#fff' : 'var(--text)', metroOn ? 'var(--e-inset)' : 'var(--e2)')} onClick={toggleMetro}>
             🥁 메트로놈
           </button>
-          <button
-            className="btn"
-            style={{ flex: 1, background: phase !== 'idle' ? 'var(--t-coral)' : 'var(--blue)' }}
-            onClick={toggleRec}
-          >
-            {phase !== 'idle' ? '■ 정지' : '● 녹음'}
+          <button className="btn" style={ctrlBtn(busy ? 'var(--coral)' : 'var(--blue)', '#fff')} onClick={toggleRec}>
+            {busy ? '■ 정지' : '● 녹음'}
           </button>
-          <button
-            className="btn"
-            style={{
-              flex: 1,
-              background: 'var(--surface)',
-              color: hasTake ? 'var(--text)' : 'var(--sub)',
-              boxShadow: 'var(--shadow)',
-            }}
-            disabled={!hasTake || phase !== 'idle'}
-            onClick={play}
-          >
+          <button className="btn" style={ctrlBtn('var(--surface)', hasTake ? 'var(--text)' : 'var(--sub)')} disabled={!hasTake || busy} onClick={play}>
             ▶ 재생
           </button>
         </div>
 
-        {hasTake && phase === 'idle' && (
-          <button className="btn" style={{ marginTop: 10 }} onClick={saveCurrent}>
+        {hasTake && !busy && (
+          <button className="btn" style={{ marginTop: 10, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={saveCurrent}>
             💾 이 연주 저장
           </button>
         )}
 
+        {/* 합주 세션 */}
         {sessionCode && (
-          <div className="card" style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="card" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="t-cap" style={{ flex: 1 }}>
-                🎵 {baseOwner ? `${baseOwner}님과 합주` : '합주 세션'} · <b>{sessionCode}</b>
-                {trackCount > 0 && ` · 트랙 ${trackCount}`}
-              </span>
-              {hasTake && phase === 'idle' && (
-                <button
-                  onClick={overdub}
-                  style={{ border: 0, borderRadius: 10, padding: '8px 14px', fontWeight: 700, fontSize: 14, background: 'var(--blue)', color: '#fff' }}
-                >
-                  ⬆ 얹기
-                </button>
-              )}
+              <div style={{ flex: 1 }}>
+                <div className="t-body" style={{ fontWeight: 700 }}>🎵 {baseOwner ? `${baseOwner}님과 합주` : '합주 세션'}</div>
+                <div className="t-cap c-sub">코드 {sessionCode} · 트랙 {Math.max(trackCount, sessionTracks.length)}개</div>
+              </div>
+              {hasTake && !busy && <button className="chip" onClick={overdub}>⬆ 얹기</button>}
             </div>
+
+            {/* 트랙 아바타 */}
             {sessionTracks.length > 0 && (
-              <button
-                className="btn"
-                style={{ background: jamming ? 'var(--t-coral)' : 'var(--blue)' }}
-                disabled={phase !== 'idle'}
-                onClick={jamming ? stopJam : playSession}
-              >
-                {jamming ? '■ 합주 정지' : `🎶 합주 듣기 (트랙 ${sessionTracks.length})`}
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {sessionTracks.map((t, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span className="track-av" data-playing={jamming} style={{ background: SIG[i % SIG.length], animationDelay: `${i * 0.12}s` }}>
+                      {(t.owner || '?').slice(0, 1)}
+                    </span>
+                    <span className="t-cap c-sub2">{t.owner}</span>
+                  </div>
+                ))}
+              </div>
             )}
+
+            <button className="btn" style={{ background: jamming ? 'var(--coral)' : 'var(--blue)' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
+              {jamming ? '■ 합주 정지' : `🎶 합주 듣기 (트랙 ${sessionTracks.length})`}
+            </button>
           </div>
         )}
 
+        {/* 합주 받기 / 공유 */}
         <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-          <button
-            className="btn"
-            style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--shadow)' }}
-            onClick={receive}
-          >
+          <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={receive}>
             📥 합주 받기
           </button>
-          {hasTake && phase === 'idle' && (
-            <button
-              className="btn"
-              style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--shadow)' }}
-              onClick={share}
-            >
+          {hasTake && !busy && (
+            <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={share}>
               📤 공유
             </button>
           )}
         </div>
 
-        {toast && (
-          <div style={{ marginTop: 12, textAlign: 'center', color: 'var(--blue)', fontWeight: 700, fontSize: 14 }}>
-            {toast}
-          </div>
-        )}
+        {toast && <div style={{ marginTop: 14, textAlign: 'center', color: 'var(--blue)', fontWeight: 700, fontSize: 14 }}>{toast}</div>}
       </div>
+
+      {/* 음색 바텀시트 */}
+      {sheet === 'timbre' && (
+        <>
+          <div className="backdrop" onClick={() => setSheet(null)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div className="t-title" style={{ padding: '4px 6px 8px' }}>음색 고르기</div>
+            {TIMBRES.map((t) => (
+              <button key={t} className="sheet-row" data-on={timbre === t} onClick={() => chooseTimbre(t)}>
+                <span style={{ fontSize: 26 }}>{TIMBRE_EMOJI[t]}</span>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>{TIMBRE_LABEL[t]}</span>
+                {timbre === t && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* 합주 받기 바텀시트 */}
+      {sheet === 'receive' && pending && (
+        <>
+          <div className="backdrop" onClick={() => { setSheet(null); setPending(null); }} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 6px 16px' }}>
+              <span className="track-av" style={{ background: SIG[0], width: 48, height: 48, fontSize: 18 }}>
+                {(pending.tracks[0]?.owner || '?').slice(0, 1)}
+              </span>
+              <div>
+                <div className="t-title">{pending.tracks[0]?.owner}님 트랙을 복사했어요</div>
+                <div className="t-cap c-sub" style={{ marginTop: 2 }}>코드 {pending.code} · 트랙 {pending.tracks.length}개</div>
+              </div>
+            </div>
+            <button className="btn" onClick={confirmReceive}>내 연주에 얹기</button>
+            <button className="btn" style={{ marginTop: 8, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => { setSheet(null); setPending(null); }}>
+              닫기
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 }
