@@ -14,6 +14,8 @@ import {
 } from '../audio/transport';
 import { saveSong, newSongId, listSongs, type Song } from '../lib/storage';
 import { initHandTracking, startCamera, stopCamera, detect } from '../audio/gesture';
+import { createSession, getSession, addTrack, copyText, readClipboardCode, PRELOAD } from '../lib/share';
+import { getNickname } from '../lib/identity';
 
 // Phase 0~3 통합 스튜디오: 터치/제스처 입력(세그먼트, 동시 바인딩 금지) + 메트로놈 + 카운트인 +
 // tick clock + 이벤트 녹음/재생 + 로컬 저장. 제스처는 검증 스파이크 로직을 라이트 셸에 이식.
@@ -30,6 +32,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const [toast, setToast] = useState('');
   const [input, setInput] = useState<Input>('touch');
   const [camMsg, setCamMsg] = useState('');
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [baseOwner, setBaseOwner] = useState('');
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -205,6 +209,58 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     window.setTimeout(() => setToast(''), 1800);
   }
 
+  function flashToast(msg: string) {
+    setToast(msg);
+    window.setTimeout(() => setToast(''), 2200);
+  }
+
+  async function share() {
+    if (!stateRef.current.events.length) return;
+    try {
+      const code = await createSession({
+        name: '하모니 합주',
+        bpm: BPM,
+        owner: getNickname() || '익명',
+        events: stateRef.current.events,
+      });
+      setSessionCode(code);
+      const ok = await copyText(code);
+      flashToast(ok ? `공유 코드 복사됨 · ${code}` : `공유 코드 · ${code}`);
+    } catch {
+      flashToast('공유 실패 — 네트워크 확인');
+    }
+  }
+
+  async function receive() {
+    let sess;
+    try {
+      const code = await readClipboardCode();
+      sess = code ? await getSession(code) : PRELOAD;
+    } catch {
+      sess = PRELOAD;
+    }
+    const base = sess.tracks[0];
+    if (!base) {
+      flashToast('받을 트랙이 없어요');
+      return;
+    }
+    stateRef.current = { ...initialChordState, events: base.events };
+    setHasTake(true);
+    setSessionCode(sess.code);
+    setBaseOwner(base.owner);
+    flashToast(`${base.owner}님 트랙 받음 — 들어보고 얹어보세요`);
+  }
+
+  async function overdub() {
+    if (!sessionCode || !stateRef.current.events.length) return;
+    try {
+      await addTrack(sessionCode, getNickname() || '익명', stateRef.current.events);
+      flashToast('얹기 완료! 🎶');
+    } catch {
+      flashToast('얹기 실패 — 네트워크 확인');
+    }
+  }
+
   const recording = phase === 'recording';
   const countin = phase === 'countin';
   const countdown = BEATS_PER_BAR - (beat < 0 ? 0 : beat);
@@ -378,6 +434,42 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
             💾 이 연주 저장
           </button>
         )}
+
+        {sessionCode && (
+          <div className="card" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="t-cap" style={{ flex: 1 }}>
+              🎵 {baseOwner ? `${baseOwner}님과 합주` : '합주 세션'} · <b>{sessionCode}</b>
+            </span>
+            {hasTake && phase === 'idle' && (
+              <button
+                onClick={overdub}
+                style={{ border: 0, borderRadius: 10, padding: '8px 14px', fontWeight: 700, fontSize: 14, background: 'var(--blue)', color: '#fff' }}
+              >
+                ⬆ 얹기
+              </button>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+          <button
+            className="btn"
+            style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--shadow)' }}
+            onClick={receive}
+          >
+            📥 합주 받기
+          </button>
+          {hasTake && phase === 'idle' && (
+            <button
+              className="btn"
+              style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--shadow)' }}
+              onClick={share}
+            >
+              📤 공유
+            </button>
+          )}
+        </div>
+
         {toast && (
           <div style={{ marginTop: 12, textAlign: 'center', color: 'var(--blue)', fontWeight: 700, fontSize: 14 }}>
             {toast}
