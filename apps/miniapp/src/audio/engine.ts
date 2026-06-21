@@ -63,3 +63,16 @@ export function chordOff(chord: Chord): void {
 export function allOff(): void {
   synth?.releaseAll();
 }
+
+let click: Tone.Synth | null = null;
+/** 메트로놈 클릭. accent=다운비트(첫 박). time은 Tone 스케줄 시각(정확한 타이밍). */
+export function playClick(accent: boolean, time?: number): void {
+  if (!click) {
+    click = new Tone.Synth({
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.01 },
+    }).toDestination();
+    click.volume.value = -16;
+  }
+  click.triggerAttackRelease(accent ? 'C6' : 'G5', '32n', time);
+}
