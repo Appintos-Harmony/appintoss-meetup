@@ -1,0 +1,25 @@
+import { useState } from 'react';
+import { getNickname } from './lib/identity';
+import { Onboarding } from './routes/Onboarding';
+import { Home } from './routes/Home';
+import { Studio } from './routes/Studio';
+import { Settings } from './routes/Settings';
+
+export type Route = 'home' | 'studio' | 'settings';
+
+export function App() {
+  const [nickname, setNick] = useState<string | null>(() => getNickname());
+  const [route, setRoute] = useState<Route>('studio');
+
+  // 온보딩 게이트: 닉네임 없으면 닉네임부터(가입/로그인 아님).
+  if (!nickname) {
+    return <Onboarding onDone={(n) => { setNick(n); setRoute('studio'); }} />;
+  }
+  return (
+    <div className="screen">
+      {route === 'home' && <Home nickname={nickname} go={setRoute} />}
+      {route === 'studio' && <Studio go={setRoute} />}
+      {route === 'settings' && <Settings go={setRoute} />}
+    </div>
+  );
+}
