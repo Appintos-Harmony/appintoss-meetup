@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Route } from '../App';
-import { CHORDS, type Chord, unlockAudio, chordOn, chordOff, allOff } from '../audio/engine';
+import { CHORDS, type Chord, unlockAudio, chordOn, chordOff, allOff, createVoice, TIMBRES, type Voice } from '../audio/engine';
 import { chordReducer, initialChordState, type ChordState, type Source } from '../audio/chordReducer';
 import {
   BEATS_PER_BAR,
@@ -14,7 +14,7 @@ import {
 } from '../audio/transport';
 import { saveSong, newSongId, listSongs, type Song } from '../lib/storage';
 import { initHandTracking, startCamera, stopCamera, detect } from '../audio/gesture';
-import { createSession, getSession, addTrack, copyText, readClipboardCode, PRELOAD } from '../lib/share';
+import { createSession, getSession, addTrack, copyText, readClipboardCode, PRELOAD, type SessionTrack } from '../lib/share';
 import { getNickname } from '../lib/identity';
 
 // Phase 0~3 통합 스튜디오: 터치/제스처 입력(세그먼트, 동시 바인딩 금지) + 메트로놈 + 카운트인 +
@@ -35,6 +35,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [baseOwner, setBaseOwner] = useState('');
   const [trackCount, setTrackCount] = useState(0);
+  const [sessionTracks, setSessionTracks] = useState<SessionTrack[]>([]);
+  const [jamming, setJamming] = useState(false);
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -44,6 +46,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef(0);
+  const voicesRef = useRef<Voice[]>([]);
 
   useEffect(() => {
     onBeat((beatInBar, bar) => {
@@ -76,7 +79,10 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     const tick = async () => {
       try {
         const s = await getSession(sessionCode);
-        if (alive) setTrackCount(s.tracks.length);
+        if (alive) {
+          setTrackCount(s.tracks.length);
+          setSessionTracks(s.tracks);
+        }
       } catch {
         // 오프라인/프리로드(DEMO01) 세션은 폴링 무시
       }
@@ -221,6 +227,37 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     }
   }
 
+  // 합주 합쳐듣기: 세션의 모든 트랙을 트랙별 음색으로 동시 재생.
+  function stopJam() {
+    voicesRef.current.forEach((v) => v.dispose());
+    voicesRef.current = [];
+    setJamming(false);
+  }
+
+  function playSession() {
+    void ensureAudio().then(() => {
+      stopJam();
+      const tracks = sessionTracks.length
+        ? sessionTracks
+        : [{ owner: '나', events: stateRef.current.events, createdAt: 0 }];
+      const voices = tracks.map((_, i) => createVoice(TIMBRES[i % TIMBRES.length]));
+      voicesRef.current = voices;
+      let maxMs = 0;
+      tracks.forEach((t, i) => {
+        for (const ev of t.events) {
+          const ms = tickToMs(ev.tick);
+          if (ms > maxMs) maxMs = ms;
+          window.setTimeout(() => {
+            if (ev.phase === 'on') voices[i].on(ev.chord as Chord);
+            else voices[i].off(ev.chord as Chord);
+          }, ms);
+        }
+      });
+      setJamming(true);
+      window.setTimeout(() => stopJam(), maxMs + 1500);
+    });
+  }
+
   function saveCurrent() {
     const events = stateRef.current.events;
     if (!events.length) return;
@@ -245,6 +282,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
         events: stateRef.current.events,
       });
       setSessionCode(code);
+      setSessionTracks([{ owner: getNickname() || '익명', events: stateRef.current.events, createdAt: Date.now() }]);
       const ok = await copyText(code);
       flashToast(ok ? `공유 코드 복사됨 · ${code}` : `공유 코드 · ${code}`);
     } catch {
@@ -270,6 +308,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     setSessionCode(sess.code);
     setBaseOwner(base.owner);
     setTrackCount(sess.tracks.length);
+    setSessionTracks(sess.tracks);
     flashToast(`${base.owner}님 트랙 받음 — 들어보고 얹어보세요`);
   }
 
@@ -458,17 +497,29 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
         )}
 
         {sessionCode && (
-          <div className="card" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="t-cap" style={{ flex: 1 }}>
-              🎵 {baseOwner ? `${baseOwner}님과 합주` : '합주 세션'} · <b>{sessionCode}</b>
-              {trackCount > 0 && ` · 트랙 ${trackCount}`}
-            </span>
-            {hasTake && phase === 'idle' && (
+          <div className="card" style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="t-cap" style={{ flex: 1 }}>
+                🎵 {baseOwner ? `${baseOwner}님과 합주` : '합주 세션'} · <b>{sessionCode}</b>
+                {trackCount > 0 && ` · 트랙 ${trackCount}`}
+              </span>
+              {hasTake && phase === 'idle' && (
+                <button
+                  onClick={overdub}
+                  style={{ border: 0, borderRadius: 10, padding: '8px 14px', fontWeight: 700, fontSize: 14, background: 'var(--blue)', color: '#fff' }}
+                >
+                  ⬆ 얹기
+                </button>
+              )}
+            </div>
+            {sessionTracks.length > 0 && (
               <button
-                onClick={overdub}
-                style={{ border: 0, borderRadius: 10, padding: '8px 14px', fontWeight: 700, fontSize: 14, background: 'var(--blue)', color: '#fff' }}
+                className="btn"
+                style={{ background: jamming ? 'var(--t-coral)' : 'var(--blue)' }}
+                disabled={phase !== 'idle'}
+                onClick={jamming ? stopJam : playSession}
               >
-                ⬆ 얹기
+                {jamming ? '■ 합주 정지' : `🎶 합주 듣기 (트랙 ${sessionTracks.length})`}
               </button>
             )}
           </div>

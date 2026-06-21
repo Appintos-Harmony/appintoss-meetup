@@ -76,3 +76,31 @@ export function playClick(accent: boolean, time?: number): void {
   }
   click.triggerAttackRelease(accent ? 'C6' : 'G5', '32n', time);
 }
+
+export const TIMBRES: Timbre[] = ['acoustic', 'electric', 'synthbass'];
+
+export interface Voice {
+  on(chord: Chord): void;
+  off(chord: Chord): void;
+  dispose(): void;
+}
+
+/** 합주 합쳐듣기용 독립 보이스(트랙별 음색). dispose 후 호출은 무시(no-op). */
+export function createVoice(t: Timbre): Voice {
+  const s = makeSynth(t);
+  let dead = false;
+  return {
+    on: (c) => {
+      if (!dead) s.triggerAttack(CHORD_NOTES[c]);
+    },
+    off: (c) => {
+      if (!dead) s.triggerRelease(CHORD_NOTES[c]);
+    },
+    dispose: () => {
+      if (dead) return;
+      dead = true;
+      s.releaseAll();
+      s.dispose();
+    },
+  };
+}
