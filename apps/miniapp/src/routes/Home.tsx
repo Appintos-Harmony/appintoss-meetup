@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Button } from '@toss/tds-mobile';
 import type { Route } from '../App';
 import { listSongs, deleteSong, type Song } from '../lib/storage';
 
@@ -31,9 +30,9 @@ export function Home({
         <p className="t-body c-sub2" style={{ marginTop: 4 }}>오늘은 어떤 곡을 만들어볼까요?</p>
 
         <div style={{ marginTop: 18 }}>
-          <Button display="full" size="xlarge" onClick={() => go('studio')}>
+          <button className="btn" style={{ padding: 17, fontSize: 17 }} onClick={() => go('studio')}>
             🎹 스튜디오 열기
-          </Button>
+          </button>
         </div>
 
         <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '24px 4px 10px' }}>최근 곡</div>
