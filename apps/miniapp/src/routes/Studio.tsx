@@ -34,6 +34,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const [camMsg, setCamMsg] = useState('');
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [baseOwner, setBaseOwner] = useState('');
+  const [trackCount, setTrackCount] = useState(0);
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -67,6 +68,26 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
       setHasTake(loaded.events.length > 0);
     }
   }, [loaded]);
+
+  // 합주 세션 폴링(1.5s) — 다른 사람의 '얹기'를 자동 반영(실시간 아님).
+  useEffect(() => {
+    if (!sessionCode) return;
+    let alive = true;
+    const tick = async () => {
+      try {
+        const s = await getSession(sessionCode);
+        if (alive) setTrackCount(s.tracks.length);
+      } catch {
+        // 오프라인/프리로드(DEMO01) 세션은 폴링 무시
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 1500);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [sessionCode]);
 
   async function ensureAudio() {
     if (!ready) {
@@ -248,6 +269,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     setHasTake(true);
     setSessionCode(sess.code);
     setBaseOwner(base.owner);
+    setTrackCount(sess.tracks.length);
     flashToast(`${base.owner}님 트랙 받음 — 들어보고 얹어보세요`);
   }
 
@@ -439,6 +461,7 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
           <div className="card" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="t-cap" style={{ flex: 1 }}>
               🎵 {baseOwner ? `${baseOwner}님과 합주` : '합주 세션'} · <b>{sessionCode}</b>
+              {trackCount > 0 && ` · 트랙 ${trackCount}`}
             </span>
             {hasTake && phase === 'idle' && (
               <button
