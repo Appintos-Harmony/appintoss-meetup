@@ -1,0 +1,14 @@
+[Unit]
+Description=cloudflared quick tunnel for harmony-api (HTTPS for Toss WebView)
+After=network-online.target harmony-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cloudflared tunnel --url http://localhost:8080 --no-autoupdate
+Restart=on-failure
+RestartSec=5
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
