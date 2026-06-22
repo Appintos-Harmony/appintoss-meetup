@@ -10,7 +10,15 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function Settings({ go }: { go: (r: Route) => void }) {
+export function Settings({
+  go,
+  devMode,
+  onToggleDev,
+}: {
+  go: (r: Route) => void;
+  devMode: boolean;
+  onToggleDev: (on: boolean) => void;
+}) {
   return (
     <>
       <div className="appbar">설정</div>
@@ -19,6 +27,43 @@ export function Settings({ go }: { go: (r: Route) => void }) {
           <InfoRow label="닉네임" value={getNickname() ?? '-'} />
           <div style={{ height: 1, background: 'var(--line)' }} />
           <InfoRow label="버전" value="1.0.0" />
+        </div>
+
+        {/* 개발자 모드 토글 (FPS·네트워크·손 스켈레톤) */}
+        <div
+          className="card"
+          style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+          onClick={() => onToggleDev(!devMode)}
+        >
+          <div style={{ flex: 1 }}>
+            <div className="t-body" style={{ fontWeight: 700 }}>🛠 개발자 모드</div>
+            <div className="t-cap c-sub" style={{ marginTop: 2 }}>FPS · 네트워크 · 손 스켈레톤 표시</div>
+          </div>
+          <div
+            style={{
+              width: 48,
+              height: 28,
+              borderRadius: 999,
+              background: devMode ? 'var(--blue)' : 'var(--line-2)',
+              position: 'relative',
+              transition: 'background .18s var(--ease)',
+              flex: 'none',
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: devMode ? 23 : 3,
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: '#fff',
+                boxShadow: 'var(--e1)',
+                transition: 'left .18s var(--spring)',
+              }}
+            />
+          </div>
         </div>
 
         <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '20px 4px 8px' }}>법적 고지 (초안)</div>
