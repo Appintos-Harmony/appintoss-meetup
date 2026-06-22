@@ -987,15 +987,15 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
       <div className="content" style={{ paddingBottom: 'calc(108px + env(safe-area-inset-bottom))' }}>
         {/* 설정 요약 칩바 — 연주법·악기·음색·입력을 한 줄로(탭하면 바텀시트, 현재값 라벨 표시) */}
-        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, alignItems: 'center', marginTop: 4, overflowX: 'auto', paddingBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'stretch', marginTop: 4 }}>
           {!drumMode && (
-            <button className="chip chip-ghost" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
+            <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
               {playMode === 'chord' ? '🎸 코드' : '🎹 멜로디'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
             </button>
           )}
           <InstrumentCombo inline instrument={instrument} style={style} disabled={busy} onPick={chooseVoice} />
           {(drumMode || playMode === 'chord') && (
-            <button className="chip chip-ghost" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
+            <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
               {input === 'touch' ? '👆 터치' : '👋 제스처'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
             </button>
           )}
@@ -1052,11 +1052,6 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           <span className="t-cap c-sub" style={{ fontWeight: recording ? 700 : 400, color: recording ? 'var(--coral)' : undefined }}>{statusText}</span>
         </div>
 
-        {!ready && (
-          <div className="pulse" style={{ marginTop: 12, background: 'var(--blue-weak)', color: 'var(--blue)', borderRadius: 'var(--r-md)', padding: '12px 14px', textAlign: 'center', fontWeight: 800, fontSize: 14 }}>
-            🔊 아무 곳이나 눌러 소리를 켜주세요
-          </div>
-        )}
 
         {/* 카메라(코드/드럼 제스처) — 본문 안, 전체화면 시 fixed로 덮음 */}
         {cameraBlock}

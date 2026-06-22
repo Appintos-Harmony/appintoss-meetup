@@ -34,7 +34,7 @@ export function InstrumentCombo({
   }
 
   const comboBtn: CSSProperties = inline
-    ? { display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
+    ? { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
     : { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
 
   const chips = (

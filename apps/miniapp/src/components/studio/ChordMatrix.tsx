@@ -26,62 +26,67 @@ export function ChordMatrix({
         <button className="chip" style={{ fontWeight: 800 }} disabled={disabled} onClick={onPreset}>
           기본 팝 4코드 (C·Am·F·G)
         </button>
-        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={disabled} onClick={() => setOpen((o) => !o)}>
-          내 코드 직접 고르기 {open ? '▴' : '▾'}
+        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={disabled} onClick={() => setOpen(true)}>
+          내 코드 직접 고르기 ▾
         </button>
       </div>
 
       {open && (
-        <div className="card" style={{ padding: 12, marginBottom: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span className="t-cap c-sub">루트 × 종류</span>
-            <span className="t-cap" style={{ fontWeight: 800, color: full ? 'var(--coral)' : 'var(--sub)' }}>
-              선택 {selected.length}/{MAX_CHORDS}
-            </span>
-          </div>
-
-          <div style={grid}>
-            <span />
-            {QUALITIES.map((q) => (
-              <span key={q.key} className="t-cap c-sub" style={{ textAlign: 'center', fontWeight: 700 }}>
-                {q.label}
+        <>
+          <div className="backdrop" onClick={() => setOpen(false)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '0 2px' }}>
+              <span className="t-title">코드 직접 고르기</span>
+              <span className="t-cap" style={{ fontWeight: 800, color: full ? 'var(--coral)' : 'var(--sub)' }}>
+                선택 {selected.length}/{MAX_CHORDS}
               </span>
-            ))}
-          </div>
-
-          {ROOTS.map((root) => (
-            <div key={root} style={grid}>
-              <span className="t-cap c-sub" style={{ alignSelf: 'center', fontWeight: 800 }}>{root}</span>
-              {QUALITIES.map((q, i) => {
-                const name = buildChordName(root, q.key);
-                const idx = selected.indexOf(name);
-                const sel = idx >= 0;
-                const [base] = chordColor(name, idx < 0 ? i : idx);
-                return (
-                  <button
-                    key={q.key}
-                    disabled={disabled}
-                    onClick={() => onToggle(name)}
-                    style={{
-                      border: sel ? `2px solid ${base}` : '1.5px solid var(--line)',
-                      background: sel ? base : 'var(--surface)',
-                      color: sel ? '#fff' : 'var(--text-2)',
-                      borderRadius: 10,
-                      padding: '10px 0',
-                      fontWeight: 800,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      minHeight: 44,
-                      touchAction: 'manipulation',
-                    }}
-                  >
-                    {name}
-                  </button>
-                );
-              })}
             </div>
-          ))}
-        </div>
+            <div style={{ maxHeight: '58vh', overflowY: 'auto', paddingBottom: 4 }}>
+              <div style={grid}>
+                <span />
+                {QUALITIES.map((q) => (
+                  <span key={q.key} className="t-cap c-sub" style={{ textAlign: 'center', fontWeight: 700 }}>
+                    {q.label}
+                  </span>
+                ))}
+              </div>
+              {ROOTS.map((root) => (
+                <div key={root} style={grid}>
+                  <span className="t-cap c-sub" style={{ alignSelf: 'center', fontWeight: 800 }}>{root}</span>
+                  {QUALITIES.map((q, i) => {
+                    const name = buildChordName(root, q.key);
+                    const idx = selected.indexOf(name);
+                    const sel = idx >= 0;
+                    const [base] = chordColor(name, idx < 0 ? i : idx);
+                    return (
+                      <button
+                        key={q.key}
+                        disabled={disabled}
+                        onClick={() => onToggle(name)}
+                        style={{
+                          border: sel ? `2px solid ${base}` : '1.5px solid var(--line)',
+                          background: sel ? base : 'var(--surface)',
+                          color: sel ? '#fff' : 'var(--text-2)',
+                          borderRadius: 10,
+                          padding: '10px 0',
+                          fontWeight: 800,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          minHeight: 44,
+                          touchAction: 'manipulation',
+                        }}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <button className="btn" style={{ marginTop: 12 }} onClick={() => setOpen(false)}>완료</button>
+          </div>
+        </>
       )}
     </div>
   );

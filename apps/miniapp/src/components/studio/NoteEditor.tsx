@@ -9,7 +9,7 @@ import { normalizeEvents } from '../../audio/events';
 import { noteToMidi } from '../../audio/tuning';
 import { transpose, solfa, midiToName } from '../../lib/notes';
 import { DRUM_PIECES } from './chords';
-import { TICKS_PER_BEAT, BEATS_PER_BAR, tickToMs } from '../../audio/transport';
+import { TICKS_PER_BEAT, BEATS_PER_BAR, tickToMs, msToTick } from '../../audio/transport';
 import { unlockAudio, createVoice, type Voice } from '../../audio/engine';
 
 const GRID = TICKS_PER_BEAT / 2; // 1/8박 스냅
@@ -34,6 +34,9 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
   const [playing, setPlaying] = useState(false);
   const voicesRef = useRef<Voice[]>([]);
   const timersRef = useRef<number[]>([]);
+  const rafRef = useRef(0);
+  const startRef = useRef(0);
+  const [playTick, setPlayTick] = useState(0); // 재생 플레이헤드 위치(틱)
   const dragRef = useRef<{ id: number; mode: 'move' | 'resize'; x0: number; y0: number; start0: number; dur0: number; midi0: number } | null>(null);
 
   useEffect(() => () => stopPreview(), []);
@@ -82,6 +85,9 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
     timersRef.current = [];
     voicesRef.current.forEach((v) => v.dispose());
     voicesRef.current = [];
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
+    setPlayTick(0);
     setPlaying(false);
   }
 
@@ -113,6 +119,13 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
     }
     timersRef.current.push(window.setTimeout(() => stopPreview(), maxMs + 800));
     setPlaying(true);
+    // 플레이헤드: 경과 시간 → 틱으로 변환해 선을 움직임(노트 위를 지날 때 색 변화).
+    startRef.current = performance.now();
+    const tickLoop = () => {
+      setPlayTick(msToTick(performance.now() - startRef.current));
+      rafRef.current = requestAnimationFrame(tickLoop);
+    };
+    rafRef.current = requestAnimationFrame(tickLoop);
   }
 
   // ---- 드래그 ----
@@ -194,6 +207,9 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
                 ))}
               </div>
               <div style={{ position: 'relative', width, height, flex: 'none' }}>
+                {playing && (
+                  <div style={{ position: 'absolute', left: playTick * PX, top: 0, height, width: 2.5, background: 'var(--coral)', boxShadow: '0 0 8px var(--coral)', zIndex: 4, pointerEvents: 'none' }} />
+                )}
                 {Array.from({ length: Math.ceil(totalTicks / TPB) + 1 }).map((_, i) => {
                   const t = i * TPB;
                   const isBar = t % BAR === 0;
@@ -206,6 +222,8 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
                   const r = rowOf(n);
                   if (r < 0) return null;
                   const w = n.kind === 'drum' ? Math.max(GRID * PX, 14) : Math.max(n.dur * PX, 12);
+                  const noteEnd = n.start + (n.kind === 'drum' ? GRID : Math.max(n.dur, 1));
+                  const active = playing && playTick >= n.start && playTick < noteEnd; // 플레이헤드가 지나는 중
                   return (
                     <button
                       key={n.id}
@@ -225,12 +243,15 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
                         color: '#fff',
                         fontSize: 10,
                         fontWeight: 800,
-                        boxShadow: sel === n.id ? '0 0 0 2.5px var(--text)' : 'var(--e1)',
+                        boxShadow: active ? `0 0 12px ${colorOf(n)}` : sel === n.id ? '0 0 0 2.5px var(--text)' : 'var(--e1)',
                         opacity: sel === null || sel === n.id ? 1 : 0.7,
                         padding: 0,
                         cursor: 'grab',
                         touchAction: 'none',
                         borderRight: n.kind !== 'drum' ? '3px solid rgba(255,255,255,.55)' : 0,
+                        filter: active ? 'brightness(1.4)' : 'none',
+                        transform: active ? 'scaleY(1.14)' : 'none',
+                        transition: 'filter .08s, transform .08s, box-shadow .08s',
                       }}
                     >
                       {n.kind === 'drum' ? '●' : ''}
