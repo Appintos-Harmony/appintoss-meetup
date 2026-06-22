@@ -10,6 +10,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (code TEXT PRIMARY KEY, name TEXT, bpm INTEGER, created_at INTEGER);
   CREATE TABLE IF NOT EXISTS tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, owner TEXT, events TEXT, created_at INTEGER);
 `);
+// 트랙별 악기/스타일 컬럼(기존 DB 호환: 없으면 추가, 있으면 무시). 옛 행은 NULL → 클라가 추론.
+for (const col of ['instrument', 'style']) {
+  try {
+    db.exec(`ALTER TABLE tracks ADD COLUMN ${col} TEXT`);
+  } catch {
+    /* 이미 존재 */
+  }
+}
 
 // 혼동 문자(0/O/1/I) 제외한 코드.
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -57,7 +65,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && path === '/sessions') {
-      const { name, bpm, owner, events } = await readBody(req);
+      const { name, bpm, owner, events, instrument, style } = await readBody(req);
       let code = genCode();
       while (db.prepare('SELECT 1 FROM sessions WHERE code = ?').get(code)) code = genCode();
       const now = Date.now();
@@ -68,10 +76,12 @@ const server = createServer(async (req, res) => {
         now,
       );
       if (Array.isArray(events) && events.length) {
-        db.prepare('INSERT INTO tracks (code, owner, events, created_at) VALUES (?, ?, ?, ?)').run(
+        db.prepare('INSERT INTO tracks (code, owner, events, instrument, style, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
           code,
           owner || '익명',
           JSON.stringify(events),
+          instrument || null,
+          style || null,
           now,
         );
       }
@@ -84,11 +94,11 @@ const server = createServer(async (req, res) => {
       if (!db.prepare('SELECT 1 FROM sessions WHERE code = ?').get(code)) {
         return send(res, 404, { error: 'session not found' });
       }
-      const { owner, events } = await readBody(req);
+      const { owner, events, instrument, style } = await readBody(req);
       if (!Array.isArray(events)) return send(res, 400, { error: 'events array required' });
       const info = db
-        .prepare('INSERT INTO tracks (code, owner, events, created_at) VALUES (?, ?, ?, ?)')
-        .run(code, owner || '익명', JSON.stringify(events), Date.now());
+        .prepare('INSERT INTO tracks (code, owner, events, instrument, style, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(code, owner || '익명', JSON.stringify(events), instrument || null, style || null, Date.now());
       return send(res, 201, { ok: true, trackId: Number(info.lastInsertRowid) });
     }
 
@@ -98,9 +108,9 @@ const server = createServer(async (req, res) => {
       const sess = db.prepare('SELECT code, name, bpm, created_at FROM sessions WHERE code = ?').get(code);
       if (!sess) return send(res, 404, { error: 'session not found' });
       const tracks = db
-        .prepare('SELECT owner, events, created_at FROM tracks WHERE code = ? ORDER BY id')
+        .prepare('SELECT owner, events, instrument, style, created_at FROM tracks WHERE code = ? ORDER BY id')
         .all(code)
-        .map((t) => ({ owner: t.owner, events: JSON.parse(t.events), createdAt: t.created_at }));
+        .map((t) => ({ owner: t.owner, events: JSON.parse(t.events), instrument: t.instrument || undefined, style: t.style || undefined, createdAt: t.created_at }));
       return send(res, 200, { code: sess.code, name: sess.name, bpm: sess.bpm, tracks });
     }
 
