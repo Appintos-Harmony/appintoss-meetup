@@ -26,8 +26,8 @@ const PRESETS = {
 } as const;
 type PresetKey = keyof typeof PRESETS;
 
-// 합성 폴백·예시음 볼륨(악기 밸런스). 피아노·드럼을 기타 수준으로 키움.
-const PRESET_VOLUME: Record<Instrument, number> = { piano: -3, guitar: -9, bass: -10, drum: 1 };
+// 합성 폴백·예시음 볼륨(악기 밸런스). 피아노·드럼·베이스 추가 상향.
+const PRESET_VOLUME: Record<Instrument, number> = { piano: -1, guitar: -9, bass: -8, drum: 3 };
 
 // ---- 실제 샘플 음원(Tone.Sampler/Buffer) + 합성 폴백 ----
 // 출처: 피아노=Salamander(CC-BY), 기타/베이스/오르간=nbrosowsky tonejs-instruments(jsDelivr), 드럼=Tone.js drum-samples.
@@ -49,8 +49,8 @@ const SAMPLE_DEFS: Record<string, SampleDef> = {
   'bass:precision': { baseUrl: NB + 'bass-electric/', urls: { E1: 'E1.mp3', G1: 'G1.mp3', 'A#1': 'As1.mp3', 'C#2': 'Cs2.mp3', E2: 'E2.mp3', G2: 'G2.mp3', 'A#2': 'As2.mp3', E3: 'E3.mp3' } },
   'bass:jazz': { baseUrl: NB + 'contrabass/', urls: { 'F#1': 'Fs1.mp3', 'A#1': 'As1.mp3', D2: 'D2.mp3', E2: 'E2.mp3', 'G#2': 'Gs2.mp3', A2: 'A2.mp3', E3: 'E3.mp3', B3: 'B3.mp3' } },
 };
-// 샘플 재생 볼륨(악기 밸런스). 피아노는 Salamander가 조용히 녹음돼 기타 체감에 맞춰 더 올림.
-const SAMPLE_VOLUME: Record<Instrument, number> = { piano: -2, guitar: -7, bass: -8, drum: 0 };
+// 샘플 재생 볼륨(악기 밸런스). 피아노·베이스 추가 상향(피아노는 Salamander가 조용히 녹음됨).
+const SAMPLE_VOLUME: Record<Instrument, number> = { piano: 0, guitar: -7, bass: -6, drum: 0 };
 
 interface SamplerEntry {
   node: Tone.Sampler | null;
@@ -93,7 +93,7 @@ let drumOut: Tone.Volume | null = null;
 function playDrumSample(st: string, piece: DrumPiece): boolean {
   const buf = drumSampleCache.get(st)?.[piece];
   if (!buf || !buf.loaded) return false;
-  if (!drumOut) drumOut = new Tone.Volume(7).toDestination();
+  if (!drumOut) drumOut = new Tone.Volume(9).toDestination();
   const src = new Tone.ToneBufferSource(buf).connect(drumOut);
   src.start();
   src.onended = () => src.dispose();
