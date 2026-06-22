@@ -1,5 +1,6 @@
 // 로컬 곡 저장/복구 (localStorage). 합주 백엔드는 Phase 4(조건부).
 import type { ChordEvent } from '../audio/chordReducer';
+import type { Instrument } from '../audio/events';
 
 export interface Song {
   id: string;
@@ -7,6 +8,8 @@ export interface Song {
   bpm: number;
   events: ChordEvent[];
   createdAt: number;
+  instrument?: Instrument; // 녹음 악기(재생·복구 기준). 구버전 곡엔 없을 수 있어 옵셔널.
+  style?: string;
 }
 
 const KEY = 'harmony.songs';

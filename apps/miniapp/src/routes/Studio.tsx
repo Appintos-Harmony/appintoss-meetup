@@ -46,7 +46,7 @@ import { NotePadGrid } from '../components/studio/NotePadGrid';
 import { DrumPad } from '../components/studio/DrumPad';
 import { DevOverlay } from '../components/studio/DevOverlay';
 import { NoteEditor } from '../components/studio/NoteEditor';
-import { ROMAN, chordColor, PRESET_POP, MAX_CHORDS, GESTURE_ZONES, GESTURE_ZONES_FULL, FRETS_NORMAL, FRETS_FULL, DRUM_KIT_LAYOUT, nearestDrumPiece } from '../components/studio/chords';
+import { ROMAN, chordColor, PRESET_POP, MAX_CHORDS, GESTURE_ZONES, GESTURE_ZONES_FULL, FRETS_NORMAL, FRETS_FULL, DRUM_KIT_LAYOUT, nearestDrumPiece, STYLE_OPTIONS } from '../components/studio/chords';
 
 type Phase = 'idle' | 'countin' | 'recording';
 type Input = 'touch' | 'gesture';
@@ -150,6 +150,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const heldRef = useRef<Set<string>>(new Set());
   const pointerNoteRef = useRef<Map<number, string>>(new Map());
   const playTimersRef = useRef<number[]>([]);
+  const takeVoiceRef = useRef<{ instrument: Instrument; style: string }>({ instrument: initVoice.instrument, style: initVoice.style }); // 이 take를 녹음한 악기(재생·저장 기준)
+  const playVoiceRef = useRef<Voice | null>(null); // 단일 take 재생용 보이스(녹음 악기로 생성)
   const selectedRef = useRef<string[]>(selected);
   selectedRef.current = selected;
   const gestureModeRef = useRef(gestureMode);
@@ -196,6 +198,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     if (loaded) {
       stateRef.current = { ...initialChordState, events: loaded.events };
       setHasTake(loaded.events.length > 0);
+      const inst = loaded.instrument ?? inferInstrument(loaded.events);
+      takeVoiceRef.current = { instrument: inst, style: loaded.style ?? STYLE_OPTIONS[inst][0].key };
     }
   }, [loaded]);
 
@@ -210,6 +214,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     setBaseOwner(base.owner);
     setTrackCount(forked.tracks.length);
     setSessionTracks(forked.tracks);
+    const binst = inferInstrument(base.events);
+    takeVoiceRef.current = { instrument: binst, style: STYLE_OPTIONS[binst][0].key };
     flashToast(`${base.owner}님 트랙을 얹을 준비 완료`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forked]);
@@ -364,6 +370,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   function stopPlayback() {
     playTimersRef.current.forEach((id) => window.clearTimeout(id));
     playTimersRef.current = [];
+    if (playVoiceRef.current) {
+      playVoiceRef.current.dispose();
+      playVoiceRef.current = null;
+    }
   }
 
   function shiftOctave(d: number) {
@@ -560,6 +570,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     await ensureAudio();
     stopPlayback();
     if (phase === 'idle') {
+      takeVoiceRef.current = { instrument, style }; // 이 take의 악기 고정(이후 전환해도 재생은 녹음 악기로)
       setPhase('countin');
       startMetronome();
     } else {
@@ -602,24 +613,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     allOff();
     soundingRef.current = null;
     clearMelody();
-    // 현재 악기 보이스(샘플 로드됐으면 실제 샘플)로 take 재생.
-    let maxMs = 0;
-    for (const ev of normalizeEvents(stateRef.current.events)) {
-      const ms = tickToMs(ev.tick);
-      if (ms > maxMs) maxMs = ms;
-      const id = window.setTimeout(() => {
-        if (ev.kind === 'drum') triggerHit(ev.piece);
-        else if (ev.kind === 'melody') {
-          if (ev.phase === 'on') downNote(ev.note);
-          else upNote(ev.note);
-        } else {
-          if (ev.phase === 'on') chordOn(ev.chord);
-          else chordOff(ev.chord);
-        }
-      }, ms);
-      playTimersRef.current.push(id);
-    }
-    playTimersRef.current.push(window.setTimeout(() => allOff(), maxMs + 300));
+    // take를 '녹음한 악기'의 보이스로 재생(현재 선택 악기와 무관 — 전환해도 원래 소리 유지).
+    const voice = createVoice(takeVoiceRef.current.instrument, takeVoiceRef.current.style);
+    playVoiceRef.current = voice;
+    const maxMs = scheduleEvents(stateRef.current.events, { chord: voice, melody: voice, drum: voice });
+    playTimersRef.current.push(
+      window.setTimeout(() => {
+        voice.dispose();
+        if (playVoiceRef.current === voice) playVoiceRef.current = null;
+      }, maxMs + 400),
+    );
   }
 
   function stopJam() {
@@ -653,7 +656,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     const events = stateRef.current.events;
     if (!events.length) return;
     const name = `내 곡 ${listSongs().length + 1}`;
-    saveSong({ id: newSongId(), name, bpm: BPM, events, createdAt: Date.now() });
+    const { instrument: ti, style: ts } = takeVoiceRef.current;
+    saveSong({ id: newSongId(), name, bpm: BPM, events, createdAt: Date.now(), instrument: ti, style: ts });
     flashToast(`'${name}' 저장됨`);
   }
 
