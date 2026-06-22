@@ -111,7 +111,7 @@ related_adrs: []
 - correction_made: 적대적 코드리뷰가 멜로디 폴리포니 HIGH 3건(clearMelody desync 등) 발견 → 수정
 - accepted/rejected: accepted
 - reusable_asset: 4-AI 설계 토의·적대적 코드리뷰 패턴
-- 비고: 독립검토는 Codex 페르소나 대행(실제 다른 계열 Codex 아님)
+- 비고: REVIEW-032는 Codex 독립검토 정본으로 보강 완료.
 
 - date: 2026-06-23
 - phase: 구현/배포
@@ -120,7 +120,7 @@ related_adrs: []
 - role: 구현·배포 절차 준비
 - task: vitest 7파일 58개 정비, AWS EC2(nginx 정적+리버스프록시·systemd harmony-api:8080·Let's Encrypt) 배포 준비, develop 통합
 - input_artifact: apps/miniapp, apps/api(node:http+node:sqlite 4엔드포인트)
-- output_artifact: https://3.39.167.74.nip.io 운영, develop 최신 6372dc3
+- output_artifact: https://3.39.167.74.nip.io 운영, develop tip ebdad0a(마지막 feature 6372dc3 위 조장 docs 커밋), 작업 브랜치 review/fullstudio HEAD 219b6ac
 - automated_checks: vitest 58 PASS(chordReducer·poly·events·tuning·noteEdit·notes·loop), 통합 12/12(과거 스냅샷)
 - human_reviewer: 이상혁(커밋 자동·푸시 사람 게이트)
 - correction_made: 없음
@@ -144,7 +144,7 @@ related_adrs: []
 
 ## 추가 기록 (2026-06-21~23 후속)
 - 주제 전환(DL-018 Proposed): 소모임 밋업 → 악기 합주 미니앱 「하모니」. 제스처 입력은 스파이크(923e545)로 모바일 브라우저 검증 후 채택했다.
-- 4-AI 설계 토의: 6/22 오디오/홈 허브 설계를 ChatGPT-Pro·Gemini-Pro·Codex·Claude 페르소나 토의(DEBATE-20260622-013)로 진행했다. 단, 이 시점 독립검토는 Codex 페르소나 대행이며 다른 계열 실제 Codex 검토는 미실시다(AI실행_20260622 기록 참조).
+- 4-AI 설계 토의: 6/22 오디오/홈 허브 설계를 ChatGPT-Pro·Gemini-Pro·Codex·Claude 페르소나 토의(DEBATE-20260622-013)로 진행했다. 이후 REVIEW-032를 Codex 독립검토 정본으로 보강해 PR#1 Rework / PR#2 GO 판정을 확정했다(AI실행_20260622 기록 참조).
 - 적대적 코드리뷰가 차단한 결함: 멜로디 폴리포니 HIGH 3건(clearMelody desync 등)을 머지 전에 잡아 수정했다.
-- 배포: develop 통합·푸시 완료(6372dc3), AWS EC2에 HTTPS 동일출처로 운영(https://3.39.167.74.nip.io). 커밋은 자동, 푸시는 사람 게이트.
+- 배포: develop 통합·푸시 완료(마지막 feature 6372dc3, 그 위 조장 docs 커밋 ebdad0a가 develop tip), AWS EC2에 HTTPS 동일출처로 운영(https://3.39.167.74.nip.io). 커밋은 자동, 푸시는 사람 게이트.
 - 한계: 실기기 멀티터치·실제 음색 청취·제품 통합테스트(EV-101 이후)는 사람 확인이 남았다.
