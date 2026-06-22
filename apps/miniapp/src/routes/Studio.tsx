@@ -16,6 +16,7 @@ import {
   type Voice,
 } from '../audio/engine';
 import { chordReducer, initialChordState, type ChordState, type Source } from '../audio/chordReducer';
+import { isChordName } from '../audio/tuning';
 import {
   BEATS_PER_BAR,
   BPM,
@@ -53,12 +54,48 @@ const ACCENT: Record<Chord, [string, string]> = {
 };
 const ROMAN: Record<Chord, string> = { C: 'I', Am: 'vi', F: 'IV', G: 'V' };
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
-// 멜로디 한 옥타브(도~도) + 계이름
-const MELODY: [string, string][] = [
-  ['C4', '도'], ['D4', '레'], ['E4', '미'], ['F4', '파'], ['G4', '솔'], ['A4', '라'], ['B4', '시'], ['C5', '도'],
+// 멜로디 피아노 건반: 흰/검은 건반 + 계이름. ▲▼ 옥타브 이동으로 음역 선택(기본 2옥타브).
+const WHITE_PC = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const SOLFA: Record<string, string> = { C: '도', D: '레', E: '미', F: '파', G: '솔', A: '라', B: '시' };
+// 검은건반(반음): pitch class + 바로 왼쪽 흰건반 인덱스(0~6). E·B 뒤에는 검은건반 없음.
+const BLACK_PC: { pc: string; label: string; afterWhite: number }[] = [
+  { pc: 'C#', label: '도#', afterWhite: 0 },
+  { pc: 'D#', label: '레#', afterWhite: 1 },
+  { pc: 'F#', label: '파#', afterWhite: 3 },
+  { pc: 'G#', label: '솔#', afterWhite: 4 },
+  { pc: 'A#', label: '라#', afterWhite: 5 },
 ];
-const TIMBRE_LABEL: Record<Timbre, string> = { acoustic: '어쿠스틱 피아노', electric: '일렉트릭', synthbass: '신스 베이스' };
-const TIMBRE_EMOJI: Record<Timbre, string> = { acoustic: '🎹', electric: '🎸', synthbass: '🎵' };
+const VISIBLE_OCTAVES = 2;
+const OCTAVE_MIN = 1;
+// 상한 5 → 보이는 최고 음 B6. 옥타브7 음(C7 등)이 7th 코드 이름과 충돌하는 것을 차단.
+const OCTAVE_MAX = 5;
+
+interface PianoKey {
+  note: string;
+  label: string;
+}
+interface BlackKey {
+  note: string;
+  label: string;
+  leftPct: number;
+}
+// base 옥타브부터 VISIBLE_OCTAVES만큼의 흰/검은 건반을 만든다.
+function buildKeys(base: number): { whites: PianoKey[]; blacks: BlackKey[] } {
+  const whites: PianoKey[] = [];
+  const blacks: BlackKey[] = [];
+  const totalWhite = WHITE_PC.length * VISIBLE_OCTAVES;
+  for (let oi = 0; oi < VISIBLE_OCTAVES; oi++) {
+    const oct = base + oi;
+    WHITE_PC.forEach((pc) => whites.push({ note: `${pc}${oct}`, label: SOLFA[pc] }));
+    BLACK_PC.forEach((b) => {
+      const whiteGlobal = oi * WHITE_PC.length + b.afterWhite;
+      blacks.push({ note: `${b.pc}${oct}`, label: b.label, leftPct: ((whiteGlobal + 1) / totalWhite) * 100 });
+    });
+  }
+  return { whites, blacks };
+}
+const TIMBRE_LABEL: Record<Timbre, string> = { acoustic: '어쿠스틱 피아노', electric: '전자 피아노' };
+const TIMBRE_EMOJI: Record<Timbre, string> = { acoustic: '🎹', electric: '🎛️' };
 
 export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | null }) {
   const [ready, setReady] = useState(false);
@@ -79,6 +116,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const [timbre, setTimbreState] = useState<Timbre>(() => getTimbre());
   const [sheet, setSheet] = useState<Sheet>(null);
   const [pending, setPending] = useState<Session | null>(null);
+  const [octave, setOctave] = useState(4); // 멜로디 키보드 base 옥타브(C{octave}~B{octave+1})
+  const [heldNotes, setHeldNotes] = useState<Set<string>>(new Set()); // 멜로디 하이라이트(동시)
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -89,18 +128,27 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef(0);
   const voicesRef = useRef<Voice[]>([]);
+  const heldRef = useRef<Set<string>>(new Set()); // 현재 울리는 멜로디 음(정리용)
+  const pointerNoteRef = useRef<Map<number, string>>(new Map()); // pointerId → note(멀티터치)
+  const playTimersRef = useRef<number[]>([]); // 재생 예약 타이머(중복 재생 취소용)
 
   useEffect(() => {
     onBeat((beatInBar, bar) => {
       setBeat(beatInBar);
       if (phaseRef.current === 'countin' && bar >= 1) {
-        stateRef.current = initialChordState;
+        // 새 녹음 시작: 상태 초기화. 지금 누르고 있는 멜로디 음은 tick 0의 on으로 재등록(ref와 desync 방지).
+        let st: ChordState = { ...initialChordState };
+        for (const note of heldRef.current) {
+          st = chordReducer(st, { type: 'down', chord: note, source: 'touch', tick: 0, nowMs: performance.now(), poly: true });
+        }
+        stateRef.current = st;
         recordStartRef.current = transportSeconds();
         setPhase('recording');
       }
     });
     return () => {
       stopMetronome();
+      stopPlayback();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       stopCamera(streamRef.current);
     };
@@ -166,6 +214,77 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
     const a = stateRef.current.activeChord;
     applyChord(a);
     setActive(a);
+  }
+
+  // 멜로디(폴리포니): 음별 독립 on/off + 멀티터치(pointerId별 추적). 코드/제스처 경로와 분리.
+  function melodyDown(note: string, pointerId: number, el: Element) {
+    // 캡처·포인터 매핑·tick은 이벤트 시점에 동기 처리(타이밍 안정), 발음은 오디오 언락 후.
+    try {
+      el.setPointerCapture(pointerId);
+    } catch {
+      /* 포인터 캡처 미지원 무시 */
+    }
+    pointerNoteRef.current.set(pointerId, note);
+    const tick = curTick(); // 언락 지연으로 tick이 밀리지 않도록 누른 순간에 캡처
+    const nowMs = performance.now();
+    void ensureAudio().then(() => {
+      // 누르고 있는 동안에만 발음(빠른 탭 후 이미 뗐으면 스킵).
+      if (pointerNoteRef.current.get(pointerId) !== note) return;
+      stateRef.current = chordReducer(stateRef.current, { type: 'down', chord: note, source: 'touch', tick, nowMs, poly: true });
+      if (!heldRef.current.has(note)) {
+        heldRef.current.add(note);
+        chordOn(note);
+        setHeldNotes(new Set(heldRef.current));
+      }
+    });
+  }
+
+  function melodyUp(pointerId: number) {
+    const note = pointerNoteRef.current.get(pointerId);
+    if (note === undefined) return;
+    pointerNoteRef.current.delete(pointerId);
+    // 같은 음을 누른 다른 손가락이 남아 있으면 끄지 않는다.
+    if (Array.from(pointerNoteRef.current.values()).includes(note)) return;
+    stateRef.current = chordReducer(stateRef.current, { type: 'up', chord: note, source: 'touch', tick: curTick(), nowMs: performance.now(), poly: true });
+    heldRef.current.delete(note);
+    chordOff(note);
+    setHeldNotes(new Set(heldRef.current));
+  }
+
+  // 멜로디 정리: 보유 음을 reducer에도 off로 닫아 events/activeNotes와 ref를 한 트랜잭션에서 동기화한다.
+  // (이걸 안 하면 activeNotes 잔류 → 같은 음 재입력 막힘·짝 없는 off·재생 무한 지속음)
+  function clearMelody() {
+    const now = performance.now();
+    const tick = curTick();
+    let st = stateRef.current;
+    for (const note of Object.keys(st.activeNotes)) {
+      st = chordReducer(st, { type: 'up', chord: note, source: 'touch', tick, nowMs: now, poly: true });
+    }
+    stateRef.current = st;
+    heldRef.current.forEach((n) => chordOff(n));
+    heldRef.current.clear();
+    pointerNoteRef.current.clear();
+    setHeldNotes(new Set());
+  }
+
+  function stopPlayback() {
+    playTimersRef.current.forEach((id) => window.clearTimeout(id));
+    playTimersRef.current = [];
+  }
+
+  function shiftOctave(d: number) {
+    clearMelody(); // 건반 언마운트로 인한 stuck note 방지
+    setOctave((o) => Math.min(OCTAVE_MAX, Math.max(OCTAVE_MIN, o + d)));
+  }
+
+  function switchMode(m: PlayMode) {
+    if (m === playMode) return;
+    allOff();
+    soundingRef.current = null;
+    setActive(null);
+    clearMelody();
+    if (m === 'melody') selectTouch();
+    setPlayMode(m);
   }
 
   function loop() {
@@ -237,12 +356,14 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
 
   async function toggleRec() {
     await ensureAudio();
+    stopPlayback();
     if (phase === 'idle') {
       setPhase('countin');
       startMetronome();
     } else {
       allOff();
       soundingRef.current = null;
+      clearMelody();
       if (phase === 'recording') setHasTake(stateRef.current.events.length > 0);
       setPhase('idle');
       if (!metroOn) {
@@ -254,14 +375,28 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
 
   async function play() {
     await ensureAudio();
+    stopPlayback(); // 이전 재생 타이머 취소(중복 재생 겹침/stuck 방지)
+    stopJam(); // 이전 재생 보이스 정리
     allOff();
     soundingRef.current = null;
+    clearMelody();
+    // 코드 이벤트와 멜로디 이벤트를 독립 보이스로 분리 → 같은 freq(예: 코드의 E4 vs 멜로디 E4) 충돌 방지.
+    const chordVoice = createVoice(getTimbre());
+    const melodyVoice = createVoice(getTimbre());
+    voicesRef.current = [chordVoice, melodyVoice];
+    let maxMs = 0;
     for (const ev of stateRef.current.events) {
-      window.setTimeout(() => {
-        if (ev.phase === 'on') chordOn(ev.chord);
-        else chordOff(ev.chord);
-      }, tickToMs(ev.tick));
+      const ms = tickToMs(ev.tick);
+      if (ms > maxMs) maxMs = ms;
+      const voice = isChordName(ev.chord) ? chordVoice : melodyVoice;
+      const id = window.setTimeout(() => {
+        if (ev.phase === 'on') voice.on(ev.chord);
+        else voice.off(ev.chord);
+      }, ms);
+      playTimersRef.current.push(id);
     }
+    const endId = window.setTimeout(() => stopJam(), maxMs + 1500);
+    playTimersRef.current.push(endId);
   }
 
   function stopJam() {
@@ -378,8 +513,8 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
       <div className="content">
         {/* 연주법 세그먼트 */}
         <div className="segment">
-          <button className="seg" data-on={playMode === 'chord'} onClick={() => setPlayMode('chord')}>🎸 코드</button>
-          <button className="seg" data-on={playMode === 'melody'} onClick={() => { selectTouch(); setPlayMode('melody'); }}>🎹 멜로디</button>
+          <button className="seg" data-on={playMode === 'chord'} onClick={() => switchMode('chord')}>🎸 코드</button>
+          <button className="seg" data-on={playMode === 'melody'} onClick={() => switchMode('melody')}>🎹 멜로디</button>
         </div>
 
         {/* 입력 세그먼트 (코드 모드만) */}
@@ -438,37 +573,84 @@ export function Studio({ go, loaded }: { go: (r: Route) => void; loaded: Song | 
           </div>
         )}
 
-        {/* 멜로디 모드 — 피아노 건반 */}
-        {playMode === 'melody' && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 14, height: 220 }}>
-            {MELODY.map(([note, solfa]) => (
-              <button
-                key={note}
-                onPointerDown={() => void ensureAudio().then(() => downChord(note, 'touch'))}
-                onPointerUp={() => upChord('touch')}
-                onPointerLeave={() => active === note && upChord('touch')}
-                style={{
-                  flex: 1,
-                  border: 0,
-                  borderRadius: '6px 6px 14px 14px',
-                  background: active === note ? 'linear-gradient(180deg, #3182f6, #1b64da)' : 'linear-gradient(180deg, #ffffff, #eef1f4)',
-                  color: active === note ? '#fff' : 'var(--key-dark)',
-                  boxShadow: active === note ? 'var(--e-inset)' : 'var(--e2)',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'center',
-                  paddingBottom: 14,
-                  fontWeight: 800,
-                  fontSize: 15,
-                  transition: 'all .08s var(--ease)',
-                  touchAction: 'manipulation',
-                }}
-              >
-                {solfa}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* 멜로디 모드 — 피아노 건반(흰/검은, 폴리포니, 옥타브 이동) */}
+        {playMode === 'melody' && (() => {
+          const { whites, blacks } = buildKeys(octave);
+          const blackW = (100 / (WHITE_PC.length * VISIBLE_OCTAVES)) * 0.62;
+          return (
+            <div style={{ marginTop: 14 }}>
+              {/* 옥타브 이동 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <button className="chip" style={{ opacity: octave <= OCTAVE_MIN ? 0.4 : 1 }} disabled={octave <= OCTAVE_MIN} onClick={() => shiftOctave(-1)}>▼ 옥타브</button>
+                <span className="t-cap c-sub" style={{ flex: 1, textAlign: 'center', fontWeight: 700 }}>C{octave} ~ B{octave + 1}</span>
+                <button className="chip" style={{ opacity: octave >= OCTAVE_MAX ? 0.4 : 1 }} disabled={octave >= OCTAVE_MAX} onClick={() => shiftOctave(1)}>옥타브 ▲</button>
+              </div>
+              {/* 건반(흰 건반 행 + 검은 건반 오버레이) */}
+              <div style={{ position: 'relative', height: 200, userSelect: 'none', touchAction: 'none' }}>
+                <div style={{ display: 'flex', gap: 0, height: '100%' }}>
+                  {whites.map((k) => (
+                    <button
+                      key={k.note}
+                      onPointerDown={(e) => melodyDown(k.note, e.pointerId, e.currentTarget)}
+                      onPointerUp={(e) => melodyUp(e.pointerId)}
+                      onPointerCancel={(e) => melodyUp(e.pointerId)}
+                      style={{
+                        flex: 1,
+                        border: 0,
+                        borderLeft: '1px solid rgba(0,0,0,0.07)',
+                        boxSizing: 'border-box',
+                        borderRadius: '4px 4px 10px 10px',
+                        background: heldNotes.has(k.note) ? 'linear-gradient(180deg,#3182f6,#1b64da)' : 'linear-gradient(180deg,#ffffff,#eef1f4)',
+                        color: heldNotes.has(k.note) ? '#fff' : 'var(--key-dark)',
+                        boxShadow: heldNotes.has(k.note) ? 'var(--e-inset)' : 'var(--e2)',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        justifyContent: 'center',
+                        paddingBottom: 10,
+                        fontWeight: 800,
+                        fontSize: 12,
+                        touchAction: 'none',
+                      }}
+                    >
+                      {k.label}
+                    </button>
+                  ))}
+                </div>
+                {blacks.map((b) => (
+                  <button
+                    key={b.note}
+                    onPointerDown={(e) => melodyDown(b.note, e.pointerId, e.currentTarget)}
+                    onPointerUp={(e) => melodyUp(e.pointerId)}
+                    onPointerCancel={(e) => melodyUp(e.pointerId)}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: `${b.leftPct}%`,
+                      transform: 'translateX(-50%)',
+                      width: `${blackW}%`,
+                      height: '62%',
+                      border: 0,
+                      borderRadius: '3px 3px 7px 7px',
+                      background: heldNotes.has(b.note) ? 'linear-gradient(180deg,#3182f6,#1b64da)' : 'linear-gradient(180deg,#2a2f36,#0b0d10)',
+                      boxShadow: 'var(--e2)',
+                      zIndex: 2,
+                      touchAction: 'none',
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      justifyContent: 'center',
+                      paddingBottom: 6,
+                      color: '#fff',
+                      fontSize: 9,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 트랜스포트 */}
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>

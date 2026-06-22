@@ -20,11 +20,13 @@ export interface ChordState {
   events: ChordEvent[];
   /** 마지막으로 터치가 해제된 실시간(ms). gesture 재개 게이트용. */
   touchReleasedAtMs: number | null;
+  /** 폴리포니(멜로디)에서 현재 동시에 보유 중인 음 → Source. 코드/제스처는 사용 안 함. */
+  activeNotes: Record<string, Source>;
 }
 
 export type ChordAction =
-  | { type: 'down'; chord: string; source: Source; tick: number; nowMs: number }
-  | { type: 'up'; source: Source; tick: number; nowMs: number };
+  | { type: 'down'; chord: string; source: Source; tick: number; nowMs: number; poly?: boolean }
+  | { type: 'up'; source: Source; tick: number; nowMs: number; chord?: string; poly?: boolean };
 
 /** 터치 종료 후 이 시간(ms) 동안은 제스처 입력을 무시한다(손이 빠져나가며 오발 방지). */
 export const GESTURE_RESUME_MS = 200;
@@ -34,10 +36,17 @@ export const initialChordState: ChordState = {
   activeSource: null,
   events: [],
   touchReleasedAtMs: null,
+  activeNotes: {},
 };
 
 export function chordReducer(state: ChordState, action: ChordAction): ChordState {
   if (action.type === 'down') {
+    // 폴리포니(멜로디): 음별 독립 noteOn — 이전 음을 끄지 않고 가산. 같은 음 재입력은 무시.
+    if (action.poly) {
+      if (action.chord in state.activeNotes) return state;
+      const events = state.events.concat({ tick: action.tick, phase: 'on', chord: action.chord, source: action.source });
+      return { ...state, activeNotes: { ...state.activeNotes, [action.chord]: action.source }, events };
+    }
     // 터치 우선: 터치 연주 중이거나 터치 종료 직후엔 제스처를 무시한다.
     if (action.source === 'gesture') {
       if (state.activeSource === 'touch') return state;
@@ -58,6 +67,15 @@ export function chordReducer(state: ChordState, action: ChordAction): ChordState
     }
     events.push({ tick: action.tick, phase: 'on', chord: action.chord, source: action.source });
     return { ...state, activeChord: action.chord, activeSource: action.source, events };
+  }
+
+  // 폴리포니(멜로디): 지정된 음만 noteOff.
+  if (action.poly) {
+    if (!action.chord || !(action.chord in state.activeNotes)) return state;
+    const events = state.events.concat({ tick: action.tick, phase: 'off', chord: action.chord, source: state.activeNotes[action.chord] });
+    const activeNotes = { ...state.activeNotes };
+    delete activeNotes[action.chord];
+    return { ...state, activeNotes, events };
   }
 
   // up: 활성 소스가 해제할 때만 off. (다른 소스의 up은 무시)
