@@ -27,6 +27,21 @@ function genCode() {
   return c;
 }
 
+// 입력 검증(데모는 무인증 — 코드=접근권한. 최소 방어로 오염 payload 차단). 잘못되면 400.
+const VALID_INSTRUMENTS = new Set(['piano', 'guitar', 'bass', 'drum']);
+function badEvents(events) {
+  if (!Array.isArray(events) || events.length > 5000) return true;
+  for (const e of events) {
+    if (!e || typeof e !== 'object') return true;
+    if (typeof e.tick !== 'number' || !Number.isFinite(e.tick) || e.tick < 0 || e.tick > 1e7) return true;
+    if (e.phase !== 'on' && e.phase !== 'off') return true;
+    if (typeof e.chord !== 'string' || e.chord.length > 40) return true;
+  }
+  return false;
+}
+const okInstrument = (i) => i == null || (typeof i === 'string' && VALID_INSTRUMENTS.has(i));
+const clip = (s, n, dflt) => (typeof s === 'string' ? s.slice(0, n) : dflt);
+
 function send(res, status, body) {
   res.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
@@ -66,6 +81,8 @@ const server = createServer(async (req, res) => {
 
     if (req.method === 'POST' && path === '/sessions') {
       const { name, bpm, owner, events, instrument, style } = await readBody(req);
+      if (events !== undefined && badEvents(events)) return send(res, 400, { error: 'invalid events' });
+      if (!okInstrument(instrument)) return send(res, 400, { error: 'invalid instrument' });
       let code = genCode();
       while (db.prepare('SELECT 1 FROM sessions WHERE code = ?').get(code)) code = genCode();
       const now = Date.now();
@@ -78,10 +95,10 @@ const server = createServer(async (req, res) => {
       if (Array.isArray(events) && events.length) {
         db.prepare('INSERT INTO tracks (code, owner, events, instrument, style, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
           code,
-          owner || '익명',
+          clip(owner, 60, '익명'),
           JSON.stringify(events),
           instrument || null,
-          style || null,
+          clip(style, 40, null),
           now,
         );
       }
@@ -95,10 +112,11 @@ const server = createServer(async (req, res) => {
         return send(res, 404, { error: 'session not found' });
       }
       const { owner, events, instrument, style } = await readBody(req);
-      if (!Array.isArray(events)) return send(res, 400, { error: 'events array required' });
+      if (badEvents(events)) return send(res, 400, { error: 'invalid events' });
+      if (!okInstrument(instrument)) return send(res, 400, { error: 'invalid instrument' });
       const info = db
         .prepare('INSERT INTO tracks (code, owner, events, instrument, style, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(code, owner || '익명', JSON.stringify(events), instrument || null, style || null, Date.now());
+        .run(code, clip(owner, 60, '익명'), JSON.stringify(events), instrument || null, clip(style, 40, null), Date.now());
       return send(res, 201, { ok: true, trackId: Number(info.lastInsertRowid) });
     }
 

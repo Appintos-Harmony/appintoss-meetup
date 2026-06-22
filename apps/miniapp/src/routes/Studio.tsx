@@ -196,6 +196,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     return () => {
       stopMetronome();
       stopPlayback();
+      stopJam(); // 합주 재생 보이스도 언마운트 시 정리(잔류음·노드 누수 방지)
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       stopCamera(streamRef.current);
     };
@@ -229,8 +230,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     const base = forked.tracks[0];
     if (!base) return;
     clearMelody();
-    stateRef.current = { ...initialChordState, events: base.events };
-    setHasTake(base.events.length > 0);
+    // 받은 트랙은 sessionTracks 레이어로만 둔다. take는 비워 내 연주를 새로 녹음 → 얹기.
+    // (take에도 base를 넣으면 합주 듣기에서 base가 두 번 재생됨 — R34-001)
+    stateRef.current = { ...initialChordState };
+    setHasTake(false);
     setSessionCode(forked.code.startsWith('LOCAL') ? null : forked.code);
     setBaseOwner(base.owner);
     setTrackCount(forked.tracks.length);
@@ -806,15 +809,17 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   function confirmReceive() {
     if (!pending) return;
     const base = pending.tracks[0];
-    stateRef.current = { ...initialChordState, events: base.events };
-    setHasTake(true);
+    clearMelody();
+    // 받은 트랙=레이어(sessionTracks)로만. take는 비움 → 내 악기로 새로 녹음해 얹는다(R34-001 이중재생 방지).
+    stateRef.current = { ...initialChordState };
+    setHasTake(false);
     setSessionCode(pending.code);
     setBaseOwner(base.owner);
     setTrackCount(pending.tracks.length);
     setSessionTracks(pending.tracks);
     setShowReceive(false);
     setPending(null);
-    flashToast(`${base.owner}님 트랙을 얹을 준비 완료`);
+    flashToast(`${base.owner}님 트랙 받았어요 — 내 악기로 녹음해 얹어보세요`);
   }
 
   // 레이어 추가(솔로/세션 공통): 현재 take를 트랙으로 쌓고 take를 비워 다음 악기 녹음 준비. 세션이면 백엔드에도 업로드.
