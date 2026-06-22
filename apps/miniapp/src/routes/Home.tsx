@@ -66,11 +66,19 @@ export function Home({
           <span className="c-sub" style={{ fontSize: 18 }}>›</span>
         </button>
 
-        {!empty && (
-          <>
-            <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '24px 4px 10px' }}>이어하기</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {songs.slice(0, 3).map((s) => {
+        <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '24px 4px 10px' }}>이어하기</div>
+        {empty ? (
+          <div className="card" style={{ textAlign: 'center', padding: '28px 18px' }}>
+            <div style={{ fontSize: 34 }}>🎵</div>
+            <p className="t-body c-sub" style={{ marginTop: 8 }}>
+              아직 녹음한 곡이 없어요.
+              <br />
+              스튜디오에서 첫 곡을 만들어보세요.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {songs.slice(0, 3).map((s) => {
                 const chords = [...new Set(s.events.filter((e) => e.phase === 'on').map((e) => e.chord))];
                 return (
                   <button
@@ -108,7 +116,6 @@ export function Home({
                 );
               })}
             </div>
-          </>
         )}
       </div>
     </>
