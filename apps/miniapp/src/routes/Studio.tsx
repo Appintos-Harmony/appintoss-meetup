@@ -14,7 +14,7 @@ import {
   createVoice,
   type Voice,
 } from '../audio/engine';
-import { chordReducer, initialChordState, type ChordState, type Source } from '../audio/chordReducer';
+import { chordReducer, initialChordState, type ChordState, type Source, type ChordEvent } from '../audio/chordReducer';
 import { drumKey, normalizeEvents, type Instrument, type DrumPiece } from '../audio/events';
 import {
   BEATS_PER_BAR,
@@ -27,6 +27,7 @@ import {
   transportSeconds,
 } from '../audio/transport';
 import { saveSong, newSongId, listSongs, songTracks, type Song } from '../lib/storage';
+import { loopEvents } from '../lib/loop';
 import { initHandTracking, startCamera, stopCamera, detect, type GestureMode, type Pt } from '../audio/gesture';
 import {
   createSession,
@@ -137,6 +138,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [brightness, setBrightness] = useState(1); // 개발자 모드 오버레이 창 자체의 밝기/투명도
   const [modeSheet, setModeSheet] = useState(false); // 연주법(코드/멜로디) 시트
   const [inputSheet, setInputSheet] = useState(false); // 입력 방식(터치/제스처) 시트
+  const [loopSheet, setLoopSheet] = useState(false); // 구간 반복 시트
+  const [loopBars, setLoopBars] = useState(1); // 반복 단위(마디)
+  const [loopCount, setLoopCount] = useState(4); // 반복 횟수
+  const [looped, setLooped] = useState(false); // 반복 적용 여부
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -153,6 +158,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const takeVoiceRef = useRef<{ instrument: Instrument; style: string }>({ instrument: initVoice.instrument, style: initVoice.style }); // 이 take를 녹음한 악기(재생·저장 기준)
   const playVoiceRef = useRef<Voice | null>(null); // 단일 take 재생용 보이스(녹음 악기로 생성)
   const monitorRef = useRef<{ voices: Voice[]; timers: number[] }>({ voices: [], timers: [] }); // 녹음 중 기존 레이어 모니터링
+  const loopOriginalRef = useRef<ChordEvent[] | null>(null); // 구간 반복 적용 전 원본(해제용)
   const selectedRef = useRef<string[]>(selected);
   selectedRef.current = selected;
   const gestureModeRef = useRef(gestureMode);
@@ -626,6 +632,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     stopPlayback();
     if (phase === 'idle') {
       takeVoiceRef.current = { instrument, style }; // 이 take의 악기 고정(이후 전환해도 재생은 녹음 악기로)
+      loopOriginalRef.current = null; // 새 녹음 = 반복 초기화
+      setLooped(false);
       setPhase('countin');
       startMetronome();
     } else {
@@ -724,6 +732,32 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     flashToast(`'${name}' 저장됨 (트랙 ${layered.length})`);
   }
 
+  // 구간 반복: 녹음 앞부분(loopBars 마디)을 잘라 loopCount회 이어붙인다. 이벤트 복제 방식(저장/공유/재생 일관).
+  function applyLoop() {
+    const base = loopOriginalRef.current ?? stateRef.current.events;
+    if (!base.length) return;
+    const barMs = (60000 / BPM) * BEATS_PER_BAR;
+    const loopTicks = Math.max(1, Math.round(msToTick(barMs * loopBars)));
+    if (!base.some((e) => e.tick < loopTicks)) {
+      flashToast('반복할 구간에 연주가 없어요');
+      return;
+    }
+    const tiled = loopEvents(base, loopTicks, loopCount);
+    loopOriginalRef.current = base;
+    stateRef.current = { ...stateRef.current, events: tiled };
+    setHasTake(tiled.length > 0);
+    setLooped(true);
+    flashToast(`${loopBars}마디 × ${loopCount}회 반복 적용`);
+  }
+  function clearLoop() {
+    if (!loopOriginalRef.current) return;
+    stateRef.current = { ...stateRef.current, events: loopOriginalRef.current };
+    setHasTake(stateRef.current.events.length > 0);
+    loopOriginalRef.current = null;
+    setLooped(false);
+    flashToast('반복 해제');
+  }
+
   function flashToast(msg: string) {
     setToast(msg);
     window.setTimeout(() => setToast(''), 2000);
@@ -799,6 +833,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     stateRef.current = { ...initialChordState };
     setHasTake(false);
     setActive(null);
+    loopOriginalRef.current = null; // 레이어로 넘긴 take의 반복 상태 초기화
+    setLooped(false);
     flashToast('레이어 추가됨 🎶 다른 악기로 다음 트랙을 녹음하세요');
   }
 
@@ -1176,6 +1212,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 <span className="t-cap c-sub">{hasTake ? '피아노롤로 음 다듬기' : '녹음 후 사용 가능'}</span>
               </span>
             </button>
+            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); setLoopSheet(true); }}>
+              <span style={{ fontSize: 22 }}>🔁</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>구간 반복{looped ? ' (적용됨)' : ''}</span>
+                <span className="t-cap c-sub">{hasTake ? '녹음 앞부분을 마디·횟수로 반복' : '녹음 후 사용 가능'}</span>
+              </span>
+            </button>
             <div style={{ height: 1, background: 'var(--line)', margin: '8px 6px' }} />
             <button className="sheet-row" onClick={() => { setShowMore(false); void receive(); }}>
               <span style={{ fontSize: 22 }}>📥</span>
@@ -1192,6 +1235,32 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               </span>
             </button>
             <button className="btn" style={{ marginTop: 10, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setShowMore(false)}>닫기</button>
+          </div>
+        </>
+      )}
+
+      {/* 구간 반복 시트 */}
+      {loopSheet && (
+        <>
+          <div className="backdrop" onClick={() => setLoopSheet(false)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div className="t-title" style={{ padding: '4px 6px 6px' }}>🔁 구간 반복</div>
+            <div className="t-cap c-sub" style={{ padding: '0 6px 14px' }}>녹음 앞부분을 정한 마디만큼 잘라 정한 횟수로 이어붙여요. (예: 1마디 × 4 = 4마디)</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px 10px' }}>
+              <span className="t-cap c-sub" style={{ width: 44 }}>길이</span>
+              {[1, 2, 4].map((b) => (
+                <button key={b} className={loopBars === b ? 'chip' : 'chip chip-ghost'} onClick={() => setLoopBars(b)}>{b}마디</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px 16px' }}>
+              <span className="t-cap c-sub" style={{ width: 44 }}>횟수</span>
+              {[2, 4, 8].map((n) => (
+                <button key={n} className={loopCount === n ? 'chip' : 'chip chip-ghost'} onClick={() => setLoopCount(n)}>×{n}</button>
+              ))}
+            </div>
+            <button className="btn" onClick={() => { applyLoop(); setLoopSheet(false); }}>적용 · {loopBars}마디 × {loopCount}회</button>
+            <button className="btn" style={{ marginTop: 8, background: 'var(--bg)', color: 'var(--text-2)' }} disabled={!looped} onClick={() => { clearLoop(); setLoopSheet(false); }}>반복 해제</button>
           </div>
         </>
       )}
