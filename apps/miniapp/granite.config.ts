@@ -22,5 +22,12 @@ export default defineConfig({
   permissions: [
     { name: 'camera', access: 'access' },
   ],
+  // 토스 WebView: iOS 인라인 카메라 재생 허용(제스처 영상이 전체화면으로 튀지 않게);
+  // 오디오 자동재생은 사용자 탭 필요(첫 탭 unlock과 일치); 비게임 오버스크롤 억제.
+  webViewProps: {
+    allowsInlineMediaPlayback: true,
+    mediaPlaybackRequiresUserAction: true,
+    overScrollMode: 'never',
+  },
   outdir: 'dist',
 });
