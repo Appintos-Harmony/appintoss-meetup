@@ -120,3 +120,31 @@ describe('chordReducer — 폴리포니(멜로디)', () => {
     expect(s.events.filter((e) => e.phase === 'off')).toHaveLength(1);
   });
 });
+
+describe('chordReducer — 드럼(hit)', () => {
+  it('hit은 off 없이 on 1개만 적재, activeChord/activeNotes 불변', () => {
+    const s = run([{ type: 'hit', chord: 'drum:kick', source: 'touch', tick: 0 }]);
+    expect(s.events).toEqual([{ tick: 0, phase: 'on', chord: 'drum:kick', source: 'touch' }]);
+    expect(s.activeChord).toBeNull();
+    expect(Object.keys(s.activeNotes)).toHaveLength(0);
+  });
+
+  it('연속 hit은 누적되고 off가 없다', () => {
+    const s = run([
+      { type: 'hit', chord: 'drum:kick', source: 'touch', tick: 0 },
+      { type: 'hit', chord: 'drum:snare', source: 'touch', tick: 4 },
+      { type: 'hit', chord: 'drum:kick', source: 'touch', tick: 8 },
+    ]);
+    expect(s.events).toHaveLength(3);
+    expect(s.events.every((e) => e.phase === 'on')).toBe(true);
+  });
+
+  it('코드 연주 중 hit은 활성 코드를 끄지 않는다', () => {
+    const s = run([
+      { type: 'down', chord: 'C', source: 'touch', tick: 0, nowMs: 0 },
+      { type: 'hit', chord: 'drum:hat', source: 'touch', tick: 2 },
+    ]);
+    expect(s.activeChord).toBe('C');
+    expect(s.events.at(-1)).toEqual({ tick: 2, phase: 'on', chord: 'drum:hat', source: 'touch' });
+  });
+});

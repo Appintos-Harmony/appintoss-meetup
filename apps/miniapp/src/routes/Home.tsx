@@ -8,10 +8,14 @@ export function Home({
   nickname,
   go,
   onOpen,
+  devMode,
+  onToggleDev,
 }: {
   nickname: string;
   go: (r: Route) => void;
   onOpen: (s: Song) => void;
+  devMode: boolean;
+  onToggleDev: (on: boolean) => void;
 }) {
   const [songs, setSongs] = useState<Song[]>(() => listSongs());
 
@@ -73,9 +77,46 @@ export function Home({
           </div>
         )}
 
+        {/* 개발자 모드 토글 */}
+        <div
+          className="card"
+          style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+          onClick={() => onToggleDev(!devMode)}
+        >
+          <div style={{ flex: 1 }}>
+            <div className="t-body" style={{ fontWeight: 700 }}>🛠 개발자 모드</div>
+            <div className="t-cap c-sub" style={{ marginTop: 2 }}>FPS · 네트워크 · 손 스켈레톤 표시</div>
+          </div>
+          <div
+            style={{
+              width: 48,
+              height: 28,
+              borderRadius: 999,
+              background: devMode ? 'var(--blue)' : 'var(--line-2)',
+              position: 'relative',
+              transition: 'background .18s var(--ease)',
+              flex: 'none',
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: devMode ? 23 : 3,
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: '#fff',
+                boxShadow: 'var(--e1)',
+                transition: 'left .18s var(--spring)',
+              }}
+            />
+          </div>
+        </div>
+
         <button
           className="btn"
-          style={{ marginTop: 20, background: 'var(--surface)', color: 'var(--text-2)', boxShadow: 'var(--e1)' }}
+          style={{ marginTop: 12, background: 'var(--surface)', color: 'var(--text-2)', boxShadow: 'var(--e1)' }}
           onClick={() => go('settings')}
         >
           설정

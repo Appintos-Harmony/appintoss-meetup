@@ -1,0 +1,82 @@
+// 악기/스타일 연동 콤보(SCR-ST-00). 항상 표시. 악기는 본문 레이아웃을 바꾸고, 스타일은 화면 동일·소리만.
+// 둘 다 onPick → 부모가 engine.setVoice(instrument, style)로 수렴. 디자인=theme.css(.chip/.sheet) 재사용.
+import { useState } from 'react';
+import type { CSSProperties } from 'react';
+import { INSTRUMENTS, STYLE_OPTIONS } from './chords';
+import type { Instrument } from '../../audio/events';
+
+export function InstrumentCombo({
+  instrument,
+  style,
+  disabled,
+  onPick,
+}: {
+  instrument: Instrument;
+  style: string;
+  disabled?: boolean;
+  onPick: (instrument: Instrument, style: string) => void;
+}) {
+  const [sheet, setSheet] = useState<'instrument' | 'style' | null>(null);
+  const styleOpts = STYLE_OPTIONS[instrument];
+  const instMeta = INSTRUMENTS.find((i) => i.key === instrument);
+  const styleLabel = styleOpts.find((s) => s.key === style)?.label ?? styleOpts[0].label;
+
+  function pickInstrument(next: Instrument) {
+    onPick(next, STYLE_OPTIONS[next][0].key); // 악기 바꾸면 스타일 첫 값으로 리셋
+    setSheet(null);
+  }
+  function pickStyle(next: string) {
+    onPick(instrument, next);
+    setSheet(null);
+  }
+
+  const comboBtn: CSSProperties = { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+        <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('instrument')}>
+          <span>{instMeta?.emoji} {instMeta?.label}</span>
+          <span aria-hidden>▾</span>
+        </button>
+        <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('style')}>
+          <span>{styleLabel}</span>
+          <span aria-hidden>▾</span>
+        </button>
+      </div>
+
+      {sheet === 'instrument' && (
+        <>
+          <div className="backdrop" onClick={() => setSheet(null)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div className="t-title" style={{ padding: '4px 6px 8px' }}>악기 고르기</div>
+            {INSTRUMENTS.map((i) => (
+              <button key={i.key} className="sheet-row" data-on={instrument === i.key} onClick={() => pickInstrument(i.key)}>
+                <span style={{ fontSize: 26 }}>{i.emoji}</span>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>{i.label}</span>
+                {instrument === i.key && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {sheet === 'style' && (
+        <>
+          <div className="backdrop" onClick={() => setSheet(null)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div className="t-title" style={{ padding: '4px 6px 8px' }}>{instMeta?.label} 스타일</div>
+            {styleOpts.map((s) => (
+              <button key={s.key} className="sheet-row" data-on={style === s.key} onClick={() => pickStyle(s.key)}>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>{s.label}</span>
+                {style === s.key && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}

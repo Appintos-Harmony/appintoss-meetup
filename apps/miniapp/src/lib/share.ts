@@ -69,6 +69,19 @@ export async function addTrack(code: string, owner: string, events: ChordEvent[]
   });
 }
 
+/** 백엔드 왕복 지연(ms). 개발자 모드 네트워크 표시용. 실패 시 null. */
+export async function ping(): Promise<number | null> {
+  const t0 = performance.now();
+  try {
+    const r = await fetch(API_BASE + '/healthz', { cache: 'no-store' });
+    if (!r.ok) return null;
+    await r.json();
+    return Math.round(performance.now() - t0);
+  } catch {
+    return null;
+  }
+}
+
 export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
