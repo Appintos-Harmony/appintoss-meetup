@@ -26,7 +26,9 @@ export interface ChordState {
 
 export type ChordAction =
   | { type: 'down'; chord: string; source: Source; tick: number; nowMs: number; poly?: boolean }
-  | { type: 'up'; source: Source; tick: number; nowMs: number; chord?: string; poly?: boolean };
+  | { type: 'up'; source: Source; tick: number; nowMs: number; chord?: string; poly?: boolean }
+  // 드럼 원샷: chord='drum:piece'(events.ts drumKey). off 없이 1이벤트.
+  | { type: 'hit'; chord: string; source: Source; tick: number };
 
 /** 터치 종료 후 이 시간(ms) 동안은 제스처 입력을 무시한다(손이 빠져나가며 오발 방지). */
 export const GESTURE_RESUME_MS = 200;
@@ -40,6 +42,13 @@ export const initialChordState: ChordState = {
 };
 
 export function chordReducer(state: ChordState, action: ChordAction): ChordState {
+  // 드럼 원샷(hit): off 없이 단일 이벤트만 적재(activeChord/activeNotes 불변).
+  if (action.type === 'hit') {
+    return {
+      ...state,
+      events: state.events.concat({ tick: action.tick, phase: 'on', chord: action.chord, source: action.source }),
+    };
+  }
   if (action.type === 'down') {
     // 폴리포니(멜로디): 음별 독립 noteOn — 이전 음을 끄지 않고 가산. 같은 음 재입력은 무시.
     if (action.poly) {

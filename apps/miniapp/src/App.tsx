@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getNickname } from './lib/identity';
 import type { Song } from './lib/storage';
+import type { Session } from './lib/share';
+import { getDevMode } from './lib/settings';
 import { Onboarding } from './routes/Onboarding';
 import { Home } from './routes/Home';
 import { Studio } from './routes/Studio';
@@ -21,6 +23,8 @@ export function App() {
   const [nickname, setNick] = useState<string | null>(() => getNickname());
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [loaded, setLoaded] = useState<Song | null>(null);
+  const [forked, setForked] = useState<Session | null>(null); // 커뮤니티 얹기 → 스튜디오로 전달
+  const [devMode] = useState<boolean>(() => getDevMode());
 
   // 수동 해시 변경(#community 등)을 추종.
   useEffect(() => {
@@ -29,7 +33,7 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // 온보딩 게이트: 닉네임 없으면 닉네임부터(가입/로그인 아님). 완료 후 (해시 지정 화면 또는) 홈 허브로 착지.
+  // 온보딩 게이트: 닉네임 없으면 닉네임부터. 완료 후 (해시 지정 화면 또는) 홈 허브로 착지.
   if (!nickname) {
     return <Onboarding onDone={(n) => { setNick(n); setRoute(routeFromHash()); }} />;
   }
@@ -38,8 +42,8 @@ export function App() {
       {route === 'home' && (
         <Home nickname={nickname} go={setRoute} onOpen={(s) => { setLoaded(s); setRoute('studio'); }} />
       )}
-      {route === 'studio' && <Studio go={setRoute} loaded={loaded} />}
-      {route === 'community' && <Community go={setRoute} />}
+      {route === 'studio' && <Studio go={setRoute} loaded={loaded} forked={forked} devMode={devMode} />}
+      {route === 'community' && <Community go={setRoute} onFork={(s) => { setForked(s); setRoute('studio'); }} />}
       {route === 'settings' && <Settings go={setRoute} />}
     </div>
   );

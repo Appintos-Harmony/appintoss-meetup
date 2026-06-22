@@ -13,8 +13,7 @@ import {
 } from '../lib/community';
 import { unlockAudio, chordOn, chordOff, allOff } from '../audio/engine';
 import { tickToMs } from '../audio/transport';
-import { createSession } from '../lib/share';
-import { getNickname } from '../lib/identity';
+import type { Session } from '../lib/share';
 import type { ChordEvent } from '../audio/chordReducer';
 
 const SIG = ['var(--t-blue)', 'var(--t-coral)', 'var(--t-mint)', 'var(--t-violet)', 'var(--t-amber)'];
@@ -26,7 +25,7 @@ const bars = (ticks: number | null) => (ticks ? `${Math.max(1, Math.round(ticks 
 type Tab = 'feed' | 'mine';
 type Sort = 'recent' | 'popular';
 
-export function Community({ go }: { go: (r: Route) => void }) {
+export function Community({ go, onFork }: { go: (r: Route) => void; onFork?: (s: Session) => void }) {
   const [tab, setTab] = useState<Tab>('feed');
   const [sort, setSort] = useState<Sort>('recent');
   const [items, setItems] = useState<FeedItem[] | null>(null); // null = 로딩
@@ -189,17 +188,16 @@ export function Community({ go }: { go: (r: Route) => void }) {
   }
 
   async function fork(it: FeedItem) {
+    if (!onFork) return flash('스튜디오에서 받기를 사용하세요');
     try {
       const pub = await getPublication(it.id);
-      const code = await createSession({
+      // 원곡을 베이스 트랙으로 한 로컬 세션을 스튜디오에 넘김(얹기) — 곽소정 Studio forked 계약
+      onFork({
+        code: 'LOCAL-' + it.id,
         name: it.name,
         bpm: it.bpm,
-        owner: getNickname() || '익명',
-        events: pub.events as unknown as ChordEvent[],
+        tracks: [{ owner: it.owner, events: pub.events as unknown as ChordEvent[], createdAt: it.createdAt }],
       });
-      localStorage.setItem('harmony.pendingFork', code); // 스튜디오가 받아 연다(곽소정 연동)
-      flash('내 스튜디오로 가져왔어요');
-      go('studio');
     } catch {
       flash('가져오기 실패');
     }
