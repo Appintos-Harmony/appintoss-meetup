@@ -1,5 +1,6 @@
 // 악기/스타일 연동 콤보(SCR-ST-00). 항상 표시. 악기는 본문 레이아웃을 바꾸고, 스타일은 화면 동일·소리만.
 // 둘 다 onPick → 부모가 engine.setVoice(instrument, style)로 수렴. 디자인=theme.css(.chip/.sheet) 재사용.
+// inline=true: 래퍼 행 없이 칩 2개만(상단 설정 칩바에 같이 묶을 때).
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { INSTRUMENTS, STYLE_OPTIONS } from './chords';
@@ -9,11 +10,13 @@ export function InstrumentCombo({
   instrument,
   style,
   disabled,
+  inline,
   onPick,
 }: {
   instrument: Instrument;
   style: string;
   disabled?: boolean;
+  inline?: boolean;
   onPick: (instrument: Instrument, style: string) => void;
 }) {
   const [sheet, setSheet] = useState<'instrument' | 'style' | null>(null);
@@ -30,20 +33,26 @@ export function InstrumentCombo({
     setSheet(null);
   }
 
-  const comboBtn: CSSProperties = { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
+  const comboBtn: CSSProperties = inline
+    ? { display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
+    : { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
+
+  const chips = (
+    <>
+      <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('instrument')}>
+        <span>{instMeta?.emoji} {instMeta?.label}</span>
+        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+      </button>
+      <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('style')}>
+        <span>{styleLabel}</span>
+        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+      </button>
+    </>
+  );
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-        <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('instrument')}>
-          <span>{instMeta?.emoji} {instMeta?.label}</span>
-          <span aria-hidden>▾</span>
-        </button>
-        <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('style')}>
-          <span>{styleLabel}</span>
-          <span aria-hidden>▾</span>
-        </button>
-      </div>
+      {inline ? chips : <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>{chips}</div>}
 
       {sheet === 'instrument' && (
         <>

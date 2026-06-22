@@ -133,6 +133,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [flashPiece, setFlashPiece] = useState<DrumPiece | null>(null); // 드럼 타격 시 모양/패드 깜빡임
   const [hands, setHands] = useState<1 | 2>(1); // 제스처 한 손/양손
   const [gestureChords, setGestureChords] = useState<string[]>([]); // 제스처로 현재 울리는 코드(존 하이라이트)
+  const [showMore, setShowMore] = useState(false); // 하단 '더보기' 시트(부차 액션 모음)
+  const [brightness, setBrightness] = useState(1); // 개발자 모드 오버레이 창 자체의 밝기/투명도
+  const [modeSheet, setModeSheet] = useState(false); // 연주법(코드/멜로디) 시트
+  const [inputSheet, setInputSheet] = useState(false); // 입력 방식(터치/제스처) 시트
 
   const stateRef = useRef<ChordState>(initialChordState);
   const recordStartRef = useRef(0);
@@ -718,7 +722,6 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const fretInstrument: 'guitar' | 'bass' | null = instrument === 'guitar' || instrument === 'bass' ? instrument : null;
   const countdown = BEATS_PER_BAR - (beat < 0 ? 0 : beat);
   const statusText = camMsg || (countin ? `카운트인 ${countdown}` : recording ? '녹음 중' : !ready ? '눌러서 소리 켜기' : '준비됐어요');
-  const ctrlBtn = (bg: string, color: string, shadow = 'var(--e2)'): CSSProperties => ({ flex: 1, background: bg, color, boxShadow: shadow });
   const mirror = facing === 'user';
   const camMountable = drumMode || playMode === 'chord'; // 제스처 가능한 모드 → video 항상 마운트(ref 확보)
   const showCamera = input === 'gesture' && camMountable;
@@ -844,7 +847,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   return (
     <>
-      {devMode && <DevOverlay fps={fps} latency={latency} />}
+      {devMode && <DevOverlay fps={fps} latency={latency} brightness={brightness} onBrightness={setBrightness} />}
 
       <div className="appbar">
         스튜디오
@@ -853,19 +856,62 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         </span>
       </div>
 
-      <div className="content">
-        <div className="segment" style={{ opacity: drumMode ? 0.45 : 1 }}>
-          <button className="seg" data-on={!drumMode && playMode === 'chord'} disabled={drumMode} onClick={() => switchMode('chord')}>🎸 코드</button>
-          <button className="seg" data-on={!drumMode && playMode === 'melody'} disabled={drumMode} onClick={() => switchMode('melody')}>🎹 멜로디</button>
+      <div className="content" style={{ paddingBottom: 'calc(108px + env(safe-area-inset-bottom))' }}>
+        {/* 설정 요약 칩바 — 연주법·악기·음색·입력을 한 줄로(탭하면 바텀시트, 현재값 라벨 표시) */}
+        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, alignItems: 'center', marginTop: 4, overflowX: 'auto', paddingBottom: 2 }}>
+          {!drumMode && (
+            <button className="chip chip-ghost" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
+              {playMode === 'chord' ? '🎸 코드' : '🎹 멜로디'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+            </button>
+          )}
+          <InstrumentCombo inline instrument={instrument} style={style} disabled={busy} onPick={chooseVoice} />
+          {(drumMode || playMode === 'chord') && (
+            <button className="chip chip-ghost" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
+              {input === 'touch' ? '👆 터치' : '👋 제스처'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+            </button>
+          )}
         </div>
 
-        <InstrumentCombo instrument={instrument} style={style} disabled={busy} onPick={chooseVoice} />
+        {/* 연주법 시트 */}
+        {modeSheet && (
+          <>
+            <div className="backdrop" onClick={() => setModeSheet(false)} />
+            <div className="sheet">
+              <div className="sheet-grip" />
+              <div className="t-title" style={{ padding: '4px 6px 8px' }}>연주법</div>
+              <button className="sheet-row" data-on={playMode === 'chord'} onClick={() => { switchMode('chord'); setModeSheet(false); }}>
+                <span style={{ fontSize: 24 }}>🎸</span>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>코드</span>
+                {playMode === 'chord' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+              <button className="sheet-row" data-on={playMode === 'melody'} onClick={() => { switchMode('melody'); setModeSheet(false); }}>
+                <span style={{ fontSize: 24 }}>🎹</span>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>멜로디</span>
+                {playMode === 'melody' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+            </div>
+          </>
+        )}
 
-        {(drumMode || playMode === 'chord') && (
-          <div className="segment" style={{ marginTop: 8 }}>
-            <button className="seg" data-on={input === 'touch'} onClick={selectTouch}>👆 터치</button>
-            <button className="seg" data-on={input === 'gesture'} onClick={selectGesture}>👋 제스처</button>
-          </div>
+        {/* 입력 방식 시트 */}
+        {inputSheet && (
+          <>
+            <div className="backdrop" onClick={() => setInputSheet(false)} />
+            <div className="sheet">
+              <div className="sheet-grip" />
+              <div className="t-title" style={{ padding: '4px 6px 8px' }}>입력 방식</div>
+              <button className="sheet-row" data-on={input === 'touch'} onClick={() => { selectTouch(); setInputSheet(false); }}>
+                <span style={{ fontSize: 24 }}>👆</span>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>터치</span>
+                {input === 'touch' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+              <button className="sheet-row" data-on={input === 'gesture'} onClick={() => { void selectGesture(); setInputSheet(false); }}>
+                <span style={{ fontSize: 24 }}>👋</span>
+                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>제스처 (카메라)</span>
+                {input === 'gesture' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              </button>
+            </div>
+          </>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 24, marginTop: 14 }}>
@@ -876,6 +922,12 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           </div>
           <span className="t-cap c-sub" style={{ fontWeight: recording ? 700 : 400, color: recording ? 'var(--coral)' : undefined }}>{statusText}</span>
         </div>
+
+        {!ready && (
+          <div className="pulse" style={{ marginTop: 12, background: 'var(--blue-weak)', color: 'var(--blue)', borderRadius: 'var(--r-md)', padding: '12px 14px', textAlign: 'center', fontWeight: 800, fontSize: 14 }}>
+            🔊 아무 곳이나 눌러 소리를 켜주세요
+          </div>
+        )}
 
         {/* 카메라(코드/드럼 제스처) — 본문 안, 전체화면 시 fixed로 덮음 */}
         {cameraBlock}
@@ -936,30 +988,6 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           </>
         )}
 
-        {/* 트랜스포트 */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button className="btn" style={ctrlBtn(metroOn ? 'var(--blue)' : 'var(--surface)', metroOn ? '#fff' : 'var(--text)', metroOn ? 'var(--e-inset)' : 'var(--e2)')} onClick={toggleMetro}>
-            🥁 메트로놈
-          </button>
-          <button className="btn" style={ctrlBtn(busy ? 'var(--coral)' : 'var(--blue)', '#fff')} onClick={toggleRec}>
-            {busy ? '■ 정지' : '● 녹음'}
-          </button>
-          <button className="btn" style={ctrlBtn('var(--surface)', hasTake ? 'var(--text)' : 'var(--sub)')} disabled={!hasTake || busy} onClick={play}>
-            ▶ 재생
-          </button>
-        </div>
-
-        {hasTake && !busy && (
-          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-            <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={saveCurrent}>
-              💾 저장
-            </button>
-            <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={() => setEditing(true)}>
-              🎚 음 편집
-            </button>
-          </div>
-        )}
-
         {sessionCode && (
           <div className="card" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -987,16 +1015,73 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-          <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={receive}>📥 가져오기</button>
-          <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={() => go('community')}>🌐 구경 가기</button>
-          {hasTake && !busy && (
-            <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={share}>📤 공유</button>
-          )}
-        </div>
-
         {toast && <div style={{ marginTop: 14, textAlign: 'center', color: 'var(--blue)', fontWeight: 700, fontSize: 14 }}>{toast}</div>}
       </div>
+
+      {/* 하단 고정 트랜스포트 바 — 연주 중 항상 닿는 메트로놈·녹음·재생·더보기 */}
+      {!melodyFull && !drumTouchFull && !camFull && !editing && (
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 480, margin: '0 auto', zIndex: 30, background: 'var(--surface)', boxShadow: '0 -3px 18px rgba(17,24,39,.10)', borderRadius: '18px 18px 0 0', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', display: 'flex', gap: 8 }}>
+          <button className="btn" onClick={toggleMetro} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: metroOn ? 'var(--blue)' : 'var(--surface)', color: metroOn ? '#fff' : 'var(--text)', boxShadow: metroOn ? 'var(--e-inset)' : 'var(--e2)' }}>
+            <span style={{ fontSize: 20 }}>🥁</span>메트로놈
+          </button>
+          <button className="btn" onClick={toggleRec} style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 13, fontWeight: 800, background: busy ? 'var(--coral)' : 'var(--blue)', color: '#fff', boxShadow: 'var(--e3)' }}>
+            <span style={{ fontSize: 22 }}>{busy ? '■' : '●'}</span>{busy ? '정지' : '녹음'}
+          </button>
+          <button className="btn" onClick={play} disabled={!hasTake || busy} title={!hasTake ? '녹음하면 재생할 수 있어요' : undefined} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: hasTake && !busy ? 'var(--text)' : 'var(--sub)', boxShadow: 'var(--e2)' }}>
+            <span style={{ fontSize: 20 }}>▶</span>재생
+          </button>
+          <button className="btn" onClick={() => setShowMore(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }}>
+            <span style={{ fontSize: 20 }}>⋯</span>더보기
+          </button>
+        </div>
+      )}
+
+      {/* 더보기 시트 — 공유·저장·음편집·가져오기·구경가기 */}
+      {showMore && (
+        <>
+          <div className="backdrop" onClick={() => setShowMore(false)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); void share(); }}>
+              <span style={{ fontSize: 22 }}>📤</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>공유</span>
+                <span className="t-cap c-sub">{hasTake ? '합주 코드로 친구에게 공유' : '녹음 후 사용 가능'}</span>
+              </span>
+            </button>
+            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); saveCurrent(); }}>
+              <span style={{ fontSize: 22 }}>💾</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>저장</span>
+                <span className="t-cap c-sub">{hasTake ? '내 기기에 곡 저장' : '녹음 후 사용 가능'}</span>
+              </span>
+            </button>
+            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); setEditing(true); }}>
+              <span style={{ fontSize: 22 }}>🎚</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>음 편집</span>
+                <span className="t-cap c-sub">{hasTake ? '피아노롤로 음 다듬기' : '녹음 후 사용 가능'}</span>
+              </span>
+            </button>
+            <div style={{ height: 1, background: 'var(--line)', margin: '8px 6px' }} />
+            <button className="sheet-row" onClick={() => { setShowMore(false); void receive(); }}>
+              <span style={{ fontSize: 22 }}>📥</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>가져오기</span>
+                <span className="t-cap c-sub">친구 트랙 받아서 얹기</span>
+              </span>
+            </button>
+            <button className="sheet-row" onClick={() => { setShowMore(false); go('community'); }}>
+              <span style={{ fontSize: 22 }}>🌐</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>구경 가기</span>
+                <span className="t-cap c-sub">다른 사람들의 합주 둘러보기</span>
+              </span>
+            </button>
+            <button className="btn" style={{ marginTop: 10, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setShowMore(false)}>닫기</button>
+          </div>
+        </>
+      )}
 
       {/* 멜로디 전체화면 */}
       {melodyFull && surfaceWrap(instrument === 'piano' ? renderPiano(true) : fretInstrument ? <NotePadGrid instrument={fretInstrument} held={heldNotes} frets={FRETS_FULL} onDown={melodyDown} onUp={melodyUp} /> : null)}
