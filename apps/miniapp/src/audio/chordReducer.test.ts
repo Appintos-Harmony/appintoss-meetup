@@ -71,3 +71,52 @@ describe('chordReducer', () => {
     expect(s.activeChord).toBe('C');
   });
 });
+
+describe('chordReducer — 폴리포니(멜로디)', () => {
+  it('두 음 동시 down(poly): on 2개, 이전 off 없음, activeNotes 2개', () => {
+    const s = run([
+      { type: 'down', chord: 'C4', source: 'touch', tick: 0, nowMs: 0, poly: true },
+      { type: 'down', chord: 'E4', source: 'touch', tick: 2, nowMs: 20, poly: true },
+    ]);
+    expect(s.events).toEqual([
+      { tick: 0, phase: 'on', chord: 'C4', source: 'touch' },
+      { tick: 2, phase: 'on', chord: 'E4', source: 'touch' },
+    ]);
+    expect(Object.keys(s.activeNotes).sort()).toEqual(['C4', 'E4']);
+  });
+
+  it('한 음만 up(poly): 그 음만 off, 나머지 유지', () => {
+    const s = run([
+      { type: 'down', chord: 'C4', source: 'touch', tick: 0, nowMs: 0, poly: true },
+      { type: 'down', chord: 'E4', source: 'touch', tick: 2, nowMs: 20, poly: true },
+      { type: 'up', chord: 'C4', source: 'touch', tick: 5, nowMs: 50, poly: true },
+    ]);
+    expect(s.events.at(-1)).toEqual({ tick: 5, phase: 'off', chord: 'C4', source: 'touch' });
+    expect(Object.keys(s.activeNotes)).toEqual(['E4']);
+  });
+
+  it('같은 음 재down(poly)은 중복 on 무시', () => {
+    const s = run([
+      { type: 'down', chord: 'C4', source: 'touch', tick: 0, nowMs: 0, poly: true },
+      { type: 'down', chord: 'C4', source: 'touch', tick: 3, nowMs: 30, poly: true },
+    ]);
+    expect(s.events.filter((e) => e.phase === 'on')).toHaveLength(1);
+  });
+
+  it('활성 아닌 음 up(poly)은 무시', () => {
+    const s = run([
+      { type: 'down', chord: 'C4', source: 'touch', tick: 0, nowMs: 0, poly: true },
+      { type: 'up', chord: 'G4', source: 'touch', tick: 4, nowMs: 40, poly: true },
+    ]);
+    expect(s.events.filter((e) => e.phase === 'off')).toHaveLength(0);
+  });
+
+  it('코드 모드(poly 없음)는 단음 동작 보존 — 전환 시 이전 off', () => {
+    const s = run([
+      { type: 'down', chord: 'C', source: 'touch', tick: 0, nowMs: 0 },
+      { type: 'down', chord: 'G', source: 'touch', tick: 8, nowMs: 80 },
+    ]);
+    expect(s.activeChord).toBe('G');
+    expect(s.events.filter((e) => e.phase === 'off')).toHaveLength(1);
+  });
+});
