@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Route } from '../App';
-import { listSongs, deleteSong, type Song } from '../lib/storage';
+import { listSongs, type Song } from '../lib/storage';
 
 const CHORD_COLOR: Record<string, string> = { C: '#3182f6', Am: '#8b5cf6', F: '#15c47e', G: '#ff6b6b' };
 
+// 홈 = 얇은 디스패처 허브(DEBATE-20260622-013). 콘텐츠/편집/목록 UI를 만들지 않고
+// 스튜디오·커뮤니티로 '보내기'만 + 이어하기(최근곡 읽기 전용) + 설정 진입.
 export function Home({
   nickname,
   go,
@@ -13,73 +16,100 @@ export function Home({
   go: (r: Route) => void;
   onOpen: (s: Song) => void;
 }) {
-  const [songs, setSongs] = useState<Song[]>(() => listSongs());
+  const [songs] = useState<Song[]>(() => listSongs());
+  const empty = songs.length === 0;
 
-  function remove(id: string) {
-    deleteSong(id);
-    setSongs(listSongs());
-  }
+  // 진입 카드 공통 스타일. accent=빈 상태에서 스튜디오 1순위 강조(--blue).
+  const entryCard = (accent: boolean): CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    textAlign: 'left',
+    font: 'inherit',
+    color: 'var(--text)',
+    background: accent ? 'var(--blue-weak, #eaf1ff)' : 'var(--surface)',
+    border: accent ? '2px solid var(--blue)' : '0.5px solid var(--line-2)',
+    borderRadius: 'var(--r-xl)',
+    padding: 16,
+    boxShadow: 'var(--e1)',
+    cursor: 'pointer',
+  });
 
   return (
     <>
-      <div className="appbar">하모니</div>
+      <div className="appbar">
+        하모니
+        <span style={{ marginLeft: 'auto', fontSize: 20, cursor: 'pointer' }} onClick={() => go('settings')} aria-label="설정" role="button">
+          ⚙️
+        </span>
+      </div>
       <div className="content fade">
-        <h1 className="t-title" style={{ marginTop: 4 }}>
-          안녕하세요, {nickname}님 👋
-        </h1>
-        <p className="t-body c-sub2" style={{ marginTop: 4 }}>오늘은 어떤 곡을 만들어볼까요?</p>
+        <h1 className="t-title" style={{ marginTop: 4 }}>안녕하세요, {nickname}님 👋</h1>
+        <p className="t-body c-sub2" style={{ marginTop: 4 }}>{empty ? '첫 트랙을 녹음해볼까요?' : '이어서 만들어볼까요?'}</p>
 
-        <div style={{ marginTop: 18 }}>
-          <button className="btn" style={{ padding: 17, fontSize: 17 }} onClick={() => go('studio')}>
-            🎹 스튜디오 열기
-          </button>
-        </div>
-
-        <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '24px 4px 10px' }}>최근 곡</div>
-        {songs.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '34px 18px' }}>
-            <div style={{ fontSize: 38 }}>🎵</div>
-            <p className="t-body c-sub" style={{ marginTop: 10 }}>
-              아직 만든 곡이 없어요.
-              <br />
-              스튜디오에서 첫 곡을 만들어보세요.
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {songs.slice(0, 3).map((s) => {
-              const chords = [...new Set(s.events.filter((e) => e.phase === 'on').map((e) => e.chord))];
-              return (
-                <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="t-body" style={{ fontWeight: 700 }}>{s.name}</div>
-                    <div style={{ display: 'flex', gap: 5, marginTop: 7, flexWrap: 'wrap' }}>
-                      {chords.length === 0 && <span className="t-cap c-sub">빈 곡</span>}
-                      {chords.slice(0, 6).map((c, i) => (
-                        <span
-                          key={i}
-                          style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: CHORD_COLOR[c] ?? '#8b95a1', borderRadius: 6, padding: '2px 7px' }}
-                        >
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <button className="chip" onClick={() => onOpen(s)}>열기</button>
-                  <button className="chip chip-ghost" onClick={() => remove(s.id)}>삭제</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <button
-          className="btn"
-          style={{ marginTop: 20, background: 'var(--surface)', color: 'var(--text-2)', boxShadow: 'var(--e1)' }}
-          onClick={() => go('settings')}
-        >
-          설정
+        <button style={{ ...entryCard(empty), marginTop: 18 }} onClick={() => go('studio')}>
+          <span style={{ fontSize: 26 }}>🎹</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontWeight: 700 }}>스튜디오</span>
+            <span className="t-cap c-sub" style={{ display: 'block' }}>새 곡 만들기 · 트랙 녹음</span>
+          </span>
+          <span className="c-sub" style={{ fontSize: 18 }}>›</span>
         </button>
+
+        <button style={{ ...entryCard(false), marginTop: 12 }} onClick={() => go('community')}>
+          <span style={{ fontSize: 26 }}>🎧</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontWeight: 700 }}>커뮤니티</span>
+            <span className="t-cap c-sub" style={{ display: 'block' }}>다른 사람 곡에 얹기 · 둘러보기</span>
+          </span>
+          <span className="c-sub" style={{ fontSize: 18 }}>›</span>
+        </button>
+
+        {!empty && (
+          <>
+            <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '24px 4px 10px' }}>이어하기</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {songs.slice(0, 3).map((s) => {
+                const chords = [...new Set(s.events.filter((e) => e.phase === 'on').map((e) => e.chord))];
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => onOpen(s)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      width: '100%',
+                      textAlign: 'left',
+                      font: 'inherit',
+                      color: 'var(--text)',
+                      background: 'var(--surface)',
+                      border: '0.5px solid var(--line-2)',
+                      borderRadius: 'var(--r-lg, 14px)',
+                      padding: '12px 14px',
+                      boxShadow: 'var(--e1)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontWeight: 700 }}>{s.name}</span>
+                      <span style={{ display: 'flex', gap: 5, marginTop: 7, flexWrap: 'wrap' }}>
+                        {chords.length === 0 && <span className="t-cap c-sub">빈 곡</span>}
+                        {chords.slice(0, 6).map((c, i) => (
+                          <span key={i} style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: CHORD_COLOR[c] ?? '#8b95a1', borderRadius: 6, padding: '2px 7px' }}>
+                            {c}
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                    <span className="c-sub" style={{ fontSize: 18 }}>›</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </>
   );
