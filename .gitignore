@@ -27,3 +27,6 @@ Thumbs.db
 # editor
 .idea/
 *.swp
+
+# office 임시 잠금 파일
+~$*

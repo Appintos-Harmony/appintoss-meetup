@@ -1,9 +1,9 @@
 ---
 status: 확정 — A안(carve-out). 초기화면 = 이 세션(김민혁측) 구현 / 곽소정 = 스튜디오+audio
-supersedes: 초기화면_B안_인계_및_식별계약.md
-last_updated: 2026-06-22
+supersedes: (없음 — B안 미채택, 파일 미작성)
+last_updated: 2026-06-23
 related: [DEBATE-20260622-013_초기화면설계, TASK-20260622-030_풀스튜디오UI_곽소정]
-branch: feat/TASK-20260622-031-home-hub
+branch: develop (머지 완료, 6372dc3)
 ---
 
 # 초기화면 carve-out + 머지 조율 계약
