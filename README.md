@@ -14,7 +14,7 @@
 - 식별: `getAnonymousKey` + 닉네임. 계정 없음. 비게임.
 - 백엔드: Node 24 `node:http` + `node:sqlite`(외부 의존성 없음). 엔드포인트 4개(`/healthz`, `POST /sessions`, `GET /sessions/:code`, `POST .../tracks`). tracks는 owner·events·instrument·style을 가진다.
 - 배포: AWS EC2 Ubuntu 26.04에서 운영 중. nginx(정적 `/opt/harmony-web` + 리버스프록시) + systemd `harmony-api`(:8080) + Let's Encrypt(certbot). 주소는 https://3.39.167.74.nip.io, HTTPS 동일 출처. 프론트는 `vite build` → `/opt/harmony-web`.
-- 테스트: vitest 7파일 58개 통과(chordReducer·poly·events·tuning·noteEdit·notes·loop). 통합 12/12(과거 스냅샷).
+- 테스트: vitest 7파일 58개 통과(chordReducer·poly·events·tuning·noteEdit·notes·loop). 통합 12/12(과거 스냅샷, 6372dc3 기준).
 - 형상: `develop`에 통합·푸시 완료(마지막 feature 커밋 6372dc3, 그 위 조장 docs 커밋 ebdad0a가 `develop` tip). 작업 브랜치 `review/fullstudio` HEAD는 docs 1커밋 더 위인 ebdad0a→219b6ac. 커밋은 자동, 푸시는 사람 게이트.
 - 남은 일: `ait deploy`로 토스 WebView 등록(`granite.config`의 `appName`을 `meetup-lite`에서 `harmony`로 교체), 실기기 검수, 익명키 실연동, 발표자료·종료보고서 마감, 키 로테이션.
 
