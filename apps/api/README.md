@@ -15,7 +15,20 @@ PORT=8080 DB_PATH=./harmony.db node server.mjs
 | GET | `/sessions/:code` | `{code,name,bpm,tracks:[{owner,events,createdAt}]}` |
 | POST | `/sessions/:code/tracks` | body `{owner,events}` → `{ok,trackId}` (얹기) |
 
-`events` = 클라 `chordReducer`의 `ChordEvent[]`(tick 기반). 클라 `src/lib/share.ts`와 계약 일치.
+### 커뮤니티 (피드) — 쓰기는 헤더 `X-Anon-Key` 필요(없으면 503 페일클로즈드)
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/feed?sort=recent\|popular&limit=` | 공개곡 목록(**메타만, events 미포함**). `liked`는 키 있으면 표기 |
+| GET | `/publications/:id` | 단건(**events 포함** — 들어보기/가져오기) |
+| POST | `/publications` | 게시(events를 불변 스냅샷 복사). owner당 5곡 초과 시 409 |
+| POST·DELETE | `/publications/:id/like` | 좋아요 토글(`UNIQUE(pub_id,user_key)` 중복 차단) |
+| POST | `/publications/:id/report` | 신고. 누적 3건 → 자동 `hidden` |
+| GET | `/me/publications` | 내 공개곡(5개 한도 표시) |
+| DELETE | `/publications/:id` | 내 것 삭제 |
+
+`events` = 클라 `chordReducer`의 `ChordEvent[]`(tick 기반, 서버는 opaque JSON 저장). 클라 `src/lib/share.ts`·`src/lib/community.ts`와 계약 일치. 테이블: `sessions`·`tracks`(합주) + `publications`·`likes`·`reports`(커뮤니티). WAL·busy_timeout·인덱스·rate-limit 적용. 통합테스트 `server.test.mjs`(`node --test`).
+
+> **재배포 시:** `server.mjs` 교체 후 `sudo systemctl restart harmony-api`, nginx conf(`deploy/nginx-harmony-api.conf`) 교체 후 `sudo nginx -t && sudo systemctl reload nginx`. 신규 테이블은 `CREATE TABLE IF NOT EXISTS`라 기존 데이터 보존(추가만).
 
 ## AWS Ubuntu 배포 (사람 실행 — 키 로테이션 후)
 > ⚠️ **유출된 SSH 키 로테이션 먼저.** SSH 접속·키 작업은 사람이 한다(AI 금지).
