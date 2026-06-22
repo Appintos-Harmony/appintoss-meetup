@@ -13,21 +13,22 @@ PORT=8080 DB_PATH=./harmony.db node server.mjs
 | GET | `/healthz` | `{ok,time}` |
 | POST | `/sessions` | body `{name,bpm,owner,events}` → `{code}` (6자리, 0/1/I/O 제외) |
 | GET | `/sessions/:code` | `{code,name,bpm,tracks:[{owner,events,createdAt}]}` |
-| POST | `/sessions/:code/tracks` | body `{owner,events}` → `{ok,trackId}` (얹기) |
+| POST | `/sessions/:code/tracks` | body `{owner,events,instrument,style}` → `{ok,trackId}` (얹기) |
 
-`events` = 클라 `chordReducer`의 `ChordEvent[]`(tick 기반). 클라 `src/lib/share.ts`와 계약 일치.
+`events` = 클라 `chordReducer`의 `ChordEvent[]`(tick 기반). `instrument`·`style`은 트랙별 음색 재생용 선택 필드다. 클라 `src/lib/share.ts`와 계약 일치.
 
-## AWS Ubuntu 배포 (사람 실행 — 키 로테이션 후)
-> ⚠️ **유출된 SSH 키 로테이션 먼저.** SSH 접속·키 작업은 사람이 한다(AI 금지).
+## AWS Ubuntu 배포
+> ⚠️ SSH 키(pem)는 저장소에 두지 않는다. 키 로테이션·접속 권한은 사람이 관리한다.
+
+현재 운영 계약(DL-021): `https://3.39.167.74.nip.io` 한 도메인에서 정적 미니앱(`/opt/harmony-web`)과 API(`/healthz`, `/sessions`)를 함께 서빙한다.
 
 1. **Node ≥ 22.5** 설치 (nodesource 또는 nvm). `node --version`으로 `node:sqlite` 가용 확인.
 2. 파일 복사: `server.mjs`·`package.json` → `/opt/harmony-api/`.
 3. 사용자/데이터: `sudo useradd -r -s /usr/sbin/nologin harmony` · `sudo mkdir -p /opt/harmony-api/data` · `sudo chown -R harmony:harmony /opt/harmony-api`.
 4. systemd: `deploy/harmony-api.service` → `/etc/systemd/system/` · `sudo systemctl daemon-reload && sudo systemctl enable --now harmony-api` · `curl localhost:8080/healthz`로 확인.
-5. **HTTPS (토스 WebView 필수 — 둘 중 하나):**
-   - **빠른 길:** `cloudflared tunnel --url http://localhost:8080` → 즉시 `https://…trycloudflare.com`(도메인·인증서 불필요, 데모용).
-   - **정식:** nginx 리버스프록시(`deploy/nginx-harmony-api.conf`) + `certbot --nginx`(도메인 필요).
-6. **클라 주입:** 미니앱 빌드 시 `VITE_API_BASE=https://<배포URL>` 설정.
+5. **HTTPS:** nginx 리버스프록시(`deploy/nginx-harmony-api.conf`) + certbot. HTTP 80은 HTTPS로 리다이렉트한다.
+6. **정적 앱 배포:** `apps/miniapp/dist`를 `/opt/harmony-web`에 교체하고 `sudo chmod -R a+rX /opt/harmony-web && sudo systemctl reload nginx`.
+7. **클라 주입:** 미니앱 빌드 시 `VITE_API_BASE=https://3.39.167.74.nip.io` 설정.
    미설정 시 기본 `http://localhost:8080` → **기기에선 동작 안 함**(프리로드 폴백만).
 
 ## 한계 (데모 범위)

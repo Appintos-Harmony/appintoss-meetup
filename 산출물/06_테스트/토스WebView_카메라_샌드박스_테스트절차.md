@@ -23,7 +23,7 @@ related_adrs: []
 - 단, **샌드박스 실측 전엔 미확정**(근거목록 #9). 이 절차가 확정한다.
 
 ## 준비물 (전제)
-- 토스 **비즈니스 계정**(콘솔 등록 계정) + 등록 앱. **테스트는 `meetup-lite` 등록 재사용 가능**(이름은 무관, 카메라 가능여부만 확인).
+- 토스 **비즈니스 계정**(콘솔 등록 계정) + 등록 앱. **테스트는 `meetup-lite` 등록 재사용 가능**(이름은 무관, 카메라 가능여부만 확인). 제출 후보는 하모니 앱 등록 후 실제 ID로 재검수한다.
 - **샌드박스 앱**(개발용, 일반 토스앱 아님): Android APK / iOS(시뮬레이터·실기기). ([샌드박스](https://developers-apps-in-toss.toss.im/development/test/sandbox.md))
 - 폰 + 카메라. (Android) USB 케이블 + `adb`(USB 디버깅) / (iOS 실기기) 로컬 서버와 **같은 WiFi** + "로컬 네트워크" 허용.
 - 토스 인증용: 등록 토스 계정의 토스앱이 깔린 폰(푸시 인증).
@@ -40,8 +40,8 @@ npx ait init        # granite.config.ts 생성
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  appName: 'meetup-lite',        // 콘솔 등록 앱 ID(테스트용 재사용)
-  displayName: '소모임 밋업',     // 콘솔 등록 이름과 동일해야 함
+  appName: 'meetup-lite',        // 콘솔 등록 앱 ID(테스트용 재사용). 제출 후보는 harmony 등록 ID로 교체
+  displayName: '하모니',          // 콘솔 등록 이름과 동일해야 함
   permissions: [
     { name: 'camera', access: 'access' },   // 검토용 선언(라이브는 getUserMedia)
   ],
@@ -64,11 +64,11 @@ ipconfig             # (Windows) 로컬 IPv4 확인
 
 ### 3) 샌드박스 연결
 1. 샌드박스 앱 설치 → **비즈니스 개인 계정 로그인**.
-2. 워크스페이스에서 **앱 선택**(meetup-lite) → **토스 인증**(등록 토스 계정 폰 푸시).
+2. 워크스페이스에서 **앱 선택**(meetup-lite 임시 또는 harmony 등록 ID) → **토스 인증**(등록 토스 계정 폰 푸시).
 3. 로컬 서버 연결:
    - **Android:** `adb reverse tcp:5173 tcp:5173` (필요시 `tcp:8081`도)
    - **iOS 실기기:** 같은 WiFi + 서버 IP 입력 + "로컬 네트워크" 허용
-4. 스킴 접속: **`intoss://meetup-lite`**
+4. 스킴 접속: **`intoss://meetup-lite`**(임시) 또는 실제 하모니 등록 ID.
 > 샌드박스는 http 허용(라이브는 https만). 핀치줌·appName/displayName 콘솔 일치 필수.
 
 ### 4) 카메라 테스트
