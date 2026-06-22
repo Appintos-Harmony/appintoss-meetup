@@ -3,6 +3,7 @@ import { getNickname } from './lib/identity';
 import type { Song } from './lib/storage';
 import type { Session } from './lib/share';
 import { getDevMode } from './lib/settings';
+import { Splash } from './routes/Splash';
 import { Onboarding } from './routes/Onboarding';
 import { Home } from './routes/Home';
 import { Studio } from './routes/Studio';
@@ -20,6 +21,7 @@ function routeFromHash(): Route {
 }
 
 export function App() {
+  const [splash, setSplash] = useState(true); // 매 구동마다 짧은 브랜드 스플래시(라이트 리빌)
   const [nickname, setNick] = useState<string | null>(() => getNickname());
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [loaded, setLoaded] = useState<Song | null>(null);
@@ -33,6 +35,10 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  // 스플래시(로고+이름 라이트 리빌) → 그 다음 온보딩/홈 허브.
+  if (splash) {
+    return <Splash onDone={() => setSplash(false)} />;
+  }
   // 온보딩 게이트: 닉네임 없으면 닉네임부터. 완료 후 (해시 지정 화면 또는) 홈 허브로 착지.
   if (!nickname) {
     return <Onboarding onDone={(n) => { setNick(n); setRoute(routeFromHash()); }} />;
