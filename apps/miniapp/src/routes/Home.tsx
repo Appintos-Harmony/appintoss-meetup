@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Route } from '../App';
 import { listSongs, type Song } from '../lib/storage';
+import { isChordName } from '../audio/tuning';
 
 const CHORD_COLOR: Record<string, string> = { C: '#3182f6', Am: '#8b5cf6', F: '#15c47e', G: '#ff6b6b' };
 
@@ -78,7 +79,9 @@ export function Home({
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {songs.slice(0, 3).map((s) => {
-              const chords = [...new Set(s.events.filter((e) => e.phase === 'on').map((e) => e.chord))];
+              const onVals = s.events.filter((e) => e.phase === 'on').map((e) => e.chord);
+              const chords = [...new Set(onVals.filter(isChordName))]; // 코드만 색칩
+              const hasMelody = onVals.some((v) => !isChordName(v)); // 멜로디(개별음)는 배지로
               return (
                 <button
                   key={s.id}
@@ -102,12 +105,13 @@ export function Home({
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: 'block', fontWeight: 700 }}>{s.name}</span>
                     <span style={{ display: 'flex', gap: 5, marginTop: 7, flexWrap: 'wrap' }}>
-                      {chords.length === 0 && <span className="t-cap c-sub">빈 곡</span>}
+                      {chords.length === 0 && !hasMelody && <span className="t-cap c-sub">빈 곡</span>}
                       {chords.slice(0, 6).map((c, i) => (
                         <span key={i} style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: CHORD_COLOR[c] ?? '#8b95a1', borderRadius: 6, padding: '2px 7px' }}>
                           {c}
                         </span>
                       ))}
+                      {hasMelody && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', background: 'var(--bg)', borderRadius: 6, padding: '2px 7px' }}>🎵 멜로디</span>}
                     </span>
                   </span>
                   <span className="c-sub" style={{ fontSize: 18 }}>›</span>

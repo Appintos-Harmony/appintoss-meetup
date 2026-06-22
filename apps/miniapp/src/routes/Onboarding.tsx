@@ -7,9 +7,13 @@ export function Onboarding({ onDone }: { onDone: (nickname: string) => void }) {
 
   async function start() {
     setBusy(true);
-    await getUserKey(); // 익명 식별키 발급/복원 (토스 로그인 아님)
-    setNickname(name);
-    onDone(name.trim());
+    try {
+      await getUserKey(); // 익명 식별키 발급/복원 (토스 로그인 아님)
+      setNickname(name);
+      onDone(name.trim());
+    } catch {
+      setBusy(false); // 식별키 발급 실패(프로드 getAnonymousKey 등) 시 버튼 복구
+    }
   }
 
   return (
