@@ -18,7 +18,9 @@ import { getNickname } from '../lib/identity';
 import type { ChordEvent } from '../audio/chordReducer';
 
 const SIG = ['var(--t-blue)', 'var(--t-coral)', 'var(--t-mint)', 'var(--t-violet)', 'var(--t-amber)'];
-const sig = (id: number) => SIG[id % SIG.length];
+// 작성자별 고정 시그니처색(같은 사람 곡 = 같은 색) + 이니셜 아바타
+const sigOf = (name: string) => SIG[[...(name || '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % SIG.length];
+const initialOf = (name: string) => (name || '?').trim().charAt(0) || '?';
 const bars = (ticks: number | null) => (ticks ? `${Math.max(1, Math.round(ticks / 16))}마디` : '');
 
 type Tab = 'feed' | 'mine';
@@ -31,9 +33,11 @@ export function Community({ go }: { go: (r: Route) => void }) {
   const [error, setError] = useState(false);
   const [mine, setMine] = useState<{ count: number; limit: number; items: FeedItem[] } | null>(null);
   const [playingId, setPlayingId] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0); // 재생 진행 0~1
   const [burst, setBurst] = useState<number | null>(null);
   const [toast, setToast] = useState('');
   const timers = useRef<number[]>([]);
+  const progTimer = useRef<number | null>(null);
   const pausePoll = useRef(0); // 상호작용 직후 폴링이 낙관적 업데이트를 덮지 않도록
 
   const loadFeed = useCallback(async () => {
@@ -79,8 +83,13 @@ export function Community({ go }: { go: (r: Route) => void }) {
   const stop = useCallback(() => {
     timers.current.forEach((t) => window.clearTimeout(t));
     timers.current = [];
+    if (progTimer.current != null) {
+      window.clearInterval(progTimer.current);
+      progTimer.current = null;
+    }
     allOff();
     setPlayingId(null);
+    setProgress(0);
   }, []);
 
   useEffect(() => stop, [stop]); // 언마운트 시 정지
@@ -96,6 +105,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
       return flash('재생할 수 없어요');
     }
     setPlayingId(id);
+    setProgress(0);
     let last = 0;
     for (const ev of pub.events) {
       const v = ev.chord ?? ev.note;
@@ -109,7 +119,10 @@ export function Community({ go }: { go: (r: Route) => void }) {
         }, at),
       );
     }
-    timers.current.push(window.setTimeout(stop, last + 1200));
+    const total = last + 400; // 재생 길이(꼬리 포함)
+    const start = Date.now();
+    progTimer.current = window.setInterval(() => setProgress(Math.min(1, (Date.now() - start) / total)), 90);
+    timers.current.push(window.setTimeout(stop, total + 500));
   }
 
   async function toggleLike(it: FeedItem) {
@@ -197,6 +210,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
                 key={it.id}
                 it={it}
                 playing={playingId === it.id}
+                progress={playingId === it.id ? progress : 0}
                 burst={burst === it.id}
                 onPlay={() => void play(it.id)}
                 onLike={() => void toggleLike(it)}
@@ -215,7 +229,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
                 <p className="t-cap c-sub" style={{ margin: '2px 0 12px' }}>{mine.count}/{mine.limit} 공개 중</p>
                 {mine.items.length === 0 && <EmptyState onGo={() => go('studio')} />}
                 {mine.items.map((it) => (
-                  <Card key={it.id} it={it} mine playing={playingId === it.id} onPlay={() => void play(it.id)} onDelete={() => void del(it.id)} />
+                  <Card key={it.id} it={it} mine playing={playingId === it.id} progress={playingId === it.id ? progress : 0} onPlay={() => void play(it.id)} onDelete={() => void del(it.id)} />
                 ))}
               </>
             )}
@@ -240,10 +254,11 @@ export function Community({ go }: { go: (r: Route) => void }) {
 }
 
 function Card({
-  it, playing, burst, mine, onPlay, onLike, onFork, onReport, onDelete,
+  it, playing, progress = 0, burst, mine, onPlay, onLike, onFork, onReport, onDelete,
 }: {
   it: FeedItem;
   playing: boolean;
+  progress?: number;
   burst?: boolean;
   mine?: boolean;
   onPlay: () => void;
@@ -253,33 +268,49 @@ function Card({
   onDelete?: () => void;
 }) {
   return (
-    <div className="card" style={{ marginBottom: 12 }}>
+    <div
+      className="card fade"
+      style={{
+        marginBottom: 10,
+        padding: 16,
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: playing ? 'var(--e2), inset 0 0 0 1.5px var(--blue)' : undefined,
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div className="track-av" data-playing={playing} style={{ background: sig(it.id), flex: 'none' }}>♪</div>
+        <div className="track-av" data-playing={playing} style={{ background: sigOf(it.owner), flex: 'none' }}>
+          {initialOf(it.owner)}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="t-body" style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.35, letterSpacing: '-.3px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {it.name}
           </div>
-          <div className="t-cap c-sub" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="t-cap c-sub" style={{ marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {it.owner} · {it.bpm}BPM{it.durationTicks ? ` · ${bars(it.durationTicks)}` : ''}
           </div>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-        <button className="chip-ghost" onClick={onPlay}>{playing ? '■ 정지' : '▶ 듣기'}</button>
         {!mine && (
-          <button
-            className="chip"
-            onClick={onLike}
-            style={it.liked ? { background: '#ffe3e3', color: 'var(--coral)' } : undefined}
-          >
-            <span style={burst ? { display: 'inline-block', animation: 'beat .32s var(--spring)' } : undefined}>♥</span> {it.likesCount}
+          <button onClick={onReport} aria-label="신고" style={{ flex: 'none', alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--sub)', fontSize: 18, lineHeight: 1, width: 32, height: 32, borderRadius: 10, cursor: 'pointer' }}>⋯</button>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14, alignItems: 'center' }}>
+        {/* 주 행동 = 듣기(솔리드 파랑, 재생중 코랄 정지) */}
+        <button onClick={onPlay} aria-label={playing ? '정지' : '듣기'} style={{ minHeight: 44, padding: '0 18px', border: 0, borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, background: playing ? 'var(--coral)' : 'var(--blue)', color: '#fff', boxShadow: 'var(--e1)' }}>
+          {playing ? '■ 정지' : '▶ 듣기'}
+        </button>
+        {!mine && (
+          // 좋아요 = 코랄 토글(♡/♥), 누를 때 beat
+          <button onClick={onLike} aria-pressed={it.liked} aria-label={`좋아요 ${it.likesCount}`} style={{ minHeight: 44, padding: '0 16px', border: 0, borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, background: it.liked ? '#ffeaea' : 'var(--bg)', color: it.liked ? 'var(--coral)' : 'var(--text-2)' }}>
+            <span style={burst ? { display: 'inline-block', animation: 'beat .32s var(--spring)' } : undefined}>{it.liked ? '♥' : '♡'}</span>
+            {it.likesCount}
           </button>
         )}
-        {!mine && <button className="chip-ghost" onClick={onFork}>얹기</button>}
-        {!mine && <button className="chip-ghost" onClick={onReport}>신고</button>}
-        {mine && <button className="chip-ghost" onClick={onDelete}>삭제</button>}
+        {!mine && <button onClick={onFork} className="chip" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>얹기</button>}
+        {mine && <button onClick={onDelete} className="chip-ghost" style={{ minHeight: 44, padding: '0 16px', border: 0, borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>삭제</button>}
       </div>
+      {/* 재생 진행바 */}
+      {playing && <div style={{ position: 'absolute', left: 0, bottom: 0, height: 3, width: `${Math.round(progress * 100)}%`, background: 'var(--blue)', transition: 'width .12s linear' }} />}
     </div>
   );
 }
