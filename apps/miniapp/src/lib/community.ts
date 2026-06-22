@@ -46,9 +46,16 @@ async function req(path: string, init?: RequestInit, withKey = false): Promise<u
   return r.status === 204 ? null : r.json();
 }
 
-export async function getFeed(sort: 'recent' | 'popular' = 'recent', limit = 30): Promise<FeedItem[]> {
-  const res = (await req(`/feed?sort=${sort}&limit=${limit}`, undefined, true)) as { items: FeedItem[] };
-  return res.items;
+export async function getFeed(
+  sort: 'recent' | 'popular' = 'recent',
+  limit = 30,
+  offset = 0,
+  owner?: string,
+): Promise<{ items: FeedItem[]; total: number }> {
+  const q = new URLSearchParams({ sort, limit: String(limit), offset: String(offset) });
+  if (owner) q.set('owner', owner);
+  const res = (await req(`/feed?${q.toString()}`, undefined, true)) as { items: FeedItem[]; total?: number };
+  return { items: res.items, total: res.total ?? res.items.length };
 }
 export async function getPublication(id: number): Promise<Publication> {
   return (await req(`/publications/${id}`, undefined, true)) as Publication;

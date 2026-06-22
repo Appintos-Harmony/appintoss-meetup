@@ -177,15 +177,20 @@ const server = createServer(async (req, res) => {
           ? 'likes_count DESC, id DESC'
           : 'created_at DESC, id DESC';
       const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 30, 1), 100);
+      const offset = Math.max(Number(url.searchParams.get('offset')) || 0, 0);
+      const owner = url.searchParams.get('owner'); // 작성자 필터(선택)
       const key = anonKey(req); // 좋아요 표시용(선택)
+      const where = owner ? "status='public' AND owner_name=?" : "status='public'";
+      const filterArgs = owner ? [owner] : [];
+      const total = db.prepare(`SELECT COUNT(*) AS c FROM publications WHERE ${where}`).get(...filterArgs).c;
       const rows = db
-        .prepare(`SELECT * FROM publications WHERE status = 'public' ORDER BY ${order} LIMIT ?`)
-        .all(limit);
+        .prepare(`SELECT * FROM publications WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`)
+        .all(...filterArgs, limit, offset);
       const items = rows.map((r) => {
         const liked = key ? !!db.prepare('SELECT 1 FROM likes WHERE pub_id=? AND user_key=?').get(r.id, key) : false;
         return feedRow(r, liked);
       });
-      return send(res, 200, { items });
+      return send(res, 200, { items, total });
     }
 
     // 단건(events 포함 — 들어보기/가져오기)

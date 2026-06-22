@@ -102,3 +102,23 @@ test('회귀: 기존 합주 엔드포인트(sessions/tracks) 정상', async () =
   r = await post(`/sessions/${code}/tracks`, { owner: 'b', events: ev(2) });
   assert.equal(r.status, 201);
 });
+
+test('페이징(offset/limit/total) + 작성자 필터(owner)', async () => {
+  const ka = withKey('page-userA-1');
+  const kb = withKey('page-userB-2');
+  for (let i = 0; i < 3; i++) assert.equal((await post('/publications', { name: `A${i}`, owner: 'A밴드', events: ev() }, ka)).status, 201);
+  for (let i = 0; i < 3; i++) assert.equal((await post('/publications', { name: `B${i}`, owner: 'B밴드', events: ev() }, kb)).status, 201);
+
+  let r = await (await fetch(BASE + '/feed?limit=4&offset=0')).json();
+  assert.equal(r.items.length, 4); // limit 적용
+  assert.ok(r.total >= 6); // 전체 공개곡 수
+  const firstIds = r.items.map((x) => x.id);
+
+  r = await (await fetch(BASE + '/feed?limit=4&offset=4')).json();
+  assert.ok(r.items.length >= 2);
+  assert.ok(r.items.every((x) => !firstIds.includes(x.id))); // offset 페이지 비중복
+
+  r = await (await fetch(BASE + '/feed?owner=' + encodeURIComponent('A밴드'))).json();
+  assert.equal(r.total, 3); // 작성자 필터 정확
+  assert.ok(r.items.length === 3 && r.items.every((x) => x.owner === 'A밴드'));
+});

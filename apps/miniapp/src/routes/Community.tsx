@@ -30,6 +30,9 @@ export function Community({ go }: { go: (r: Route) => void }) {
   const [tab, setTab] = useState<Tab>('feed');
   const [sort, setSort] = useState<Sort>('recent');
   const [items, setItems] = useState<FeedItem[] | null>(null); // null = 로딩
+  const [total, setTotal] = useState(0);
+  const [owner, setOwner] = useState<string | null>(null); // 작성자 필터(클릭 시)
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [mine, setMine] = useState<{ count: number; limit: number; items: FeedItem[] } | null>(null);
   const [playingId, setPlayingId] = useState<number | null>(null);
@@ -39,32 +42,62 @@ export function Community({ go }: { go: (r: Route) => void }) {
   const timers = useRef<number[]>([]);
   const progTimer = useRef<number | null>(null);
   const pausePoll = useRef(0); // 상호작용 직후 폴링이 낙관적 업데이트를 덮지 않도록
+  const countRef = useRef(0); // 폴링이 현재 로드된 개수만큼 새로고침
+  const PAGE = 6;
 
-  const loadFeed = useCallback(async () => {
+  // 첫 페이지(정렬/작성자필터 바뀌면 리셋)
+  const loadFirst = useCallback(async () => {
     try {
       setError(false);
-      setItems(await getFeed(sort));
+      const r = await getFeed(sort, PAGE, 0, owner ?? undefined);
+      setItems(r.items);
+      setTotal(r.total);
     } catch {
       setError(true);
     }
-  }, [sort]);
+  }, [sort, owner]);
+
+  // 다음 페이지(이어붙임)
+  async function loadMore() {
+    if (!items || loadingMore) return;
+    setLoadingMore(true);
+    pausePoll.current = Date.now() + 4000;
+    try {
+      const r = await getFeed(sort, PAGE, items.length, owner ?? undefined);
+      setItems([...items, ...r.items]);
+      setTotal(r.total);
+    } catch {
+      flash('더 불러오지 못했어요');
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
     if (tab === 'feed') {
       setItems(null);
-      void loadFeed();
+      void loadFirst();
     }
-  }, [tab, loadFeed]);
+  }, [tab, loadFirst]);
 
-  // 폴링(실시간 느낌) — 피드 탭에서 5s마다 조용히 갱신.
+  useEffect(() => {
+    countRef.current = items?.length ?? 0;
+  }, [items]);
+
+  // 폴링(실시간 느낌) — 피드 탭에서 5s마다 "로드된 범위"만 조용히 갱신(페이지/필터 유지).
   useEffect(() => {
     if (tab !== 'feed') return;
     const t = window.setInterval(() => {
       if (Date.now() < pausePoll.current) return; // 방금 조작한 항목 보호
-      getFeed(sort).then(setItems).catch(() => {});
+      getFeed(sort, Math.max(PAGE, countRef.current), 0, owner ?? undefined)
+        .then((r) => {
+          setItems(r.items);
+          setTotal(r.total);
+        })
+        .catch(() => {});
     }, 5000);
     return () => window.clearInterval(t);
-  }, [tab, sort]);
+  }, [tab, sort, owner]);
 
   useEffect(() => {
     if (tab === 'mine') {
@@ -198,12 +231,19 @@ export function Community({ go }: { go: (r: Route) => void }) {
 
         {tab === 'feed' && (
           <>
+            {owner && (
+              <div className="card fade" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, padding: '10px 12px' }}>
+                <span className="track-av" style={{ width: 28, height: 28, fontSize: 13, background: sigOf(owner), flex: 'none' }}>{initialOf(owner)}</span>
+                <span style={{ flex: 1, fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{owner}님의 음원</span>
+                <button onClick={() => setOwner(null)} style={{ flex: 'none', minHeight: 36, border: 0, borderRadius: 999, padding: '0 14px', background: 'var(--bg)', color: 'var(--text-2)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>전체 보기</button>
+              </div>
+            )}
             <div className="segment" style={{ marginBottom: 14 }}>
               <button className="seg" data-on={sort === 'recent'} onClick={() => setSort('recent')}>최신</button>
               <button className="seg" data-on={sort === 'popular'} onClick={() => setSort('popular')}>인기</button>
             </div>
             {items === null && <Skeleton />}
-            {error && <ErrorState onRetry={() => void loadFeed()} />}
+            {error && <ErrorState onRetry={() => void loadFirst()} />}
             {items && !error && items.length === 0 && <EmptyState onGo={() => go('studio')} />}
             {items?.map((it) => (
               <Card
@@ -216,8 +256,18 @@ export function Community({ go }: { go: (r: Route) => void }) {
                 onLike={() => void toggleLike(it)}
                 onFork={() => void fork(it)}
                 onReport={() => void doReport(it)}
+                onAuthor={() => setOwner(it.owner)}
               />
             ))}
+            {items && items.length < total && (
+              <button
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                style={{ width: '100%', marginTop: 4, padding: 13, border: 0, borderRadius: 'var(--r-md)', background: 'var(--surface)', color: 'var(--text-2)', fontWeight: 700, fontSize: 15, boxShadow: 'var(--e1)', cursor: 'pointer' }}
+              >
+                {loadingMore ? '불러오는 중…' : `더 보기 (${total - items.length}곡)`}
+              </button>
+            )}
           </>
         )}
 
@@ -254,7 +304,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
 }
 
 function Card({
-  it, playing, progress = 0, burst, mine, onPlay, onLike, onFork, onReport, onDelete,
+  it, playing, progress = 0, burst, mine, onPlay, onLike, onFork, onReport, onDelete, onAuthor,
 }: {
   it: FeedItem;
   playing: boolean;
@@ -266,6 +316,7 @@ function Card({
   onFork?: () => void;
   onReport?: () => void;
   onDelete?: () => void;
+  onAuthor?: () => void;
 }) {
   return (
     <div
@@ -287,7 +338,12 @@ function Card({
             {it.name}
           </div>
           <div className="t-cap c-sub" style={{ marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {it.owner} · {it.bpm}BPM{it.durationTicks ? ` · ${bars(it.durationTicks)}` : ''}
+            {onAuthor ? (
+              <button onClick={onAuthor} style={{ border: 0, background: 'none', padding: 0, font: 'inherit', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer' }}>{it.owner}</button>
+            ) : (
+              it.owner
+            )}
+            {` · ${it.bpm}BPM`}{it.durationTicks ? ` · ${bars(it.durationTicks)}` : ''}
           </div>
         </div>
         {!mine && (
