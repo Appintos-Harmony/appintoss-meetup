@@ -5,8 +5,9 @@ import { Onboarding } from './routes/Onboarding';
 import { Home } from './routes/Home';
 import { Studio } from './routes/Studio';
 import { Settings } from './routes/Settings';
+import { Community } from './routes/Community';
 
-export type Route = 'home' | 'studio' | 'settings';
+export type Route = 'home' | 'studio' | 'settings' | 'community';
 
 export function App() {
   const [nickname, setNick] = useState<string | null>(() => getNickname());
@@ -24,6 +25,7 @@ export function App() {
       )}
       {route === 'studio' && <Studio go={setRoute} loaded={loaded} />}
       {route === 'settings' && <Settings go={setRoute} />}
+      {route === 'community' && <Community go={setRoute} />}
     </div>
   );
 }
