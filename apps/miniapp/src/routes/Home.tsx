@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Route } from '../App';
-import { listSongs, type Song } from '../lib/storage';
+import { listSongs, songTracks, type Song } from '../lib/storage';
 import { isChordName } from '../audio/tuning';
 
 const CHORD_COLOR: Record<string, string> = { C: '#3182f6', Am: '#8b5cf6', F: '#15c47e', G: '#ff6b6b' };
@@ -79,7 +79,7 @@ export function Home({
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {songs.slice(0, 3).map((s) => {
-              const onVals = s.events.filter((e) => e.phase === 'on').map((e) => e.chord);
+              const onVals = songTracks(s).flatMap((t) => t.events).filter((e) => e.phase === 'on').map((e) => e.chord);
               const chords = [...new Set(onVals.filter(isChordName))]; // 코드만 색칩
               const hasMelody = onVals.some((v) => !isChordName(v)); // 멜로디(개별음)는 배지로
               return (

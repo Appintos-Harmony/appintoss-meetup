@@ -1,6 +1,7 @@
 // 합주 공유 클라이언트. 백엔드(apps/api) 호출 + 실패 시 프리로드 폴백(데모 지속).
 // API_BASE: 개발=localhost:8080, 배포=VITE_API_BASE(AWS HTTPS) 빌드시 주입.
 import type { ChordEvent } from '../audio/chordReducer';
+import type { Instrument } from '../audio/events';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) || 'http://localhost:8080';
 
@@ -8,6 +9,8 @@ export interface SessionTrack {
   owner: string;
   events: ChordEvent[];
   createdAt: number;
+  instrument?: Instrument; // 녹음 악기(트랙별 재생 기준). 네트워크 라운드트립 전엔 로컬에서만 보존(백엔드 컬럼 추가 전).
+  style?: string;
 }
 export interface Session {
   code: string;
@@ -53,6 +56,8 @@ export async function createSession(s: {
   bpm: number;
   owner: string;
   events: ChordEvent[];
+  instrument?: Instrument;
+  style?: string;
 }): Promise<string> {
   const res = (await req('/sessions', { method: 'POST', body: JSON.stringify(s) })) as { code: string };
   return res.code;
@@ -62,10 +67,16 @@ export async function getSession(code: string): Promise<Session> {
   return (await req('/sessions/' + encodeURIComponent(code))) as Session;
 }
 
-export async function addTrack(code: string, owner: string, events: ChordEvent[]): Promise<void> {
+export async function addTrack(
+  code: string,
+  owner: string,
+  events: ChordEvent[],
+  instrument?: Instrument,
+  style?: string,
+): Promise<void> {
   await req('/sessions/' + encodeURIComponent(code) + '/tracks', {
     method: 'POST',
-    body: JSON.stringify({ owner, events }),
+    body: JSON.stringify({ owner, events, instrument, style }),
   });
 }
 

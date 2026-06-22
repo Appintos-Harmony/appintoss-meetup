@@ -1,15 +1,27 @@
-// 로컬 곡 저장/복구 (localStorage). 합주 백엔드는 Phase 4(조건부).
+// 로컬 곡 저장/복구 (localStorage). 멀티트랙(여러 악기 레이어) 지원 + 구버전 단일 take 호환.
 import type { ChordEvent } from '../audio/chordReducer';
 import type { Instrument } from '../audio/events';
+import type { SessionTrack } from './share';
 
 export interface Song {
   id: string;
   name: string;
   bpm: number;
-  events: ChordEvent[];
   createdAt: number;
-  instrument?: Instrument; // 녹음 악기(재생·복구 기준). 구버전 곡엔 없을 수 있어 옵셔널.
+  tracks?: SessionTrack[]; // 멀티트랙(신규). 각 트랙 = owner·events·instrument·style.
+  // ↓ 구버전 단일 take 호환(읽기 전용). 신규 저장은 tracks 사용.
+  events?: ChordEvent[];
+  instrument?: Instrument;
   style?: string;
+}
+
+/** Song → 트랙 배열(구버전 단일 take는 트랙 1개로 변환). 없으면 빈 배열. */
+export function songTracks(s: Song): SessionTrack[] {
+  if (s.tracks && s.tracks.length) return s.tracks;
+  if (s.events && s.events.length) {
+    return [{ owner: '나', events: s.events, instrument: s.instrument, style: s.style, createdAt: s.createdAt }];
+  }
+  return [];
 }
 
 const KEY = 'harmony.songs';

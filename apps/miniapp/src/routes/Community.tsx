@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import type { Route } from '../App';
 import { PRELOAD, type Session } from '../lib/share';
-import { listSongs } from '../lib/storage';
+import { listSongs, songTracks } from '../lib/storage';
 import { unlockAudio, createVoice, type Voice } from '../audio/engine';
 import { normalizeEvents, type ChordEvent } from '../audio/events';
 import { tickToMs } from '../audio/transport';
@@ -21,12 +21,13 @@ function buildItems(): CommunityItem[] {
   const p = PRELOAD.tracks[0];
   if (p) items.push({ id: 'preload', title: PRELOAD.name, owner: p.owner, events: p.events, session: PRELOAD });
   for (const s of listSongs()) {
+    const tks = songTracks(s);
     items.push({
       id: s.id,
       title: s.name,
       owner: '나',
-      events: s.events,
-      session: { code: 'LOCAL-' + s.id, name: s.name, bpm: s.bpm, tracks: [{ owner: '나', events: s.events, createdAt: s.createdAt }] },
+      events: tks.flatMap((t) => t.events), // 미리듣기·길이 계산용(전체 트랙 합침)
+      session: { code: 'LOCAL-' + s.id, name: s.name, bpm: s.bpm, tracks: tks },
     });
   }
   return items;
