@@ -34,6 +34,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
   const [burst, setBurst] = useState<number | null>(null);
   const [toast, setToast] = useState('');
   const timers = useRef<number[]>([]);
+  const pausePoll = useRef(0); // 상호작용 직후 폴링이 낙관적 업데이트를 덮지 않도록
 
   const loadFeed = useCallback(async () => {
     try {
@@ -55,6 +56,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
   useEffect(() => {
     if (tab !== 'feed') return;
     const t = window.setInterval(() => {
+      if (Date.now() < pausePoll.current) return; // 방금 조작한 항목 보호
       getFeed(sort).then(setItems).catch(() => {});
     }, 5000);
     return () => window.clearInterval(t);
@@ -112,6 +114,7 @@ export function Community({ go }: { go: (r: Route) => void }) {
 
   async function toggleLike(it: FeedItem) {
     const next = !it.liked;
+    pausePoll.current = Date.now() + 4000;
     if (next) {
       setBurst(it.id);
       window.setTimeout(() => setBurst(null), 340);
@@ -121,7 +124,8 @@ export function Community({ go }: { go: (r: Route) => void }) {
         cur && cur.map((x) => (x.id === it.id ? { ...x, liked: next, likesCount: x.likesCount + (next ? 1 : -1) } : x)),
     );
     try {
-      await setLike(it.id, next);
+      const res = await setLike(it.id, next); // 서버 확정값으로 동기화
+      setItems((cur) => cur && cur.map((x) => (x.id === it.id ? { ...x, liked: res.liked, likesCount: res.likesCount } : x)));
     } catch (e) {
       setItems((cur) => cur && cur.map((x) => (x.id === it.id ? { ...x, liked: it.liked, likesCount: it.likesCount } : x)));
       flash((e as { status?: number })?.status === 503 ? '잠시 후 다시 시도해 주세요' : '좋아요 실패');
@@ -249,29 +253,33 @@ function Card({
   onDelete?: () => void;
 }) {
   return (
-    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-      <div className="track-av" data-playing={playing} style={{ background: sig(it.id) }}>♪</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="t-body" style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {it.name}
-        </div>
-        <div className="t-cap c-sub">
-          {it.owner} · {it.bpm}BPM{it.durationTicks ? ` · ${bars(it.durationTicks)}` : ''}
+    <div className="card" style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="track-av" data-playing={playing} style={{ background: sig(it.id), flex: 'none' }}>♪</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="t-body" style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {it.name}
+          </div>
+          <div className="t-cap c-sub" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {it.owner} · {it.bpm}BPM{it.durationTicks ? ` · ${bars(it.durationTicks)}` : ''}
+          </div>
         </div>
       </div>
-      <button className="chip-ghost" onClick={onPlay} aria-label="play">{playing ? '■' : '▶'}</button>
-      {!mine && (
-        <button
-          className="chip"
-          onClick={onLike}
-          style={it.liked ? { background: '#ffe3e3', color: 'var(--coral)' } : undefined}
-        >
-          <span style={burst ? { display: 'inline-block', animation: 'beat .32s var(--spring)' } : undefined}>♥</span> {it.likesCount}
-        </button>
-      )}
-      {!mine && <button className="chip-ghost" onClick={onFork}>얹기</button>}
-      {!mine && <button className="chip-ghost" onClick={onReport} aria-label="more">⋯</button>}
-      {mine && <button className="chip-ghost" onClick={onDelete}>삭제</button>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <button className="chip-ghost" onClick={onPlay}>{playing ? '■ 정지' : '▶ 듣기'}</button>
+        {!mine && (
+          <button
+            className="chip"
+            onClick={onLike}
+            style={it.liked ? { background: '#ffe3e3', color: 'var(--coral)' } : undefined}
+          >
+            <span style={burst ? { display: 'inline-block', animation: 'beat .32s var(--spring)' } : undefined}>♥</span> {it.likesCount}
+          </button>
+        )}
+        {!mine && <button className="chip-ghost" onClick={onFork}>얹기</button>}
+        {!mine && <button className="chip-ghost" onClick={onReport}>신고</button>}
+        {mine && <button className="chip-ghost" onClick={onDelete}>삭제</button>}
+      </div>
     </div>
   );
 }
