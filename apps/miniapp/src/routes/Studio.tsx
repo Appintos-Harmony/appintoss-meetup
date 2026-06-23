@@ -36,6 +36,7 @@ import {
   createSession,
   getSession,
   addTrack,
+  publishSession,
   copyText,
   readClipboardCode,
   ping,
@@ -43,7 +44,7 @@ import {
   type Session,
   type SessionTrack,
 } from '../lib/share';
-import { getNickname } from '../lib/identity';
+import { getNickname, getUserKey } from '../lib/identity';
 import { InstrumentCombo } from '../components/studio/InstrumentCombo';
 import { GestureFretboard } from '../components/studio/GestureFretboard';
 import { ChordMatrix } from '../components/studio/ChordMatrix';
@@ -957,6 +958,35 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     }
   }
 
+  // 커뮤니티에 올리기(파생): 모든 레이어 + 현재 take를 published 세션으로 공개. 가져온 곡 위면 출처(origin_code) 강제 기록.
+  async function publishDerivative() {
+    const layered = [...sessionTracks];
+    if (stateRef.current.events.length) {
+      layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
+    }
+    if (!layered.length) { flashToast('올릴 연주가 없어요'); return; }
+    // 가져온 곡(서버 code) 위에 쌓는 경우 그 code가 출처. 로컬 재료(LOCAL-…)면 출처 없음.
+    const origin = forked && !forked.code.startsWith('LOCAL') ? forked.code : undefined;
+    try {
+      const key = await getUserKey();
+      const nick = getNickname() || '익명';
+      const first = layered[0];
+      const name = origin && forked ? `${forked.name} 위에 쌓음` : '내 합주';
+      const code = await publishSession({
+        name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
+        events: first.events, instrument: first.instrument, style: first.style,
+        originCode: origin, idempotencyToken: crypto.randomUUID(),
+      });
+      for (let i = 1; i < layered.length; i++) {
+        const t = layered[i];
+        await addTrack(code, t.owner, t.events, t.instrument, t.style);
+      }
+      flashToast(origin ? '커뮤니티에 올렸어요 — 출처가 함께 남아요' : '커뮤니티에 올렸어요');
+    } catch {
+      flashToast('올리기 실패 — 네트워크 확인');
+    }
+  }
+
   async function receive() {
     let sess: Session;
     try {
@@ -1411,6 +1441,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               <span style={{ flex: 1, textAlign: 'left' }}>
                 <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>공유</span>
                 <span className="t-cap c-sub">{hasTake ? '합주 코드로 친구에게 공유' : '녹음 후 사용 가능'}</span>
+              </span>
+            </button>
+            <button className="sheet-row" disabled={(!hasTake && sessionTracks.length === 0) || busy} style={{ opacity: (hasTake || sessionTracks.length > 0) && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); void publishDerivative(); }}>
+              <span style={{ fontSize: 22 }}>🌱</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>커뮤니티에 올리기</span>
+                <span className="t-cap c-sub">{forked && !forked.code.startsWith('LOCAL') ? `${forked.name} 위에 쌓아 올리기 (출처 박힘)` : '내 합주를 보드에 공개'}</span>
               </span>
             </button>
             <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); saveCurrent(); }}>

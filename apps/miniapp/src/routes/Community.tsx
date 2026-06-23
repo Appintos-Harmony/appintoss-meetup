@@ -148,9 +148,14 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       const sessions = await Promise.all(codes.map((c) => getSession(c)));
       const tracks = sessions.flatMap((s) => s.tracks);
       if (!tracks.length) { flash('가져올 트랙이 없어요'); return; }
-      const bpm = sessions[0]?.bpm ?? 100;
-      const name = sessions.length === 1 ? (sessions[0]?.name ?? '가져온 음원') : `가져온 음원 ${sessions.length}개`;
-      onFork({ code: 'LOCAL-import', name, bpm, tracks });
+      // 단일 가져오기 = 그 곡 위에 쌓기 → 서버 code 보존(스튜디오 '커뮤니티에 올리기'가 origin_code로 사용, 출처 강제).
+      // 다중 담기 = 재료 합본(LOCAL, 출처 없음).
+      if (sessions.length === 1 && sessions[0]) {
+        onFork(sessions[0]);
+      } else {
+        const bpm = sessions[0]?.bpm ?? 100;
+        onFork({ code: 'LOCAL-import', name: `가져온 음원 ${sessions.length}개`, bpm, tracks });
+      }
     } catch {
       flash('가져오기 실패 — 잠시 후 다시');
     } finally {

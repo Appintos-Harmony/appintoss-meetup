@@ -17,6 +17,9 @@ export interface Session {
   name: string;
   bpm: number;
   tracks: SessionTrack[];
+  originCode?: string | null; // 파생 출처(원본 code). 서버 GET /sessions/:code 가 반환.
+  originName?: string | null;
+  originAuthor?: string | null;
 }
 
 // 백엔드 불가 시 데모용 프리로드(친구 트랙 — C·G·Am·F 4마디).
