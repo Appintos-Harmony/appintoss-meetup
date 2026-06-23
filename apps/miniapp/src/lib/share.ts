@@ -154,7 +154,8 @@ export async function toggleLike(code: string, authorKey: string): Promise<{ lik
   })) as { liked: boolean; count: number };
 }
 
-/** 커뮤니티에 공유(publish). origin_code가 있으면 출처가 강제로 박힌다. 반환=새 code. */
+/** 커뮤니티에 공유(publish). origin_code가 있으면 출처가 강제로 박힌다.
+ *  반환: { code, deduped }. deduped=true면 같은 곡이 이미 있어 새로 만들지 않고 기존 code를 돌려준 것(호출부는 추가 트랙 적재를 건너뛴다). */
 export async function publishSession(s: {
   name: string;
   bpm: number;
@@ -166,7 +167,7 @@ export async function publishSession(s: {
   style?: string;
   originCode?: string;
   idempotencyToken?: string;
-}): Promise<string> {
+}): Promise<{ code: string; deduped: boolean }> {
   const body: Record<string, unknown> = {
     name: s.name,
     bpm: s.bpm,
@@ -180,8 +181,8 @@ export async function publishSession(s: {
   };
   if (s.originCode) body.origin_code = s.originCode;
   if (s.idempotencyToken) body.idempotencyToken = s.idempotencyToken;
-  const res = (await req('/sessions', { method: 'POST', body: JSON.stringify(body) })) as { code: string };
-  return res.code;
+  const res = (await req('/sessions', { method: 'POST', body: JSON.stringify(body) })) as { code: string; deduped?: boolean };
+  return { code: res.code, deduped: !!res.deduped };
 }
 
 export async function getComments(code: string): Promise<Comment[]> {

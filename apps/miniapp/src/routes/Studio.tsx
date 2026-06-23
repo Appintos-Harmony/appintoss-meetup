@@ -972,16 +972,19 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const nick = getNickname() || '익명';
       const first = layered[0];
       const name = origin && forked ? `${forked.name} (이어 만든 곡)` : '내 합주';
-      const code = await publishSession({
+      const { code, deduped } = await publishSession({
         name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
         originCode: origin, idempotencyToken: randomId(),
       });
-      for (let i = 1; i < layered.length; i++) {
-        const t = layered[i];
-        await addTrack(code, t.owner, t.events, t.instrument, t.style);
+      // 파생(origin 있음)은 서버에서 dedup 우회됨. deduped는 origin 없는 자기 곡 재게시일 때만 true.
+      if (!deduped) {
+        for (let i = 1; i < layered.length; i++) {
+          const t = layered[i];
+          await addTrack(code, t.owner, t.events, t.instrument, t.style);
+        }
       }
-      flashToast(origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
+      flashToast(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
     } catch {
       flashToast('올리기 실패 — 네트워크 확인');
     }
