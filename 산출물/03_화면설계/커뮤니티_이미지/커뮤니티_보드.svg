@@ -1,0 +1,157 @@
+<svg width="100%" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 커뮤니티 보드 — 스케치/와이어프레임/목업 3단계</title><desc>커뮤니티 음원 공유 보드 화면을 스케치, 와이어프레임, 목업 순으로 한 장에 그린 발표용 명세. 상단 앱바(‹ 스튜디오, 커뮤니티, ＋올리기)와 이모지 아바타 카드(음원명-작성자, 트랙·재생수·파생수 메타, 보라 출처줄, 들어보기·담기·댓글 버튼행)를 포함.</desc>
+
+<!-- 헤더 라벨 -->
+<text x="120" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">1 · 스케치</text>
+<text x="340" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">2 · 와이어프레임</text>
+<text x="560" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">3 · 목업</text>
+
+<!-- ===================== 패널 1 : 스케치 ===================== -->
+<g transform="translate(20,40)">
+  <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+  <rect x="76" y="12" width="48" height="6" rx="3" fill="#e6e9ed"/>
+
+  <!-- 앱바(스케치 아웃라인) -->
+  <line x1="16" y1="36" x2="32" y2="28" stroke="#9aa1ab" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="16" y1="36" x2="32" y2="44" stroke="#9aa1ab" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="36" y="30" width="42" height="11" rx="3" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+  <rect x="92" y="29" width="48" height="13" rx="3" fill="#e6e9ed"/>
+  <rect x="150" y="30" width="36" height="13" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+  <line x1="16" y1="54" x2="184" y2="54" stroke="#e6e9ed" stroke-width="1"/>
+
+  <!-- 안내 카피 플레이스홀더 -->
+  <rect x="16" y="62" width="168" height="7" rx="3.5" fill="#e6e9ed"/>
+  <rect x="16" y="73" width="120" height="7" rx="3.5" fill="#e6e9ed"/>
+
+  <!-- 카드 1 (스케치) -->
+  <rect x="14" y="92" width="172" height="92" rx="10" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <circle cx="36" cy="116" r="13" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <rect x="56" y="108" width="100" height="8" rx="4" fill="#e6e9ed"/>
+  <rect x="56" y="121" width="78" height="6" rx="3" fill="#eef1f4"/>
+  <rect x="56" y="131" width="60" height="6" rx="3" fill="#eef1f4"/>
+  <rect x="22" y="152" width="62" height="20" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+  <rect x="90" y="152" width="50" height="20" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+  <rect x="146" y="152" width="32" height="20" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+
+  <!-- 카드 2 (스케치, 파생 출처줄 포함) -->
+  <rect x="14" y="194" width="172" height="104" rx="10" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <circle cx="36" cy="218" r="13" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <rect x="56" y="210" width="100" height="8" rx="4" fill="#e6e9ed"/>
+  <rect x="56" y="223" width="78" height="6" rx="3" fill="#eef1f4"/>
+  <rect x="56" y="233" width="110" height="6" rx="3" fill="#ece6fb"/>
+  <rect x="22" y="266" width="62" height="20" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+  <rect x="90" y="266" width="50" height="20" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+  <rect x="146" y="266" width="32" height="20" rx="6" fill="none" stroke="#9aa1ab" stroke-width="1.3"/>
+
+  <!-- 카드 3 부분 (스케치) -->
+  <rect x="14" y="308" width="172" height="62" rx="10" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <circle cx="36" cy="332" r="13" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <rect x="56" y="324" width="100" height="8" rx="4" fill="#e6e9ed"/>
+  <rect x="56" y="337" width="70" height="6" rx="3" fill="#eef1f4"/>
+</g>
+
+<!-- ===================== 패널 2 : 와이어프레임 ===================== -->
+<g transform="translate(240,40)">
+  <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+  <rect x="76" y="12" width="48" height="6" rx="3" fill="#e6e9ed"/>
+
+  <!-- 앱바 -->
+  <rect x="12" y="28" width="176" height="22" rx="5" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="18" y="43" font-size="11" fill="#8b95a1">‹ 스튜디오</text>
+  <text x="100" y="43" text-anchor="middle" font-size="11" font-weight="700" fill="#191f28">커뮤니티</text>
+  <rect x="150" y="32" width="36" height="14" rx="7" fill="#dfe5ec" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="168" y="42" text-anchor="middle" font-size="9" fill="#8b95a1">＋올리기</text>
+
+  <!-- 안내 라벨 -->
+  <rect x="12" y="58" width="176" height="16" rx="4" fill="#f6f8fa" stroke="#e2e7ec" stroke-width="1"/>
+  <text x="16" y="69" font-size="9" fill="#8b95a1">담아 가져오면 스튜디오에 레이어로</text>
+
+  <!-- 카드 1 (와이어) -->
+  <rect x="12" y="82" width="176" height="94" rx="9" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.2"/>
+  <circle cx="33" cy="106" r="13" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <rect x="52" y="98" width="120" height="10" rx="3" fill="#eef1f4" stroke="#c4ccd4" stroke-width="0.8"/>
+  <text x="55" y="106" font-size="8" fill="#8b95a1">음원명 – 작성자</text>
+  <text x="52" y="124" font-size="9" fill="#8b95a1">트랙 N · ▶ 재생수 · 이어 파생수</text>
+  <rect x="14" y="146" width="84" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="56" y="160" text-anchor="middle" font-size="9" fill="#8b95a1">▶ 들어보기</text>
+  <rect x="102" y="146" width="50" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="127" y="160" text-anchor="middle" font-size="9" fill="#8b95a1">＋ 담기</text>
+  <rect x="156" y="146" width="30" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="171" y="160" text-anchor="middle" font-size="9" fill="#8b95a1">💬</text>
+
+  <!-- 카드 2 (와이어, 파생 출처줄) -->
+  <rect x="12" y="184" width="176" height="106" rx="9" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.2"/>
+  <circle cx="33" cy="208" r="13" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <rect x="52" y="200" width="120" height="10" rx="3" fill="#eef1f4" stroke="#c4ccd4" stroke-width="0.8"/>
+  <text x="55" y="208" font-size="8" fill="#8b95a1">음원명 – 작성자</text>
+  <text x="52" y="226" font-size="9" fill="#8b95a1">트랙 N · ▶ 재생수 · 이어 파생수</text>
+  <rect x="52" y="232" width="130" height="13" rx="4" fill="#f1ecfb" stroke="#cdbdf0" stroke-width="1"/>
+  <text x="55" y="242" font-size="8" fill="#8b5cf6">🎵 출처 — ○○의 △△ 위에 쌓음</text>
+  <rect x="14" y="260" width="84" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="56" y="274" text-anchor="middle" font-size="9" fill="#8b95a1">▶ 들어보기</text>
+  <rect x="102" y="260" width="50" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="127" y="274" text-anchor="middle" font-size="9" fill="#8b95a1">＋ 담기</text>
+  <rect x="156" y="260" width="30" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="171" y="274" text-anchor="middle" font-size="9" fill="#8b95a1">💬</text>
+
+  <!-- 카드 3 부분 (와이어) -->
+  <rect x="12" y="298" width="176" height="68" rx="9" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.2"/>
+  <circle cx="33" cy="322" r="13" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <rect x="52" y="314" width="120" height="10" rx="3" fill="#eef1f4" stroke="#c4ccd4" stroke-width="0.8"/>
+  <text x="52" y="340" font-size="9" fill="#8b95a1">트랙 N · ▶ 재생수 · 이어 파생수</text>
+</g>
+
+<!-- ===================== 패널 3 : 목업 ===================== -->
+<g transform="translate(460,40)">
+  <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+  <rect x="76" y="12" width="48" height="6" rx="3" fill="#e6e9ed"/>
+
+  <!-- 앱바 -->
+  <text x="14" y="44" font-size="12" fill="#8b95a1">‹ 스튜디오</text>
+  <text x="105" y="44" text-anchor="middle" font-size="13" font-weight="800" fill="#191f28">커뮤니티</text>
+  <rect x="148" y="32" width="40" height="17" rx="8.5" fill="#3182f6"/>
+  <text x="168" y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">＋올리기</text>
+  <line x1="0" y1="56" x2="200" y2="56" stroke="#eef1f4" stroke-width="1"/>
+
+  <!-- 안내 카피 -->
+  <text x="14" y="71" font-size="9" fill="#8b95a1">마음에 드는 음원을 담아 가져오면</text>
+  <text x="14" y="82" font-size="9" fill="#8b95a1">내 스튜디오에 레이어로 올라가요.</text>
+
+  <!-- 카드 1 (목업 — 원곡) -->
+  <rect x="12" y="90" width="176" height="90" rx="10" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
+  <circle cx="34" cy="114" r="15" fill="#3182f622"/>
+  <text x="34" y="120" text-anchor="middle" font-size="17">🎹</text>
+  <text x="56" y="110" font-size="11" font-weight="700" fill="#191f28">여름밤 코드 <tspan font-weight="500" fill="#8b95a1">– 상혁</tspan></text>
+  <text x="56" y="126" font-size="9.5" fill="#8b95a1">트랙 3개 · ▶ 128 · 이어 4</text>
+  <rect x="14" y="148" width="86" height="24" rx="7" fill="#f2f4f6"/>
+  <text x="57" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="#191f28">▶ 들어보기</text>
+  <rect x="104" y="148" width="48" height="24" rx="7" fill="#f2f4f6"/>
+  <text x="128" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="#191f28">＋ 담기</text>
+  <rect x="156" y="148" width="30" height="24" rx="7" fill="#f2f4f6"/>
+  <text x="171" y="164" text-anchor="middle" font-size="10" fill="#8b95a1">💬 2</text>
+
+  <!-- 카드 2 (목업 — 파생곡, 담김 상태 강조) -->
+  <rect x="12" y="188" width="176" height="104" rx="10" fill="#eef5ff" stroke="#3182f6" stroke-width="2"/>
+  <circle cx="34" cy="212" r="15" fill="#8b5cf622"/>
+  <text x="34" y="218" text-anchor="middle" font-size="17">🎸</text>
+  <text x="56" y="208" font-size="11" font-weight="700" fill="#191f28">합주 ver. <tspan font-weight="500" fill="#8b95a1">– 민혁</tspan></text>
+  <text x="56" y="224" font-size="9.5" fill="#8b95a1">트랙 5개 · ▶ 47 · 이어 1</text>
+  <text x="56" y="239" font-size="9" fill="#8b5cf6">🎵 상혁의 여름밤 코드 위에 쌓음</text>
+  <rect x="14" y="262" width="86" height="24" rx="7" fill="#ffffff" stroke="#dbe0e6" stroke-width="1"/>
+  <text x="57" y="278" text-anchor="middle" font-size="10" font-weight="600" fill="#191f28">▶ 들어보기</text>
+  <rect x="104" y="262" width="48" height="24" rx="7" fill="#3182f6"/>
+  <text x="128" y="278" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">✓ 담음</text>
+  <rect x="156" y="262" width="30" height="24" rx="7" fill="#ffffff" stroke="#dbe0e6" stroke-width="1"/>
+  <text x="171" y="278" text-anchor="middle" font-size="10" fill="#8b95a1">💬 5</text>
+
+  <!-- 카드 3 부분 (목업) -->
+  <rect x="12" y="300" width="176" height="66" rx="10" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
+  <circle cx="34" cy="324" r="15" fill="#15c47e22"/>
+  <text x="34" y="330" text-anchor="middle" font-size="17">🎵</text>
+  <text x="56" y="320" font-size="11" font-weight="700" fill="#191f28">로파이 비트 <tspan font-weight="500" fill="#8b95a1">– 록빈</tspan></text>
+  <text x="56" y="336" font-size="9.5" fill="#8b95a1">트랙 2개 · ▶ 89 · 이어 0</text>
+
+  <!-- 하단 가져오기 바(담은 항목 있을 때) -->
+  <rect x="12" y="378" width="176" height="30" rx="9" fill="#3182f6"/>
+  <text x="100" y="397" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">🎚 가져오기 (1개) → 스튜디오에 얹기</text>
+</g>
+</svg>

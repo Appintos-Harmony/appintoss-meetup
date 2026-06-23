@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import type { Route } from '../App';
 import {
   unlockAudio,
@@ -12,12 +12,14 @@ import {
   upNote,
   triggerHit,
   createVoice,
+  audioNow,
   type Voice,
 } from '../audio/engine';
 import { chordReducer, initialChordState, type ChordState, type Source, type ChordEvent } from '../audio/chordReducer';
 import { drumKey, normalizeEvents, type Instrument, type DrumPiece } from '../audio/events';
 import {
   BEATS_PER_BAR,
+  TICKS_PER_BEAT,
   BPM,
   msToTick,
   tickToMs,
@@ -28,11 +30,14 @@ import {
 } from '../audio/transport';
 import { saveSong, newSongId, listSongs, songTracks, type Song } from '../lib/storage';
 import { loopEvents } from '../lib/loop';
-import { initHandTracking, startCamera, stopCamera, detect, type GestureMode, type Pt } from '../audio/gesture';
+import { initHandTracking, initFaceDetection, detectFace, startCamera, stopCamera, detect, type GestureMode, type Pt } from '../audio/gesture';
+import { detectFx, playFx, resetFx, type FxHit, type FxResult } from '../audio/gestureFx';
+import { getFxOn, setFxOn } from '../lib/settings';
 import {
   createSession,
   getSession,
   addTrack,
+  publishSession,
   copyText,
   readClipboardCode,
   ping,
@@ -40,8 +45,9 @@ import {
   type Session,
   type SessionTrack,
 } from '../lib/share';
-import { getNickname } from '../lib/identity';
+import { getNickname, getUserKey, randomId } from '../lib/identity';
 import { InstrumentCombo } from '../components/studio/InstrumentCombo';
+import { GestureFretboard } from '../components/studio/GestureFretboard';
 import { ChordMatrix } from '../components/studio/ChordMatrix';
 import { NotePadGrid } from '../components/studio/NotePadGrid';
 import { DrumPad } from '../components/studio/DrumPad';
@@ -107,6 +113,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [metroOn, setMetroOn] = useState(false);
   const [beat, setBeat] = useState(-1);
   const [hasTake, setHasTake] = useState(false);
+  const [playing, setPlaying] = useState(false); // take 재생 중(재생바)
+  const [playMs, setPlayMs] = useState(0); // 재생바 현재 위치(ms)
+  const [takeMs, setTakeMs] = useState(0); // take 총 길이(ms)
   const [toast, setToast] = useState('');
   const [input, setInput] = useState<Input>('touch');
   const [camMsg, setCamMsg] = useState('');
@@ -114,6 +123,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [baseOwner, setBaseOwner] = useState('');
   const [, setTrackCount] = useState(0); // 세션 폴링 갱신 트리거(표시는 sessionTracks.length 사용)
   const [sessionTracks, setSessionTracks] = useState<SessionTrack[]>([]);
+  const currentSongRef = useRef<{ id: string; name: string } | null>(null); // 이어하기로 연 내 곡(저장 시 같은 id·이름으로 갱신). 새 곡/커뮤니티 포크면 null.
   const [jamming, setJamming] = useState(false);
   const [instrument, setInstrument] = useState<Instrument>(initVoice.instrument);
   const [style, setStyle] = useState<string>(initVoice.style);
@@ -131,10 +141,17 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [fps, setFps] = useState(0);
   const [latency, setLatency] = useState<number | null>(null);
   const [landmarks, setLandmarks] = useState<Pt[] | null>(null);
+  const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; kind: FxHit['kind'] }[]>([]); // 효과 스파클(손/머리 주변)
+  const [effectsOn, setEffectsOnState] = useState<boolean>(() => getFxOn()); // 제스처 효과음 on/off
   const [flashPiece, setFlashPiece] = useState<DrumPiece | null>(null); // 드럼 타격 시 모양/패드 깜빡임
   const [hands, setHands] = useState<1 | 2>(1); // 제스처 한 손/양손
   const [gestureChords, setGestureChords] = useState<string[]>([]); // 제스처로 현재 울리는 코드(존 하이라이트)
   const [showMore, setShowMore] = useState(false); // 하단 '더보기' 시트(부차 액션 모음)
+  const [nameModal, setNameModal] = useState<null | 'save' | 'publish'>(null); // 곡 이름 입력 모달(저장/커뮤니티 올리기 공통)
+  const [songName, setSongName] = useState('');
+  const [monitorLoop, setMonitorLoop] = useState(false); // 녹음 중 합주(레이어) 반복 재생 여부(기본 꺼짐)
+  const [monMs, setMonMs] = useState(0); // 모니터 재생 위치(녹음 중 진행 바)
+  const [monDur, setMonDur] = useState(0); // 모니터(합주) 총 길이
   const [brightness, setBrightness] = useState(1); // 개발자 모드 오버레이 창 자체의 밝기/투명도
   const [modeSheet, setModeSheet] = useState(false); // 연주법(코드/멜로디) 시트
   const [inputSheet, setInputSheet] = useState(false); // 입력 방식(터치/제스처) 시트
@@ -157,7 +174,14 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const playTimersRef = useRef<number[]>([]);
   const takeVoiceRef = useRef<{ instrument: Instrument; style: string }>({ instrument: initVoice.instrument, style: initVoice.style }); // 이 take를 녹음한 악기(재생·저장 기준)
   const playVoiceRef = useRef<Voice | null>(null); // 단일 take 재생용 보이스(녹음 악기로 생성)
-  const monitorRef = useRef<{ voices: Voice[]; timers: number[] }>({ voices: [], timers: [] }); // 녹음 중 기존 레이어 모니터링
+  const playRafRef = useRef(0); // 재생바 진행 rAF
+  const playStartPerfRef = useRef(0); // 재생 시작 시각(performance.now)
+  const playFromMsRef = useRef(0); // 재생 시작 위치(ms)
+  const barRef = useRef<HTMLDivElement>(null); // 재생바 트랙(스크럽 좌표 기준)
+  const barDragRef = useRef(false);
+  const wasPlayingRef = useRef(false); // 스크럽 시작 시 재생 중이었나(놓으면 재개)
+  const seekMsRef = useRef(0); // 드래그 중 목표 위치
+  const monitorRef = useRef<{ voices: Voice[]; timers: number[]; raf: number; loopTimer: number; startPerf: number }>({ voices: [], timers: [], raf: 0, loopTimer: 0, startPerf: 0 }); // 녹음 중 기존 레이어 모니터링(반복·진행도)
   const loopOriginalRef = useRef<ChordEvent[] | null>(null); // 구간 반복 적용 전 원본(해제용)
   const selectedRef = useRef<string[]>(selected);
   selectedRef.current = selected;
@@ -179,6 +203,14 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   ]);
   const twoHandRef = useRef<(string | null)[]>([null, null]); // 양손 코드: 손별 현재 코드
   const flashTimerRef = useRef(0);
+  const faceRef = useRef<Pt | null>(null); // 헤드뱅잉용 캐시된 얼굴 중심
+  const fxFrameRef = useRef(0); // 효과 루프 프레임 카운터(얼굴 검출 3프레임마다)
+  const sparkleIdRef = useRef(0);
+  const effectsOnRef = useRef(effectsOn);
+  effectsOnRef.current = effectsOn;
+  const monitorLoopRef = useRef(monitorLoop); // 반복 토글의 최신값(스케줄러가 읽음)
+  monitorLoopRef.current = monitorLoop;
+  const chordPointerRef = useRef<Set<number>>(new Set()); // 터치 코드 패드: 눌린 포인터 추적(지연-down 레이스·취소 방지)
 
   useEffect(() => {
     onBeat((beatInBar, bar) => {
@@ -199,11 +231,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       stopJam(); // 합주 재생 보이스도 언마운트 시 정리(잔류음·노드 누수 방지)
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       stopCamera(streamRef.current);
+      allOff(); // 라우트 이탈/언마운트 시 보유 코드·멜로디 잔류음 해제(stuck 방지)
     };
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
+    currentSongRef.current = { id: loaded.id, name: loaded.name }; // 이어하기 = 이 곡을 저장 시 갱신
     const tks = songTracks(loaded);
     if (tks.length > 1) {
       // 멀티트랙 곡: 전부 레이어로 올리고 새 take는 비움(이어서 추가·합주)
@@ -229,12 +263,15 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     if (!forked) return;
     const base = forked.tracks[0];
     if (!base) return;
+    currentSongRef.current = null; // 커뮤니티 포크는 새 파생곡 → 저장 시 새 곡으로
     clearMelody();
     // 받은 트랙은 sessionTracks 레이어로만 둔다. take는 비워 내 연주를 새로 녹음 → 얹기.
     // (take에도 base를 넣으면 합주 듣기에서 base가 두 번 재생됨 — R34-001)
     stateRef.current = { ...initialChordState };
     setHasTake(false);
-    setSessionCode(forked.code.startsWith('LOCAL') ? null : forked.code);
+    // 커뮤니티에서 가져온 곡은 '로컬 파생 빌드'다 — sessionCode를 두지 않는다.
+    // (출처는 publish 때 forked.code에서 따로 가져옴.) 그래야 레이어 삭제 가능 + 폴링이 로컬 레이어를 덮지 않음 + 원곡 서버 미오염.
+    setSessionCode(null);
     setBaseOwner(base.owner);
     setTrackCount(forked.tracks.length);
     setSessionTracks(forked.tracks);
@@ -243,6 +280,14 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     flashToast(`${base.owner}님 트랙을 얹을 준비 완료`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forked]);
+
+  // take 길이 갱신(재생바 총 길이). 녹음 종료(phase)·편집·반복·레이어 변경 시 재계산.
+  useEffect(() => {
+    const evs = stateRef.current.events;
+    setTakeMs(evs.length ? tickToMs(evs.reduce((m, e) => Math.max(m, e.tick), 0)) : 0);
+    setPlayMs(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hasTake, looped, editing, sessionTracks]);
 
   // 녹음(recording) 진입 시 기존 레이어 모니터링 재생, 종료 시 정리.
   useEffect(() => {
@@ -406,38 +451,83 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       playVoiceRef.current.dispose();
       playVoiceRef.current = null;
     }
+    if (playRafRef.current) {
+      cancelAnimationFrame(playRafRef.current);
+      playRafRef.current = 0;
+    }
+    setPlaying(false); // 재생바 정지(위치 playMs는 유지 = 일시정지)
   }
 
   // 녹음 중 기존 레이어를 함께 들려줌(같이 연주하도록). 녹음 시작 시점 기준으로 스케줄.
   function stopMonitor() {
-    monitorRef.current.timers.forEach((id) => window.clearTimeout(id));
-    monitorRef.current.voices.forEach((v) => v.dispose());
-    monitorRef.current = { voices: [], timers: [] };
+    const m = monitorRef.current;
+    if (m.raf) cancelAnimationFrame(m.raf);
+    if (m.loopTimer) window.clearTimeout(m.loopTimer);
+    m.timers.forEach((id) => window.clearTimeout(id));
+    m.voices.forEach((v) => v.dispose());
+    monitorRef.current = { voices: [], timers: [], raf: 0, loopTimer: 0, startPerf: 0 };
+    setMonMs(0);
+    setMonDur(0);
   }
+
+  // 합주(레이어) 한 패스를 오디오 클럭으로 스케줄(t0~endAt). 패스 끝에 미해제(on-only) 노트를 off로 정리 → 반복 누적·stuck 방지(#4).
+  function scheduleMonitorPass(voices: Voice[], t0: number, endAt: number) {
+    sessionTracks.forEach((t, vi) => {
+      const v = voices[vi];
+      if (!v) return;
+      const open = new Set<string>(); // 이 패스에서 아직 off 안 된 코드/멜로디
+      for (const ev of normalizeEvents(t.events)) {
+        const at = t0 + tickToMs(ev.tick) / 1000;
+        if (ev.kind === 'drum') v.hit(ev.piece, at);
+        else if (ev.kind === 'melody') {
+          if (ev.phase === 'on') { v.on(ev.note, at); open.add(ev.note); }
+          else { v.off(ev.note, at); open.delete(ev.note); }
+        } else {
+          if (ev.phase === 'on') { v.on(ev.chord, at); open.add(ev.chord); }
+          else { v.off(ev.chord, at); open.delete(ev.chord); }
+        }
+      }
+      for (const name of open) v.off(name, endAt); // 녹음 정지 시 잡고 있던 코드 등 미해제 노트를 패스 끝에서 해제
+    });
+  }
+
   function startMonitor() {
     stopMonitor();
-    const voices: Voice[] = [];
-    const timers: number[] = [];
-    for (const t of sessionTracks) {
+    let maxTick = 0;
+    for (const t of sessionTracks) for (const ev of t.events) if (ev.tick > maxTick) maxTick = ev.tick;
+    if (maxTick <= 0 || !sessionTracks.length) return;
+    // 루프 길이를 마디 그리드에 정렬(메트로놈과 드리프트 방지, #3).
+    const barTicks = BEATS_PER_BAR * TICKS_PER_BEAT;
+    const loopTicks = Math.ceil(maxTick / barTicks) * barTicks;
+    const dur = tickToMs(loopTicks);
+    const durSec = dur / 1000;
+    const voices = sessionTracks.map((t) => {
       const inst = t.instrument ?? inferInstrument(t.events);
-      const v = createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
-      voices.push(v);
-      for (const ev of normalizeEvents(t.events)) {
-        const ms = tickToMs(ev.tick);
-        const id = window.setTimeout(() => {
-          if (ev.kind === 'drum') v.hit(ev.piece);
-          else if (ev.kind === 'melody') {
-            if (ev.phase === 'on') v.on(ev.note);
-            else v.off(ev.note);
-          } else {
-            if (ev.phase === 'on') v.on(ev.chord);
-            else v.off(ev.chord);
-          }
-        }, ms);
-        timers.push(id);
-      }
-    }
-    monitorRef.current = { voices, timers };
+      return createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
+    });
+    const t0Audio = audioNow(); // 단일 오디오 앵커 — 모든 패스를 누적 절대시각으로 스케줄(audioNow 재읽기 금지 = 드리프트 방지, #3)
+    scheduleMonitorPass(voices, t0Audio, t0Audio + durSec);
+    const startPerf = performance.now();
+    monitorRef.current = { voices, timers: [], raf: 0, loopTimer: 0, startPerf };
+    setMonDur(dur);
+    setMonMs(0);
+    // 진행 바(녹음 중 합주 위치). 반복이면 wrap, 아니면 끝에서 멈춤.
+    const tick = () => {
+      const el = performance.now() - startPerf;
+      setMonMs(monitorLoopRef.current ? el % dur : Math.min(el, dur));
+      monitorRef.current.raf = requestAnimationFrame(tick);
+    };
+    monitorRef.current.raf = requestAnimationFrame(tick);
+    // 반복: 누적 절대 오디오시각(t0Audio + pass*durSec)으로 다음 패스 스케줄. 토글 꺼지면 중단.
+    let pass = 1;
+    const loopNext = () => {
+      if (!monitorLoopRef.current) return;
+      const passStart = t0Audio + pass * durSec;
+      scheduleMonitorPass(monitorRef.current.voices, passStart, passStart + durSec);
+      pass += 1;
+      monitorRef.current.loopTimer = window.setTimeout(loopNext, dur);
+    };
+    if (monitorLoopRef.current) monitorRef.current.loopTimer = window.setTimeout(loopNext, dur);
   }
 
   function shiftOctave(d: number) {
@@ -448,6 +538,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   function switchMode(m: PlayMode) {
     if (m === playMode || instrument === 'drum') return;
     allOff();
+    releaseTwoHand();
     soundingRef.current = null;
     setActive(null);
     clearMelody();
@@ -461,6 +552,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       return;
     }
     allOff();
+    releaseTwoHand();
     soundingRef.current = null;
     setActive(null);
     clearMelody();
@@ -498,19 +590,66 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     setHasTake(true);
   }
 
-  // 제스처 루프: 코드(지속음) / 드럼(상승엣지 타격). 한 손/양손(최대 2).
+  // 효과 스파클 1개 띄움(자동 소멸). 동시 최대 ~9개.
+  function spawnSparkle(h: FxHit) {
+    const id = ++sparkleIdRef.current;
+    setSparkles((s) => [...s.slice(-8), { id, x: h.x, y: h.y, kind: h.kind }]);
+    window.setTimeout(() => setSparkles((s) => s.filter((p) => p.id !== id)), 650);
+  }
+
+  function toggleEffects() {
+    setEffectsOnState((on) => {
+      const next = !on;
+      setFxOn(next);
+      if (!next) {
+        resetFx();
+        faceRef.current = null;
+        setSparkles([]);
+      }
+      return next;
+    });
+  }
+
+  // 양손(직접 발음) 코드 잔류음 해제. 모든 정리 길목에서 호출(경로별 비대칭 누락 방지).
+  // 양손 코드는 reducer를 우회해 chordOn으로 직접 울리므로 upChord('gesture')로는 안 꺼짐 → 직접 chordOff 필요.
+  function releaseTwoHand() {
+    twoHandRef.current.forEach((c) => c && chordOff(c));
+    twoHandRef.current = [null, null];
+  }
+
+  // 제스처 루프: 코드(지속음) / 드럼(상승엣지 타격) + 효과(흔들기/박수/헤드뱅잉, 모든 모드 공통).
   function loop() {
     const v = videoRef.current;
     if (v && v.readyState >= 2) {
       const mirror = facingRef.current === 'user';
       const maxHands = handsRef.current;
-      if (drumModeRef.current) {
-        const frames = detect(v, performance.now(), { zoneCount: 1, mode: gestureModeRef.current, mirror }).slice(0, maxHands);
-        if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
+      const now = performance.now();
+      const drumOn = drumModeRef.current;
+      const zones = drumOn ? [] : selectedRef.current.slice(0, fullscreenRef.current ? GESTURE_ZONES_FULL : GESTURE_ZONES);
+      const zoneCount = drumOn ? 1 : Math.max(1, zones.length);
+      const frames = detect(v, now, { zoneCount, mode: gestureModeRef.current, mirror }).slice(0, maxHands);
+      if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
+
+      // ---- 효과 감지(토글 ON일 때만). handWaving = '팔랑팔랑 흔드는 중' → 1명 모드 연주 억제 판단. ----
+      const solo = maxHands === 1; // 한손 = 1명, 양손 = 2명+
+      fxFrameRef.current = (fxFrameRef.current + 1) % 3;
+      let fx: FxResult | null = null;
+      if (effectsOnRef.current) {
+        if (fxFrameRef.current === 0) faceRef.current = detectFace(v, now); // 얼굴은 3프레임마다(부하 절감)
+        fx = detectFx(frames, faceRef.current, now);
+      } else {
+        faceRef.current = null;
+      }
+      const waving0 = fx?.handWaving[0] ?? false;
+      const waving1 = fx?.handWaving[1] ?? false;
+
+      // ---- 음악: 드럼(타격) / 코드(지속). 1명 모드는 흔드는 중이면 연주 억제(효과와 안 겹치게). ----
+      if (drumOn) {
         for (let i = 0; i < 2; i++) {
           const f = frames[i];
           let piece: DrumPiece | null = null;
-          if (f && f.active && f.pos) {
+          const suppress = solo && (i === 0 ? waving0 : waving1);
+          if (!suppress && f && f.active && f.pos) {
             const hx = mirror ? 1 - f.pos.x : f.pos.x;
             piece = nearestDrumPiece(hx, f.pos.y);
           }
@@ -518,35 +657,43 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           if (piece !== null && (!prev.active || prev.piece !== piece)) hitDrum(piece, 'gesture');
           drumPrevRef.current[i] = { active: piece !== null, piece };
         }
+      } else if (solo) {
+        const f = frames[0];
+        if (!waving0 && f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
+        else upChord('gesture'); // 흔드는 중이거나 비활성 → 연주 억제
+        const a = stateRef.current.activeChord;
+        updateGestureChords(a ? [a] : []);
+        twoHandRef.current = [null, null];
       } else {
-        const zones = selectedRef.current.slice(0, fullscreenRef.current ? GESTURE_ZONES_FULL : GESTURE_ZONES);
-        const frames = detect(v, performance.now(), { zoneCount: Math.max(1, zones.length), mode: gestureModeRef.current, mirror }).slice(0, maxHands);
-        if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
-        if (maxHands === 1) {
-          const f = frames[0];
-          if (f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
-          else upChord('gesture');
-          const a = stateRef.current.activeChord;
-          updateGestureChords(a ? [a] : []);
-          twoHandRef.current = [null, null];
-        } else {
-          for (let i = 0; i < 2; i++) {
-            const f = frames[i];
-            const target = f && f.active && f.zone !== null && f.zone < zones.length ? zones[f.zone] : null;
-            const cur = twoHandRef.current[i];
-            if (target !== cur) {
-              if (cur) {
-                chordOff(cur);
-                recordRaw(cur, 'off');
-              }
-              if (target) {
-                chordOn(target);
-                recordRaw(target, 'on');
-              }
-              twoHandRef.current[i] = target;
+        for (let i = 0; i < 2; i++) {
+          const f = frames[i];
+          const target = f && f.active && f.zone !== null && f.zone < zones.length ? zones[f.zone] : null;
+          const cur = twoHandRef.current[i];
+          if (target !== cur) {
+            if (cur) {
+              chordOff(cur);
+              recordRaw(cur, 'off');
             }
+            if (target) {
+              chordOn(target);
+              recordRaw(target, 'on');
+            }
+            twoHandRef.current[i] = target;
           }
-          updateGestureChords(twoHandRef.current.filter((c): c is string => !!c));
+        }
+        updateGestureChords(twoHandRef.current.filter((c): c is string => !!c));
+      }
+
+      // ---- 효과 발음/스파클 ----
+      // 2명+(양손): 연주와 겹쳐도 OK. 1명(한손): 안 겹치게 — 탬버린은 흔들 때(연주 이미 억제됨)만,
+      // 헤드뱅잉은 코드 안 울릴 때만, 박수는 양손 전용이라 1명선 발생 안 함.
+      if (fx) {
+        const chordActive = stateRef.current.activeChord !== null;
+        for (const h of fx.hits) {
+          if (!solo || h.kind === 'tambourine' || (h.kind === 'cute' && !chordActive)) {
+            playFx(h.kind);
+            spawnSparkle(h);
+          }
         }
       }
     }
@@ -559,20 +706,25 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     stopCamera(streamRef.current);
     streamRef.current = null;
     setLandmarks(null);
+    resetFx();
+    faceRef.current = null;
+    setSparkles([]);
     drumPrevRef.current = [
       { active: false, piece: null },
       { active: false, piece: null },
     ];
-    twoHandRef.current = [null, null];
+    releaseTwoHand(); // 양손 보유 코드 잔류음 정리(selectTouch·제스처/카메라 실패 폴백 전부 이 길목 통과)
     setGestureChords([]);
   }
 
   async function selectGesture() {
     if (input === 'gesture') return;
     setCamMsg('카메라 준비 중…');
+    upChord('touch'); // 진입 전 touch 코드 잔류 해제(gesture up은 source 불일치로 못 끔 → stuck 방지)
     try {
       await ensureAudio();
       await initHandTracking();
+      void initFaceDetection(); // 헤드뱅잉용(베스트에포트 — 실패해도 손 효과·연주는 진행)
       const v = videoRef.current;
       if (!v) throw new Error('no video');
       streamRef.current = await startCamera(v, facing);
@@ -652,43 +804,114 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     }
   }
 
-  function scheduleEvents(events: SessionTrack['events'], voices: { chord: Voice; melody: Voice; drum: Voice }): number {
+  function scheduleEvents(events: SessionTrack['events'], voices: { chord: Voice; melody: Voice; drum: Voice }, fromMs = 0): number {
     let maxMs = 0;
+    const t0 = audioNow(); // 오디오 클럭 기준 — 샘플정확(setTimeout 지터 제거 → 레이어 싱크 타이트)
     for (const ev of normalizeEvents(events)) {
       const ms = tickToMs(ev.tick);
       if (ms > maxMs) maxMs = ms;
-      const id = window.setTimeout(() => {
-        if (ev.kind === 'drum') voices.drum.hit(ev.piece);
-        else if (ev.kind === 'melody') {
-          if (ev.phase === 'on') voices.melody.on(ev.note);
-          else voices.melody.off(ev.note);
-        } else {
-          if (ev.phase === 'on') voices.chord.on(ev.chord);
-          else voices.chord.off(ev.chord);
-        }
-      }, ms);
-      playTimersRef.current.push(id);
+      if (ms < fromMs - 1) continue; // 스크럽: 이미 지난 구간 스킵(현재 위치부터)
+      const at = t0 + (ms - fromMs) / 1000;
+      if (ev.kind === 'drum') voices.drum.hit(ev.piece, at);
+      else if (ev.kind === 'melody') {
+        if (ev.phase === 'on') voices.melody.on(ev.note, at);
+        else voices.melody.off(ev.note, at);
+      } else {
+        if (ev.phase === 'on') voices.chord.on(ev.chord, at);
+        else voices.chord.off(ev.chord, at);
+      }
     }
     return maxMs;
   }
 
-  async function play() {
+  // 현재 take 길이(ms). 재생바 총 길이.
+  function takeDurationMs(): number {
+    const evs = stateRef.current.events;
+    if (!evs.length) return 0;
+    return tickToMs(evs.reduce((m, e) => Math.max(m, e.tick), 0));
+  }
+
+  // take를 fromMs 위치부터 '녹음한 악기'로 재생 + 빨간 재생바 진행(rAF).
+  async function playFrom(fromMs: number) {
     await ensureAudio();
     stopPlayback();
     stopJam();
     allOff();
     soundingRef.current = null;
     clearMelody();
-    // take를 '녹음한 악기'의 보이스로 재생(현재 선택 악기와 무관 — 전환해도 원래 소리 유지).
+    const total = takeDurationMs();
+    setTakeMs(total);
+    if (total <= 0) return;
+    const start = Math.max(0, Math.min(fromMs, total));
     const voice = createVoice(takeVoiceRef.current.instrument, takeVoiceRef.current.style);
     playVoiceRef.current = voice;
-    const maxMs = scheduleEvents(stateRef.current.events, { chord: voice, melody: voice, drum: voice });
+    scheduleEvents(stateRef.current.events, { chord: voice, melody: voice, drum: voice }, start);
     playTimersRef.current.push(
       window.setTimeout(() => {
         voice.dispose();
         if (playVoiceRef.current === voice) playVoiceRef.current = null;
-      }, maxMs + 400),
+      }, total - start + 400),
     );
+    playFromMsRef.current = start;
+    playStartPerfRef.current = performance.now();
+    setPlaying(true);
+    setPlayMs(start);
+    const tick = () => {
+      const t = playFromMsRef.current + (performance.now() - playStartPerfRef.current);
+      if (t >= total) {
+        setPlayMs(total); // 끝에서 멈춤(다음 재생 시 처음부터)
+        setPlaying(false);
+        if (playRafRef.current) {
+          cancelAnimationFrame(playRafRef.current);
+          playRafRef.current = 0;
+        }
+        return;
+      }
+      setPlayMs(t);
+      playRafRef.current = requestAnimationFrame(tick);
+    };
+    playRafRef.current = requestAnimationFrame(tick);
+  }
+
+  function togglePlay() {
+    if (playing) {
+      stopPlayback(); // 일시정지(위치 유지)
+      return;
+    }
+    void playFrom(playMs >= takeMs ? 0 : playMs); // 끝까지 갔으면 처음부터
+  }
+
+  // 재생바 스크럽(탭/드래그로 위치 이동).
+  function posFromX(clientX: number): number {
+    const el = barRef.current;
+    if (!el || takeMs <= 0) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * takeMs;
+  }
+  function onBarDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (takeMs <= 0) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* 캡처 미지원 무시 */
+    }
+    barDragRef.current = true;
+    wasPlayingRef.current = playing;
+    if (playing) stopPlayback(); // 드래그 중 오디오 멈춤
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!barDragRef.current) return;
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarUp() {
+    if (!barDragRef.current) return;
+    barDragRef.current = false;
+    if (wasPlayingRef.current) void playFrom(seekMsRef.current); // 재생 중이었으면 새 위치부터 재개
   }
 
   function stopJam() {
@@ -723,15 +946,32 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     });
   }
 
-  // 현재 프로젝트(모든 레이어 + 현재 take)를 멀티트랙 곡으로 저장.
-  function saveCurrent() {
+  // 모든 레이어 + 현재 take를 합친 멀티트랙(저장·올리기 공통 빌더).
+  function buildLayered(): SessionTrack[] {
     const layered = [...sessionTracks];
     if (stateRef.current.events.length) {
       layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
     }
+    return layered;
+  }
+
+  // 저장 = 이름 입력 모달을 연다(자동 '내 곡 N' 대신 사용자가 지정). 이어하기 곡이면 기존 이름을 채운다.
+  function openSave() {
+    if (!buildLayered().length) { flashToast('저장할 연주가 없어요'); return; }
+    const cur = currentSongRef.current;
+    setSongName(cur ? cur.name : `내 곡 ${listSongs().length + 1}`);
+    setNameModal('save');
+  }
+  function doSave() {
+    const layered = buildLayered();
     if (!layered.length) return;
-    const name = `내 곡 ${listSongs().length + 1}`;
-    saveSong({ id: newSongId(), name, bpm: BPM, createdAt: Date.now(), tracks: layered });
+    // 이어하기로 연 곡이면 같은 id로 갱신(원곡 보존), 아니면 새 곡. 빈 이름이면 이어하기는 기존 이름 유지(#11), 새 곡은 자동명.
+    const cur = currentSongRef.current;
+    const name = songName.trim() || (cur ? cur.name : `내 곡 ${listSongs().length + 1}`);
+    const id = cur ? cur.id : newSongId();
+    saveSong({ id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
+    currentSongRef.current = { id, name };
+    setNameModal(null);
     flashToast(`'${name}' 저장됨 (트랙 ${layered.length})`);
   }
 
@@ -790,6 +1030,44 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     }
   }
 
+  // 커뮤니티에 올리기 = 이름 입력 모달. 가져온 곡 위면 출처(origin_code) 강제 기록.
+  function openPublish() {
+    if (!buildLayered().length) { flashToast('올릴 연주가 없어요'); return; }
+    const cur = currentSongRef.current;
+    const origin = forked && !forked.code.startsWith('LOCAL') ? forked.code : undefined;
+    setSongName(cur ? cur.name : (origin && forked ? `${forked.name} (이어 만든 곡)` : '내 합주'));
+    setNameModal('publish');
+  }
+  async function doPublish() {
+    const layered = buildLayered();
+    if (!layered.length) return;
+    const name = songName.trim() || '내 합주';
+    // 가져온 곡(서버 code) 위에 쌓는 경우 그 code가 출처. 로컬 재료(LOCAL-…)면 출처 없음.
+    const origin = forked && !forked.code.startsWith('LOCAL') ? forked.code : undefined;
+    setNameModal(null);
+    try {
+      const key = await getUserKey();
+      const nick = getNickname() || '익명';
+      const first = layered[0];
+      const { code, deduped } = await publishSession({
+        name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
+        events: first.events, instrument: first.instrument, style: first.style,
+        originCode: origin, trackCount: layered.length, idempotencyToken: randomId(),
+      });
+      // 파생(origin 있음)은 서버에서 dedup 우회됨. deduped는 origin 없는 자기 곡 재게시일 때만 true.
+      if (!deduped) {
+        for (let i = 1; i < layered.length; i++) {
+          const t = layered[i];
+          await addTrack(code, t.owner, t.events, t.instrument, t.style, key); // 공개 세션 소유자 검증용 키
+        }
+      }
+      flashToast(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
+    } catch (e) {
+      const m = e instanceof Error ? e.message : '';
+      flashToast(m.includes('400') ? '곡 이름에 연락처·링크는 넣을 수 없어요' : '올리기 실패 — 네트워크 확인');
+    }
+  }
+
   async function receive() {
     let sess: Session;
     try {
@@ -811,6 +1089,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     const base = pending.tracks[0];
     clearMelody();
     // 받은 트랙=레이어(sessionTracks)로만. take는 비움 → 내 악기로 새로 녹음해 얹는다(R34-001 이중재생 방지).
+    // 친구 세션으로 컨텍스트 전환이므로 곡 신원도 끊는다 — 저장 시 새 곡으로(이어하던 내 곡 id 덮어쓰기 방지, #1).
+    currentSongRef.current = null;
     stateRef.current = { ...initialChordState };
     setHasTake(false);
     setSessionCode(pending.code);
@@ -850,6 +1130,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   }
 
   const busy = phase !== 'idle';
+  const playPct = takeMs > 0 ? Math.min(100, (playMs / takeMs) * 100) : 0; // 재생바 진행률
+  const fmtMs = (ms: number) => {
+    const s = Math.max(0, Math.round(ms / 1000));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
   const recording = phase === 'recording';
   const countin = phase === 'countin';
   const drumMode = instrument === 'drum';
@@ -879,10 +1164,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   const ctlChip: CSSProperties = { background: 'rgba(255,255,255,.92)', color: 'var(--text)', fontSize: 13, padding: '8px 12px' };
   const switchHands = () => {
-    setHands((h) => (h === 1 ? 2 : 1));
-    twoHandRef.current.forEach((c) => c && chordOff(c)); // 잔류음 정리
-    twoHandRef.current = [null, null];
-    upChord('gesture');
+    const next: 1 | 2 = hands === 1 ? 2 : 1;
+    handsRef.current = next; // 다음 루프 틱부터 새 모드로 동작(이전 분기 stale 재공격 방지)
+    setHands(next);
+    releaseTwoHand();
+    upChord('gesture'); // 1손 reducer 경로 해제
     setGestureChords([]);
   };
   const gestureControls = (
@@ -894,6 +1180,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         {camFull && <button className="chip" style={ctlChip} onClick={() => setLandscape((l) => !l)}>⟳ {landscape ? '세로' : '가로'}</button>}
         <button className="chip" style={ctlChip} onClick={switchHands}>{hands === 2 ? '🙌 양손' : '🤚 한손'}</button>
         <button className="chip" style={ctlChip} onClick={() => setGestureMode((g) => (g === 'finger' ? 'palm' : 'finger'))}>{gestureMode === 'finger' ? '☝ 손가락' : '✋ 손바닥'}</button>
+        <button className="chip" style={effectsOn ? { ...ctlChip, background: 'var(--blue)', color: '#fff' } : ctlChip} onClick={toggleEffects}>{effectsOn ? '✨ 효과 ON' : '✨ 효과 OFF'}</button>
         <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.max(1, Math.round((z - 0.25) * 100) / 100))}>➖</button>
         <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100))}>➕</button>
         <button className="chip" style={ctlChip} onClick={() => void switchCamera()}>🔄</button>
@@ -950,8 +1237,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             );
           })}
         </div>
+      ) : instrument === 'guitar' || instrument === 'bass' ? (
+        /* 기타/베이스: 투명 실루엣 + 프렛 칸(C | F | Am | G) + 현 진동 */
+        <GestureFretboard zoneCount={zoneN} selected={selected} active={gestureChords} instrument={instrument} camFull={camFull} />
       ) : (
-        /* 코드 수평 존 */
+        /* 코드 수평 존(피아노) */
         <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, zoneN)}, 1fr)` }}>
           {Array.from({ length: zoneN }).map((_, i) => {
             const label = selected[i] ?? null;
@@ -970,6 +1260,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         <div style={{ position: 'absolute', inset: 0, transform: `scaleX(${mirror ? -1 : 1}) scale(${camZoom})`, pointerEvents: 'none' }}>
           {landmarks.map((p, i) => (
             <span key={i} style={{ position: 'absolute', left: `${p.x * 100}%`, top: `${p.y * 100}%`, width: 7, height: 7, marginLeft: -3.5, marginTop: -3.5, borderRadius: '50%', background: '#7CFC9B', boxShadow: '0 0 5px #7CFC9B' }} />
+          ))}
+        </div>
+      )}
+      {sparkles.length > 0 && (
+        /* 효과 스파클: 손 흔들기/박수/헤드뱅잉 시 손·머리 주변에 튀는 이모지(영상과 동일 변환으로 정렬) */
+        <div style={{ position: 'absolute', inset: 0, transform: `scaleX(${mirror ? -1 : 1}) scale(${camZoom})`, pointerEvents: 'none', zIndex: 5 }}>
+          {sparkles.map((p) => (
+            <span key={p.id} className="fx-pop" style={{ position: 'absolute', left: `${p.x * 100}%`, top: `${p.y * 100}%`, fontSize: 30, lineHeight: 1, whiteSpace: 'nowrap' }}>
+              {p.kind === 'tambourine' ? '🔔✨' : p.kind === 'clap' ? '👏✨' : '💫✨'}
+            </span>
           ))}
         </div>
       )}
@@ -1079,10 +1379,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                     key={c}
                     className="pad"
                     data-on={active === c}
-                    style={{ ['--accent' as string]: base, ['--accent-d' as string]: dark } as CSSProperties}
-                    onPointerDown={() => void ensureAudio().then(() => downChord(c, 'touch'))}
-                    onPointerUp={() => upChord('touch')}
-                    onPointerLeave={() => active === c && upChord('touch')}
+                    style={{ ['--accent' as string]: base, ['--accent-d' as string]: dark, touchAction: 'none' } as CSSProperties}
+                    onPointerDown={(e) => {
+                      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 캡처 미지원 무시 */ }
+                      chordPointerRef.current.add(e.pointerId);
+                      // 지연-down 레이스: 떼는 게 먼저면(set에서 제거됨) chordOn을 아예 안 울림
+                      void ensureAudio().then(() => { if (chordPointerRef.current.has(e.pointerId)) downChord(c, 'touch'); });
+                    }}
+                    onPointerUp={(e) => { if (chordPointerRef.current.delete(e.pointerId)) upChord('touch'); }}
+                    onPointerCancel={(e) => { if (chordPointerRef.current.delete(e.pointerId)) upChord('touch'); }}
+                    onPointerLeave={(e) => { if (chordPointerRef.current.delete(e.pointerId)) upChord('touch'); }}
                   >
                     {ROMAN[c] && <span className="pad-sub">{ROMAN[c]}</span>}
                     {c}
@@ -1146,13 +1452,25 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 })}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
+            {sessionTracks.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 4px', borderTop: '1px solid var(--line-2)', marginTop: 2 }}>
+                <div style={{ flex: 1 }}>
+                  <div className="t-cap c-sub2" style={{ fontWeight: 700 }}>🔁 녹음할 때 합주 반복</div>
+                  <div className="t-cap c-sub" style={{ marginTop: 1 }}>녹음 끝날 때까지 합주가 계속 돌아요</div>
+                </div>
+                <button className="chip" onClick={() => setMonitorLoop((v) => !v)} style={{ background: monitorLoop ? 'var(--blue)' : 'var(--bg)', color: monitorLoop ? '#fff' : 'var(--text-2)', fontWeight: 700, padding: '8px 18px', minWidth: 58 }}>{monitorLoop ? '켜짐' : '꺼짐'}</button>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {hasTake && !busy && (
-                <button className="btn" style={{ flex: 1, background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어 추가</button>
+                <button className="btn" style={{ flex: '1 1 30%', background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어</button>
               )}
-              <button className="btn" style={{ flex: 1, background: jamming ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
+              <button className="btn" style={{ flex: '1 1 30%', background: jamming ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
                 {jamming ? '■ 정지' : '🎶 합주 듣기'}
               </button>
+              {!busy && (
+                <button className="btn" style={{ flex: '1 1 30%', background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={openSave}>💾 저장</button>
+              )}
             </div>
           </div>
         )}
@@ -1162,19 +1480,52 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
       {/* 하단 고정 트랜스포트 바 — 연주 중 항상 닿는 메트로놈·녹음·재생·더보기 */}
       {!melodyFull && !drumTouchFull && !camFull && !editing && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 480, margin: '0 auto', zIndex: 30, background: 'var(--surface)', boxShadow: '0 -3px 18px rgba(17,24,39,.10)', borderRadius: '18px 18px 0 0', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', display: 'flex', gap: 8 }}>
-          <button className="btn" onClick={toggleMetro} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: metroOn ? 'var(--blue)' : 'var(--surface)', color: metroOn ? '#fff' : 'var(--text)', boxShadow: metroOn ? 'var(--e-inset)' : 'var(--e2)' }}>
-            <span style={{ fontSize: 20 }}>🥁</span>메트로놈
-          </button>
-          <button className="btn" onClick={toggleRec} style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 13, fontWeight: 800, background: busy ? 'var(--coral)' : 'var(--blue)', color: '#fff', boxShadow: 'var(--e3)' }}>
-            <span style={{ fontSize: 22 }}>{busy ? '■' : '●'}</span>{busy ? '정지' : '녹음'}
-          </button>
-          <button className="btn" onClick={play} disabled={!hasTake || busy} title={!hasTake ? '녹음하면 재생할 수 있어요' : undefined} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: hasTake && !busy ? 'var(--text)' : 'var(--sub)', boxShadow: 'var(--e2)' }}>
-            <span style={{ fontSize: 20 }}>▶</span>재생
-          </button>
-          <button className="btn" onClick={() => setShowMore(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }}>
-            <span style={{ fontSize: 20 }}>⋯</span>더보기
-          </button>
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 480, margin: '0 auto', zIndex: 30, background: 'var(--surface)', boxShadow: '0 -3px 18px rgba(17,24,39,.10)', borderRadius: '18px 18px 0 0', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))' }}>
+          {/* 재생바: 녹음한 take 재생 위치(빨간 헤드) + 탭/드래그 스크럽 */}
+          {hasTake && !busy && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMs(playMs)}</span>
+              <div
+                ref={barRef}
+                onPointerDown={onBarDown}
+                onPointerMove={onBarMove}
+                onPointerUp={onBarUp}
+                onPointerCancel={onBarUp}
+                style={{ flex: 1, height: 20, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
+              >
+                <div style={{ position: 'relative', width: '100%', height: 6, borderRadius: 999, background: 'var(--line-2)' }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${playPct}%`, background: 'var(--blue)', borderRadius: 999 }} />
+                  <span style={{ position: 'absolute', left: `${playPct}%`, top: '50%', transform: 'translate(-50%,-50%)', width: 15, height: 15, borderRadius: '50%', background: '#fff', border: '2.5px solid var(--blue)', boxShadow: 'var(--e1)' }} />
+                </div>
+              </div>
+              <span className="t-cap c-sub" style={{ minWidth: 30, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(takeMs)}</span>
+            </div>
+          )}
+          {/* 녹음 중 합주(모니터) 진행 바 — 기존 레이어가 어디까지 재생됐는지. 반복 시 🔁 */}
+          {phase === 'recording' && monDur > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+              <span className="t-cap" style={{ fontSize: 11, fontWeight: 800, color: 'var(--coral)' }}>합주</span>
+              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMs(monMs)}</span>
+              <div style={{ flex: 1, height: 6, borderRadius: 999, background: 'var(--line-2)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.min(100, (monMs / monDur) * 100)}%`, background: 'var(--coral)', borderRadius: 999 }} />
+              </div>
+              <span className="t-cap c-sub" style={{ minWidth: 46, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(monDur)}{monitorLoop ? ' 🔁' : ''}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn" onClick={toggleMetro} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: metroOn ? 'var(--blue)' : 'var(--surface)', color: metroOn ? '#fff' : 'var(--text)', boxShadow: metroOn ? 'var(--e-inset)' : 'var(--e2)' }}>
+              <span style={{ fontSize: 20 }}>🥁</span>메트로놈
+            </button>
+            <button className="btn" onClick={toggleRec} style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 13, fontWeight: 800, background: busy ? 'var(--coral)' : 'var(--blue)', color: '#fff', boxShadow: 'var(--e3)' }}>
+              <span style={{ fontSize: 22 }}>{busy ? '■' : '●'}</span>{busy ? '정지' : '녹음'}
+            </button>
+            <button className="btn" onClick={togglePlay} disabled={!hasTake || busy} title={!hasTake ? '녹음하면 재생할 수 있어요' : undefined} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: playing ? 'var(--blue)' : 'var(--surface)', color: playing ? '#fff' : hasTake && !busy ? 'var(--text)' : 'var(--sub)', boxShadow: 'var(--e2)' }}>
+              <span style={{ fontSize: 20 }}>{playing ? '⏸' : '▶'}</span>{playing ? '일시정지' : '재생'}
+            </button>
+            <button className="btn" onClick={() => setShowMore(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }}>
+              <span style={{ fontSize: 20 }}>⋯</span>더보기
+            </button>
+          </div>
         </div>
       )}
 
@@ -1198,11 +1549,18 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 <span className="t-cap c-sub">{hasTake ? '합주 코드로 친구에게 공유' : '녹음 후 사용 가능'}</span>
               </span>
             </button>
-            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); saveCurrent(); }}>
+            <button className="sheet-row" disabled={(!hasTake && sessionTracks.length === 0) || busy} style={{ opacity: (hasTake || sessionTracks.length > 0) && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); openPublish(); }}>
+              <span style={{ fontSize: 22 }}>🌱</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>
+                <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>커뮤니티에 올리기</span>
+                <span className="t-cap c-sub">{forked && !forked.code.startsWith('LOCAL') ? `「${forked.name}」 음원으로 이어 만들기 (출처 표시됨)` : '내 합주를 보드에 공개'}</span>
+              </span>
+            </button>
+            <button className="sheet-row" disabled={(!hasTake && sessionTracks.length === 0) || busy} style={{ opacity: (hasTake || sessionTracks.length > 0) && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); openSave(); }}>
               <span style={{ fontSize: 22 }}>💾</span>
               <span style={{ flex: 1, textAlign: 'left' }}>
                 <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>저장</span>
-                <span className="t-cap c-sub">{hasTake ? '내 기기에 곡 저장' : '녹음 후 사용 가능'}</span>
+                <span className="t-cap c-sub">{(hasTake || sessionTracks.length > 0) ? '이름 지어 내 기기에만 저장(나만 간직)' : '녹음 후 사용 가능'}</span>
               </span>
             </button>
             <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); setEditing(true); }}>
@@ -1235,6 +1593,28 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               </span>
             </button>
             <button className="btn" style={{ marginTop: 10, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setShowMore(false)}>닫기</button>
+          </div>
+        </>
+      )}
+
+      {/* 곡 이름 입력 모달(저장 / 커뮤니티 올리기 공통) */}
+      {nameModal && (
+        <>
+          <div className="backdrop" onClick={() => setNameModal(null)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div className="t-title" style={{ padding: '4px 6px 8px' }}>{nameModal === 'save' ? '💾 곡 저장' : '🌱 커뮤니티에 올리기'}</div>
+            <input
+              autoFocus
+              value={songName}
+              maxLength={40}
+              placeholder="곡 이름을 지어주세요"
+              onChange={(e) => setSongName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { if (nameModal === 'save') doSave(); else void doPublish(); } }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--line-2)', fontSize: 15 }}
+            />
+            <button className="btn" style={{ marginTop: 12, background: 'var(--blue)', color: '#fff' }} onClick={() => { if (nameModal === 'save') doSave(); else void doPublish(); }}>{nameModal === 'save' ? '저장' : '올리기'}</button>
+            <button className="btn" style={{ marginTop: 8, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setNameModal(null)}>취소</button>
           </div>
         </>
       )}

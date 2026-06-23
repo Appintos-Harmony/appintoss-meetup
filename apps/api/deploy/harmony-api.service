@@ -7,6 +7,8 @@ Type=simple
 WorkingDirectory=/opt/harmony-api
 Environment=PORT=8080
 Environment=DB_PATH=/opt/harmony-api/data/harmony.db
+# 신뢰 프록시(로컬 nginx)가 X-Real-IP를 세팅하므로 앱이 그 값을 신뢰. nginx가 클라 XFF를 덮어쓴다(spoof 차단).
+Environment=TRUST_PROXY=1
 ExecStart=/usr/bin/node /opt/harmony-api/server.mjs
 Restart=on-failure
 RestartSec=3

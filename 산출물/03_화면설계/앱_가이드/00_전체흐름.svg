@@ -1,0 +1,153 @@
+<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 — 한눈에 보는 전체 흐름</title><desc>하모니 앱의 전체 사용자 여정 개요. 시작(스플래시·닉네임) → 홈(새 곡·둘러보기·이어하기) → 스튜디오(녹음·레이어·합주·저장) → 커뮤니티(올리기·들어보기·담기·합주해서 올리기·반응)를 미니 단계 카드로 연결하고, 우측에 단계 설명과 하단에 핵심 루프 요약 띠를 둔 발표/도움말용 한 장.</desc>
+
+  <!-- 배경 -->
+  <rect x="0" y="0" width="760" height="560" rx="18" fill="#f7f9fb"/>
+
+  <!-- 제목 -->
+  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">하모니 — 한눈에 보는 전체 흐름</text>
+  <text x="34" y="61" font-size="12.5" fill="#6b7684">시작 · 홈 · 스튜디오 · 커뮤니티로 이어지는 전체 사용자 여정</text>
+
+  <!-- ===================== 좌: 미니 단계 카드 흐름 ===================== -->
+  <g transform="translate(28,82)">
+
+    <!-- 단계 카드 1: 시작 -->
+    <g transform="translate(0,0)">
+      <rect x="0" y="0" width="300" height="86" rx="14" fill="#ffffff" stroke="#eef1f4" stroke-width="1.2"/>
+      <circle cx="30" cy="30" r="16" fill="#3182f622"/>
+      <text x="30" y="36" text-anchor="middle" font-size="18">🎧</text>
+      <text x="56" y="27" font-size="13" font-weight="800" fill="#191f28">시작</text>
+      <text x="56" y="45" font-size="10.5" fill="#8b95a1">스플래시 → 닉네임 정하기(온보딩)</text>
+      <rect x="56" y="56" width="76" height="20" rx="6" fill="#f2f4f6"/>
+      <text x="94" y="70" text-anchor="middle" font-size="9.5" fill="#6b7684">스플래시</text>
+      <rect x="138" y="56" width="60" height="20" rx="6" fill="#eef5ff"/>
+      <text x="168" y="70" text-anchor="middle" font-size="9.5" font-weight="700" fill="#3182f6">닉네임</text>
+      <circle cx="22" cy="22" r="11" fill="#3182f6"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">1</text>
+    </g>
+    <text x="150" y="100" text-anchor="middle" font-size="13" fill="#8b95a1">↓</text>
+
+    <!-- 단계 카드 2: 홈 -->
+    <g transform="translate(0,106)">
+      <rect x="0" y="0" width="300" height="92" rx="14" fill="#ffffff" stroke="#eef1f4" stroke-width="1.2"/>
+      <circle cx="30" cy="30" r="16" fill="#15c47e22"/>
+      <text x="30" y="36" text-anchor="middle" font-size="18">🏠</text>
+      <text x="56" y="27" font-size="13" font-weight="800" fill="#191f28">홈</text>
+      <text x="56" y="45" font-size="10.5" fill="#8b95a1">오늘 무엇을 할지 고르기</text>
+      <rect x="14" y="58" width="86" height="24" rx="8" fill="#eef5ff"/>
+      <text x="57" y="74" text-anchor="middle" font-size="10" font-weight="700" fill="#3182f6">＋ 새 곡</text>
+      <rect x="107" y="58" width="86" height="24" rx="8" fill="#f3eeff"/>
+      <text x="150" y="74" text-anchor="middle" font-size="10" font-weight="700" fill="#8b5cf6">둘러보기</text>
+      <rect x="200" y="58" width="86" height="24" rx="8" fill="#f2f4f6"/>
+      <text x="243" y="74" text-anchor="middle" font-size="10" font-weight="600" fill="#191f28">이어하기</text>
+      <circle cx="22" cy="22" r="11" fill="#3182f6"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">2</text>
+    </g>
+    <text x="150" y="212" text-anchor="middle" font-size="13" fill="#8b95a1">↓</text>
+
+    <!-- 단계 카드 3: 스튜디오 -->
+    <g transform="translate(0,218)">
+      <rect x="0" y="0" width="300" height="104" rx="14" fill="#ffffff" stroke="#eef1f4" stroke-width="1.2"/>
+      <circle cx="30" cy="30" r="16" fill="#3182f622"/>
+      <text x="30" y="36" text-anchor="middle" font-size="18">🎚</text>
+      <text x="56" y="27" font-size="13" font-weight="800" fill="#191f28">스튜디오</text>
+      <text x="56" y="45" font-size="10.5" fill="#8b95a1">코드 · 멜로디 · 드럼을 녹음해 쌓기</text>
+      <!-- 레이어 막대 -->
+      <rect x="14" y="56" width="272" height="13" rx="4" fill="#eef5ff"/>
+      <text x="20" y="66" font-size="9" font-weight="700" fill="#3182f6">코드</text>
+      <rect x="14" y="72" width="272" height="13" rx="4" fill="#f3eeff"/>
+      <text x="20" y="82" font-size="9" font-weight="700" fill="#8b5cf6">멜로디</text>
+      <rect x="14" y="88" width="184" height="13" rx="4" fill="#fff0ea"/>
+      <text x="20" y="98" font-size="9" font-weight="700" fill="#ff6b6b">드럼</text>
+      <rect x="206" y="88" width="80" height="13" rx="4" fill="#e9faf2"/>
+      <text x="246" y="98" text-anchor="middle" font-size="8.5" font-weight="700" fill="#15c47e">합주 저장</text>
+      <circle cx="22" cy="22" r="11" fill="#3182f6"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">3</text>
+    </g>
+    <text x="150" y="336" text-anchor="middle" font-size="13" fill="#8b95a1">↓</text>
+
+    <!-- 단계 카드 4: 커뮤니티 -->
+    <g transform="translate(0,342)">
+      <rect x="0" y="0" width="300" height="110" rx="14" fill="#ffffff" stroke="#eef1f4" stroke-width="1.2"/>
+      <circle cx="30" cy="30" r="16" fill="#8b5cf622"/>
+      <text x="30" y="36" text-anchor="middle" font-size="18">🌐</text>
+      <text x="56" y="27" font-size="13" font-weight="800" fill="#191f28">커뮤니티</text>
+      <text x="56" y="45" font-size="10.5" fill="#8b95a1">올리고 · 가져와 얹고 · 반응하기</text>
+      <!-- 미니 음원 카드 + 재생바 -->
+      <rect x="14" y="54" width="272" height="46" rx="10" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
+      <circle cx="34" cy="71" r="11" fill="#3182f622"/>
+      <text x="34" y="76" text-anchor="middle" font-size="13">🎵</text>
+      <text x="52" y="69" font-size="10" font-weight="700" fill="#191f28">남의 음원 들어보기</text>
+      <rect x="200" y="61" width="36" height="18" rx="6" fill="#f2f4f6"/>
+      <text x="218" y="74" text-anchor="middle" font-size="9" fill="#191f28">＋담기</text>
+      <rect x="240" y="61" width="34" height="18" rx="6" fill="#ffecec"/>
+      <text x="257" y="74" text-anchor="middle" font-size="9" font-weight="800" fill="#ff6b6b">❤</text>
+      <!-- 재생 바 -->
+      <line x1="52" y1="91" x2="274" y2="91" stroke="#e6eaef" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="52" y1="91" x2="150" y2="91" stroke="#3182f6" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="150" cy="91" r="5.5" fill="#ffffff" stroke="#3182f6" stroke-width="2.2"/>
+      <circle cx="22" cy="22" r="11" fill="#ff6b6b"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">4</text>
+    </g>
+
+  </g>
+
+  <!-- ===================== 우: 4단계 설명 ===================== -->
+  <g transform="translate(360,86)">
+    <!-- step 1 -->
+    <g transform="translate(0,0)">
+      <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">1</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">시작 — 스플래시 · 닉네임</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">앱을 열면 스플래시가 보이고, 처음이면 닉네임을</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">정해요(온보딩). 이 이름으로 곡과 한마디가 남아요.</text>
+    </g>
+    <!-- step 2 -->
+    <g transform="translate(0,68)">
+      <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">2</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">홈 — 세 갈래로 출발</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">＋새 곡(스튜디오) · 둘러보기(커뮤니티) ·</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">이어하기(최근 곡). 원하는 길로 바로 들어가요.</text>
+    </g>
+    <!-- step 3 -->
+    <g transform="translate(0,136)">
+      <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">3</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">스튜디오 — 녹음하고 쌓기</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">코드 · 멜로디 · 드럼을 녹음해 레이어로 쌓고,</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">합주로 들어본 뒤 이름을 지어 저장해요.</text>
+    </g>
+    <!-- step 4 -->
+    <g transform="translate(0,204)">
+      <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">4</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">커뮤니티 — 함께 합주하기</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">내 곡을 올리고, 남의 음원을 재생바로 들어보며</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">＋담기. 스튜디오에 얹어 합주한 뒤 ‘합주해서</text>
+      <text x="38" y="61" font-size="11" fill="#6b7684">올리기’(출처 표시), 좋아요 · 댓글로 반응해요.</text>
+    </g>
+
+    <!-- 흐름 요약 한 줄 -->
+    <g transform="translate(0,282)">
+      <rect x="0" y="0" width="372" height="34" rx="10" fill="#f2f4f6"/>
+      <text x="16" y="22" font-size="11" fill="#6b7684">전체 흐름  <tspan font-weight="800" fill="#191f28">시작 → 홈 → 스튜디오 → 커뮤니티</tspan>  로 이어져요.</text>
+    </g>
+
+    <!-- 핵심 루프 요약 띠 -->
+    <g transform="translate(0,330)">
+      <rect x="0" y="0" width="372" height="102" rx="12" fill="#eef5ff" stroke="#cfe0ff" stroke-width="1"/>
+      <text x="16" y="24" font-size="12" font-weight="800" fill="#3182f6">핵심 루프 — 돌수록 음악이 커져요</text>
+      <!-- 루프 단계 -->
+      <g font-size="10" font-weight="700">
+        <rect x="14" y="36" width="60" height="22" rx="7" fill="#ffffff" stroke="#cfe0ff" stroke-width="1"/>
+        <text x="44" y="51" text-anchor="middle" fill="#3457d5">녹음</text>
+        <text x="80" y="51" text-anchor="middle" fill="#8b95a1">→</text>
+        <rect x="90" y="36" width="60" height="22" rx="7" fill="#ffffff" stroke="#cfe0ff" stroke-width="1"/>
+        <text x="120" y="51" text-anchor="middle" fill="#3457d5">합주</text>
+        <text x="156" y="51" text-anchor="middle" fill="#8b95a1">→</text>
+        <rect x="166" y="36" width="60" height="22" rx="7" fill="#ffffff" stroke="#cfe0ff" stroke-width="1"/>
+        <text x="196" y="51" text-anchor="middle" fill="#3457d5">올리기</text>
+        <text x="232" y="51" text-anchor="middle" fill="#8b95a1">→</text>
+        <rect x="242" y="36" width="78" height="22" rx="7" fill="#ffffff" stroke="#cfe0ff" stroke-width="1"/>
+        <text x="281" y="51" text-anchor="middle" fill="#3457d5">가져와 얹기</text>
+      </g>
+      <g font-size="10" font-weight="700">
+        <rect x="14" y="68" width="60" height="22" rx="7" fill="#ffffff" stroke="#cfe0ff" stroke-width="1"/>
+        <text x="44" y="83" text-anchor="middle" fill="#3457d5">반응</text>
+        <text x="86" y="83" font-size="10" fill="#3457d5">↩ 다시 녹음 · 합주로 이어집니다</text>
+      </g>
+    </g>
+  </g>
+</svg>

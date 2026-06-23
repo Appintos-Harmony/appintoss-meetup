@@ -4,7 +4,7 @@
     {
       "name": "harmony",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "C:/Users/DEV-PC/Desktop/appintoss-meetup/apps/miniapp", "run", "dev:web"],
+      "runtimeArgs": ["--prefix", "${workspaceFolder}/apps/miniapp", "run", "dev:web"],
       "port": 5173
     }
   ]
