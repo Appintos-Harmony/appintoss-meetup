@@ -12,6 +12,7 @@ import {
   upNote,
   triggerHit,
   createVoice,
+  audioNow,
   type Voice,
 } from '../audio/engine';
 import { chordReducer, initialChordState, type ChordState, type Source, type ChordEvent } from '../audio/chordReducer';
@@ -453,23 +454,21 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     stopMonitor();
     const voices: Voice[] = [];
     const timers: number[] = [];
+    const t0 = audioNow(); // 모니터도 오디오 클럭 — 메트로놈과 샘플정확으로 그루브 락(내 연주와 싱크)
     for (const t of sessionTracks) {
       const inst = t.instrument ?? inferInstrument(t.events);
       const v = createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
       voices.push(v);
       for (const ev of normalizeEvents(t.events)) {
-        const ms = tickToMs(ev.tick);
-        const id = window.setTimeout(() => {
-          if (ev.kind === 'drum') v.hit(ev.piece);
-          else if (ev.kind === 'melody') {
-            if (ev.phase === 'on') v.on(ev.note);
-            else v.off(ev.note);
-          } else {
-            if (ev.phase === 'on') v.on(ev.chord);
-            else v.off(ev.chord);
-          }
-        }, ms);
-        timers.push(id);
+        const at = t0 + tickToMs(ev.tick) / 1000;
+        if (ev.kind === 'drum') v.hit(ev.piece, at);
+        else if (ev.kind === 'melody') {
+          if (ev.phase === 'on') v.on(ev.note, at);
+          else v.off(ev.note, at);
+        } else {
+          if (ev.phase === 'on') v.on(ev.chord, at);
+          else v.off(ev.chord, at);
+        }
       }
     }
     monitorRef.current = { voices, timers };
@@ -751,21 +750,20 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   function scheduleEvents(events: SessionTrack['events'], voices: { chord: Voice; melody: Voice; drum: Voice }, fromMs = 0): number {
     let maxMs = 0;
+    const t0 = audioNow(); // 오디오 클럭 기준 — 샘플정확(setTimeout 지터 제거 → 레이어 싱크 타이트)
     for (const ev of normalizeEvents(events)) {
       const ms = tickToMs(ev.tick);
       if (ms > maxMs) maxMs = ms;
-      if (ms < fromMs - 1) continue; // 스크럽: 이미 지난 구간 스킵(현재 위치부터 재생)
-      const id = window.setTimeout(() => {
-        if (ev.kind === 'drum') voices.drum.hit(ev.piece);
-        else if (ev.kind === 'melody') {
-          if (ev.phase === 'on') voices.melody.on(ev.note);
-          else voices.melody.off(ev.note);
-        } else {
-          if (ev.phase === 'on') voices.chord.on(ev.chord);
-          else voices.chord.off(ev.chord);
-        }
-      }, Math.max(0, ms - fromMs));
-      playTimersRef.current.push(id);
+      if (ms < fromMs - 1) continue; // 스크럽: 이미 지난 구간 스킵(현재 위치부터)
+      const at = t0 + (ms - fromMs) / 1000;
+      if (ev.kind === 'drum') voices.drum.hit(ev.piece, at);
+      else if (ev.kind === 'melody') {
+        if (ev.phase === 'on') voices.melody.on(ev.note, at);
+        else voices.melody.off(ev.note, at);
+      } else {
+        if (ev.phase === 'on') voices.chord.on(ev.chord, at);
+        else voices.chord.off(ev.chord, at);
+      }
     }
     return maxMs;
   }

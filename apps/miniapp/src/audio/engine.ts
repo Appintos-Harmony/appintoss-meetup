@@ -113,7 +113,7 @@ function makeSynthFor(inst: Instrument, st: string): Tone.PolySynth {
 
 // ---- 드럼 키트(원샷) ----
 interface DrumKit {
-  hit(piece: DrumPiece): void;
+  hit(piece: DrumPiece, time?: number): void;
   dispose(): void;
 }
 function makeDrumKit(st: string): DrumKit {
@@ -146,22 +146,22 @@ function makeDrumKit(st: string): DrumKit {
   crash.volume.value = -16;
   const all = [kick, tom1, tom2, floortom, snareNoise, snareBody, hihat, ride, rideBell, crash, hpf];
   return {
-    hit(piece) {
+    hit(piece, time) {
       switch (piece) {
-        case 'kick': kick.triggerAttackRelease('C1', '8n'); break;
-        case 'hitom': tom1.triggerAttackRelease('A2', '8n'); break;
-        case 'midtom': tom2.triggerAttackRelease('F2', '8n'); break;
-        case 'floortom': floortom.triggerAttackRelease('C2', '8n'); break;
+        case 'kick': kick.triggerAttackRelease('C1', '8n', time); break;
+        case 'hitom': tom1.triggerAttackRelease('A2', '8n', time); break;
+        case 'midtom': tom2.triggerAttackRelease('F2', '8n', time); break;
+        case 'floortom': floortom.triggerAttackRelease('C2', '8n', time); break;
         case 'snare':
-          snareNoise.triggerAttackRelease('8n');
-          snareBody.triggerAttackRelease('G3', '16n');
+          snareNoise.triggerAttackRelease('8n', time);
+          snareBody.triggerAttackRelease('G3', '16n', time);
           break;
-        case 'hihat': hihat.triggerAttackRelease('16n'); break;
+        case 'hihat': hihat.triggerAttackRelease('16n', time); break;
         case 'ride':
-          ride.triggerAttackRelease('8n');
-          rideBell.triggerAttackRelease('E6', '8n');
+          ride.triggerAttackRelease('8n', time);
+          rideBell.triggerAttackRelease('E6', '8n', time);
           break;
-        case 'crash': crash.triggerAttackRelease('1n'); break;
+        case 'crash': crash.triggerAttackRelease('1n', time); break;
       }
     },
     dispose() {
@@ -182,9 +182,17 @@ let unlocked = false;
 export async function unlockAudio(): Promise<void> {
   if (unlocked) return;
   await Tone.start();
+  // 라이브 입력 지연↓: Tone 기본 lookAhead 0.1s(≈100ms 지연)가 터치/제스처가 늦게 들리는 주원인.
+  // 0.03(=기본 updateInterval, 안전 하한)로 낮춰 ≈30ms로 즉답. 더 낮추면 부하 시 드롭아웃 위험.
+  Tone.getContext().lookAhead = 0.03;
   synth = makeSynthFor(instrument, style);
   unlocked = true;
   ensureSampler(`${instrument}:${style}`);
+}
+
+/** 현재 오디오 클럭 시각(초, lookAhead 포함). 샘플정확 스케줄(재생/모니터) 기준. */
+export function audioNow(): number {
+  return Tone.now();
 }
 
 export function isUnlocked(): boolean {
@@ -331,9 +339,9 @@ export function playClick(accent: boolean, time?: number): void {
 
 // ---- 합주 합쳐듣기용 독립 보이스(트랙별 음색) ----
 export interface Voice {
-  on(v: string): void;
-  off(v: string): void;
-  hit(piece: DrumPiece): void;
+  on(v: string, time?: number): void;
+  off(v: string, time?: number): void;
+  hit(piece: DrumPiece, time?: number): void;
   dispose(): void;
 }
 
@@ -352,16 +360,16 @@ export function createVoice(voice: Instrument | Timbre, voiceStyle?: string): Vo
   const kit = isDrum ? makeDrumKit(st) : null;
 
   return {
-    on: (c) => {
+    on: (c, time) => {
       if (dead || !s) return;
-      for (const f of voiceFreqs(c, inst)) s.triggerAttack(f);
+      for (const f of voiceFreqs(c, inst)) s.triggerAttack(f, time);
     },
-    off: (c) => {
+    off: (c, time) => {
       if (dead || !s) return;
-      for (const f of voiceFreqs(c, inst)) s.triggerRelease(f);
+      for (const f of voiceFreqs(c, inst)) s.triggerRelease(f, time);
     },
-    hit: (piece) => {
-      if (!dead) kit?.hit(piece);
+    hit: (piece, time) => {
+      if (!dead) kit?.hit(piece, time);
     },
     dispose: () => {
       if (dead) return;
