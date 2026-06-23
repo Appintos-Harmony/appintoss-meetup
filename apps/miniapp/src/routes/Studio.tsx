@@ -263,7 +263,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     // (take에도 base를 넣으면 합주 듣기에서 base가 두 번 재생됨 — R34-001)
     stateRef.current = { ...initialChordState };
     setHasTake(false);
-    setSessionCode(forked.code.startsWith('LOCAL') ? null : forked.code);
+    // 커뮤니티에서 가져온 곡은 '로컬 파생 빌드'다 — sessionCode를 두지 않는다.
+    // (출처는 publish 때 forked.code에서 따로 가져옴.) 그래야 레이어 삭제 가능 + 폴링이 로컬 레이어를 덮지 않음 + 원곡 서버 미오염.
+    setSessionCode(null);
     setBaseOwner(base.owner);
     setTrackCount(forked.tracks.length);
     setSessionTracks(forked.tracks);
