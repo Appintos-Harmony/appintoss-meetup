@@ -1,5 +1,6 @@
-// 커뮤니티(음원 게시판). 이모지 프로필 아바타 + 음원명·닉네임·길이 + 들어보기/가져오기/좋아요(개수).
-// 좋아요는 로컬(데모) — networked 집계는 후속. fork = 트랙을 스튜디오로 복사해 얹기.
+// 커뮤니티(음원 게시판). 이모지 프로필 + 음원명·닉네임·길이 + 들어보기/담기(다중선택)/좋아요(개수).
+// 가져오기 = 선택한 여러 곡의 트랙을 '로컬 합본 세션'(code 'LOCAL-…')으로 스튜디오에 레이어로 올림.
+//   → 로컬이라 스튜디오에서 레이어 삭제(✕) 가능 + 여러 개 동시 가져오기. 좋아요는 로컬(데모).
 import { useRef, useState } from 'react';
 import type { Route } from '../App';
 import { PRELOAD, type Session } from '../lib/share';
@@ -60,6 +61,7 @@ function nicknameOf(item: CommunityItem): string {
 export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: Session) => void }) {
   const [items] = useState<CommunityItem[]>(() => buildItems());
   const [playing, setPlaying] = useState<string | null>(null);
+  const [picks, setPicks] = useState<Set<string>>(() => new Set());
   const [likes, setLikes] = useState<Record<string, { liked: boolean; count: number }>>(() => {
     const m: Record<string, { liked: boolean; count: number }> = {};
     for (const it of buildItems()) {
@@ -108,9 +110,24 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     setPlaying(item.id);
   }
 
-  function fork(item: CommunityItem) {
+  function togglePick(id: string) {
+    setPicks((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
+  // 선택한 곡들의 트랙을 하나의 로컬 합본 세션으로 → 스튜디오에 레이어로 적재(여러 개 동시).
+  function importPicks() {
+    const chosen = items.filter((it) => picks.has(it.id));
+    if (chosen.length === 0) return;
     stopPreview();
-    onFork(item.session);
+    const tracks = chosen.flatMap((it) => it.session.tracks);
+    const bpm = chosen[0]?.session.bpm ?? 100;
+    const name = chosen.length === 1 ? chosen[0]!.title : `가져온 음원 ${chosen.length}개`;
+    onFork({ code: 'LOCAL-import', name, bpm, tracks });
   }
 
   function like(id: string) {
@@ -125,15 +142,20 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         <span style={{ marginLeft: 'auto', fontWeight: 800 }}>커뮤니티</span>
       </div>
 
-      <div className="content">
+      <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
         <div className="t-cap c-sub" style={{ marginBottom: 12 }}>
-          다른 사람 음원을 들어보고 좋아요·가져와 내 연주에 얹어보세요.
+          마음에 드는 음원을 담아(여러 개 OK) 가져오면 내 스튜디오에 레이어로 올라가요. 들어보고 좋아요도!
         </div>
 
         {items.map((item, i) => {
           const lk = likes[item.id] ?? { liked: false, count: baseLikes(item.id) };
+          const picked = picks.has(item.id);
           return (
-            <div key={item.id} className="card" style={{ marginBottom: 10, padding: 14 }}>
+            <div
+              key={item.id}
+              className="card"
+              style={{ marginBottom: 10, padding: 14, border: picked ? '2px solid var(--blue)' : '2px solid transparent', background: picked ? 'var(--blue-weak)' : undefined }}
+            >
               {/* 상단: 아바타 + 음원명·닉네임·길이 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ width: 44, height: 44, borderRadius: '50%', background: SIG[i % SIG.length] + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flex: 'none' }}>
@@ -143,15 +165,21 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                   <div className="t-body" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.title} <span className="c-sub" style={{ fontWeight: 500 }}>– {nicknameOf(item)}</span>
                   </div>
-                  <div className="t-cap c-sub" style={{ marginTop: 2 }}>약 {lengthSec(item.events)}초</div>
+                  <div className="t-cap c-sub" style={{ marginTop: 2 }}>약 {lengthSec(item.events)}초 · 트랙 {item.session.tracks.length}개</div>
                 </div>
               </div>
-              {/* 하단: 들어보기 / 가져오기 / 좋아요 */}
+              {/* 하단: 들어보기 / 담기(선택) / 좋아요 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
                 <button className="chip chip-ghost" style={{ flex: 1 }} onClick={() => void preview(item)}>
                   {playing === item.id ? '■ 정지' : '▶ 들어보기'}
                 </button>
-                <button className="chip" style={{ flex: 1 }} onClick={() => fork(item)}>가져오기</button>
+                <button
+                  className="chip"
+                  style={{ flex: 1, background: picked ? 'var(--blue)' : undefined, color: picked ? '#fff' : undefined }}
+                  onClick={() => togglePick(item.id)}
+                >
+                  {picked ? '✓ 담음' : '＋ 담기'}
+                </button>
                 <button
                   className="chip chip-ghost"
                   style={{ display: 'flex', alignItems: 'center', gap: 5, color: lk.liked ? 'var(--coral)' : 'var(--text-2)', background: lk.liked ? '#ffecec' : 'var(--bg)' }}
@@ -167,6 +195,15 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
 
         {items.length === 0 && <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 24 }}>아직 음원이 없어요</div>}
       </div>
+
+      {/* 다중 가져오기 바 */}
+      {picks.size > 0 && (
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, maxWidth: 480, margin: '0 auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: '0 -6px 20px rgba(17,24,39,.10)' }}>
+          <button className="btn" style={{ background: 'var(--blue)', color: '#fff' }} onClick={importPicks}>
+            🎚 가져오기 ({picks.size}개) → 스튜디오에 얹기
+          </button>
+        </div>
+      )}
     </>
   );
 }
