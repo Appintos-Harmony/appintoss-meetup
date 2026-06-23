@@ -13,6 +13,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, owner TEXT, events TEXT, created_at INTEGER);
   CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, author_key TEXT, author TEXT, text TEXT, created_at INTEGER, reports INTEGER DEFAULT 0, hidden INTEGER DEFAULT 0);
   CREATE TABLE IF NOT EXISTS comment_reports (comment_id INTEGER, reporter_key TEXT, created_at INTEGER, UNIQUE(comment_id, reporter_key));
+  CREATE TABLE IF NOT EXISTS reactions (code TEXT, anon_key TEXT, created_at INTEGER, UNIQUE(code, anon_key));
 `);
 // 멱등 컬럼 추가(기존 DB 호환: 없으면 추가, 있으면 무시).
 const MIGRATIONS = [
@@ -170,6 +171,8 @@ const server = createServer(async (req, res) => {
       const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 20, 1), 50);
       const beforeAt = url.searchParams.get('beforeAt');
       const beforeCode = url.searchParams.get('beforeCode');
+      const me = url.searchParams.get('me'); // 있으면 항목별 내 좋아요 여부(liked)를 함께 반환.
+      const meKey = typeof me === 'string' && me ? me.slice(0, 80) : null;
       let rows;
       if (beforeAt && beforeCode) {
         rows = db.prepare(
@@ -191,6 +194,8 @@ const server = createServer(async (req, res) => {
           commentCount: db.prepare('SELECT COUNT(*) n FROM comments WHERE code = ? AND hidden = 0').get(s.code).n,
           playCount: s.play_count || 0,
           forkCount: db.prepare('SELECT COUNT(*) n FROM sessions WHERE origin_code = ? AND published = 1 AND hidden = 0').get(s.code).n,
+          likeCount: db.prepare('SELECT COUNT(*) n FROM reactions WHERE code = ?').get(s.code).n,
+          liked: meKey ? !!db.prepare('SELECT 1 FROM reactions WHERE code = ? AND anon_key = ?').get(s.code, meKey) : false,
           originCode: s.origin_code || null,
           originName: origin ? origin.name : null,
           originAuthor: origin ? (origin.author || '익명') : null,
@@ -304,6 +309,27 @@ const server = createServer(async (req, res) => {
       return send(res, 201, { ok: true, trackId: Number(info.lastInsertRowid) });
     }
 
+    // 좋아요 토글: anon_key당 1회(UNIQUE), 토글 INSERT/DELETE. IP 레이트리밋. 반환 {liked, count}.
+    const mLike = path.match(/^\/sessions\/([^/]+)\/like$/);
+    if (req.method === 'POST' && mLike) {
+      const code = mLike[1];
+      if (!rateOk('like:' + ip, 60)) return send(res, 429, { error: 'rate limited' });
+      const { author_key } = await readBody(req);
+      const key = (typeof author_key === 'string' && author_key) ? author_key.slice(0, 80) : ip;
+      if (!sessionExists(code)) return send(res, 404, { error: 'session not found' });
+      const existing = db.prepare('SELECT 1 FROM reactions WHERE code = ? AND anon_key = ?').get(code, key);
+      let liked;
+      if (existing) {
+        db.prepare('DELETE FROM reactions WHERE code = ? AND anon_key = ?').run(code, key);
+        liked = false;
+      } else {
+        db.prepare('INSERT OR IGNORE INTO reactions (code, anon_key, created_at) VALUES (?, ?, ?)').run(code, key, Date.now());
+        liked = true;
+      }
+      const count = db.prepare('SELECT COUNT(*) n FROM reactions WHERE code = ?').get(code).n;
+      return send(res, 200, { liked, count });
+    }
+
     // 작성자 best-effort 숨김(세션·이름도 신고/내림 대상).
     const mHide = path.match(/^\/sessions\/([^/]+)\/hide$/);
     if (req.method === 'POST' && mHide) {
@@ -332,6 +358,7 @@ const server = createServer(async (req, res) => {
       const origin = sess.origin_code ? db.prepare('SELECT name, author FROM sessions WHERE code = ?').get(sess.origin_code) : null;
       return send(res, 200, {
         code: sess.code, name: sess.name, bpm: sess.bpm, tracks,
+        likeCount: db.prepare('SELECT COUNT(*) n FROM reactions WHERE code = ?').get(code).n,
         originCode: sess.origin_code || null,
         originName: origin ? origin.name : null,
         originAuthor: origin ? (origin.author || '익명') : null,

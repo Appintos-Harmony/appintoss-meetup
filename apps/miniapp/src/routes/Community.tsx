@@ -2,20 +2,19 @@
 // 베이스 = 곽소정 her_Community.tsx(이모지/좋아요/담기/들어보기 UI 그대로). 데이터 소스만 로컬(PRELOAD+listSongs) → 서버 listCommunity()로 전환,
 //   트랙(events)이 필요한 지점(들어보기·담기)은 getSession(code)로 lazy 확보해 동일 동작 재배선.
 // 비파괴 추가(내 서버 기능): 댓글(작성/신고) · 출처 크레딧 · 3상태(로딩/빈/실패) · 내 곡 올리기(publishSession) · toast/busy 피드백.
-// ※ 좋아요는 스펙 v2상 '비범위'지만 곽소정 작업물 보존 원칙으로 로컬(likes.ts) 방식 그대로 유지(삭제 금지). changeNotes 참고.
-// ※ 이 파일은 곽소정 브랜치가 함께 가져오는 ../lib/likes 와 ../lib/identity 의 getEmoji/EMOJI_CHOICES 에 의존한다(현 develop 트리엔 부재 → 머지 시 동반 필수).
+// ※ 좋아요는 조장 결정(OQ-D: 진짜 구현+노출)에 따라 서버 reactions(share.toggleLike)로 전환. 곽소정 로컬 likes.ts는 보드 미사용·파일 보존(dead).
+// ※ 이 파일은 ../lib/identity 의 getEmoji/EMOJI_CHOICES 에 의존한다.
 import { useEffect, useRef, useState } from 'react';
 import type { Route } from '../App';
 import {
   type Session, type CommunityItem, type Comment,
-  listCommunity, publishSession, getSession, addTrack, getComments, addComment, reportComment,
+  listCommunity, publishSession, getSession, addTrack, getComments, addComment, reportComment, toggleLike,
 } from '../lib/share';
 import { listSongs, songTracks } from '../lib/storage';
 import { unlockAudio, createVoice, type Voice } from '../audio/engine';
 import { normalizeEvents } from '../audio/events';
 import { tickToMs } from '../audio/transport';
 import { getUserKey, getNickname, getEmoji, EMOJI_CHOICES } from '../lib/identity';
-import { isLiked, toggleLike, baseLikes } from '../lib/likes';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
 function hashIdx(s: string, n: number): number {
@@ -63,14 +62,12 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     setItems(null);
     setError(false);
     try {
-      const list = await listCommunity(30);
+      const key = await getUserKey();
+      const list = await listCommunity(30, key);
       setItems(list);
-      // 좋아요 맵을 서버 목록(code 키)으로 구성 — 로컬 likes.ts 방식 유지.
+      // 좋아요 맵을 서버 응답(likeCount·liked)으로 구성.
       const m: Record<string, { liked: boolean; count: number }> = {};
-      for (const it of list) {
-        const liked = isLiked(it.code);
-        m[it.code] = { liked, count: baseLikes(it.code) + (liked ? 1 : 0) };
-      }
+      for (const it of list) m[it.code] = { liked: it.liked, count: it.likeCount };
       setLikes(m);
     } catch {
       setError(true);
@@ -163,10 +160,18 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     }
   }
 
-  // 좋아요(곽소정 로컬 하트) — 키를 item.code로. likes.ts 방식 그대로 유지.
-  function like(code: string) {
-    const liked = toggleLike(code);
-    setLikes((m) => ({ ...m, [code]: { liked, count: (m[code]?.count ?? baseLikes(code)) + (liked ? 1 : -1) } }));
+  // 좋아요(서버 reactions 토글) — 낙관적 갱신 후 서버 응답으로 보정, 실패 시 되돌림.
+  async function like(code: string) {
+    const prev = likes[code] ?? { liked: false, count: 0 };
+    setLikes((m) => ({ ...m, [code]: { liked: !prev.liked, count: prev.count + (prev.liked ? -1 : 1) } }));
+    try {
+      const key = await getUserKey();
+      const r = await toggleLike(code, key);
+      setLikes((m) => ({ ...m, [code]: { liked: r.liked, count: r.count } }));
+    } catch {
+      setLikes((m) => ({ ...m, [code]: prev }));
+      flash('좋아요 실패 — 잠시 후 다시');
+    }
   }
 
   async function toggleComments(code: string) {
@@ -273,7 +278,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         )}
 
         {(items ?? []).map((item) => {
-          const lk = likes[item.code] ?? { liked: false, count: baseLikes(item.code) };
+          const lk = likes[item.code] ?? { liked: item.liked, count: item.likeCount };
           const picked = picks.has(item.code);
           return (
             <div
@@ -315,7 +320,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                 <button
                   className="chip chip-ghost"
                   style={{ display: 'flex', alignItems: 'center', gap: 5, color: lk.liked ? 'var(--coral)' : 'var(--text-2)', background: lk.liked ? '#ffecec' : 'var(--bg)' }}
-                  onClick={() => like(item.code)}
+                  onClick={() => void like(item.code)}
                 >
                   <span style={{ fontSize: 15 }}>{lk.liked ? '❤️' : '🤍'}</span>
                   <span style={{ fontWeight: 800 }}>{lk.count}</span>

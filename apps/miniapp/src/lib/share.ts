@@ -17,6 +17,7 @@ export interface Session {
   name: string;
   bpm: number;
   tracks: SessionTrack[];
+  likeCount?: number;
   originCode?: string | null; // 파생 출처(원본 code). 서버 GET /sessions/:code 가 반환.
   originName?: string | null;
   originAuthor?: string | null;
@@ -124,6 +125,8 @@ export interface CommunityItem {
   commentCount: number;
   playCount: number;
   forkCount: number;
+  likeCount: number;
+  liked: boolean; // 호출 시 me(anonKey)를 넘기면 내 좋아요 여부, 아니면 false.
   originCode: string | null;
   originName: string | null;
   originAuthor: string | null;
@@ -136,10 +139,19 @@ export interface Comment {
   createdAt: number;
 }
 
-/** 보드 목록(최근 공유물). 실패 시 예외 — 호출부에서 오류 상태 처리. */
-export async function listCommunity(limit = 30): Promise<CommunityItem[]> {
-  const r = (await req('/community?limit=' + limit)) as { items?: CommunityItem[] };
+/** 보드 목록(최근 공유물). me(anonKey)를 넘기면 항목별 내 좋아요 여부(liked)도 채워진다. 실패 시 예외. */
+export async function listCommunity(limit = 30, me?: string): Promise<CommunityItem[]> {
+  const q = '/community?limit=' + limit + (me ? '&me=' + encodeURIComponent(me) : '');
+  const r = (await req(q)) as { items?: CommunityItem[] };
   return r.items ?? [];
+}
+
+/** 좋아요 토글(서버 reactions, anon_key당 1회). 반환 = 토글 후 상태와 총 개수. */
+export async function toggleLike(code: string, authorKey: string): Promise<{ liked: boolean; count: number }> {
+  return (await req('/sessions/' + encodeURIComponent(code) + '/like', {
+    method: 'POST',
+    body: JSON.stringify({ author_key: authorKey }),
+  })) as { liked: boolean; count: number };
 }
 
 /** 커뮤니티에 공유(publish). origin_code가 있으면 출처가 강제로 박힌다. 반환=새 code. */
