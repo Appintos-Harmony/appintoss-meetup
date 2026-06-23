@@ -319,7 +319,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         trackCount: tracks.length, idempotencyToken: randomId(),
       });
       // 같은 곡이 이미 있으면(deduped) 추가 트랙 적재를 건너뛴다(기존 세션 오염 방지).
-      if (!deduped) for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style);
+      if (!deduped) for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style, key); // 공개 세션 소유자 검증용 키
       setPublishOpen(false);
       flash(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : '보드에 올라갔어요');
       await load();

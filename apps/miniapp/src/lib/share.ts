@@ -77,10 +77,12 @@ export async function addTrack(
   events: ChordEvent[],
   instrument?: Instrument,
   style?: string,
+  authorKey?: string,
 ): Promise<void> {
+  // authorKey: 공개(published) 세션에 추가 트랙을 올릴 때 서버가 소유자 검증에 사용(공개 code 오염 차단).
   await req('/sessions/' + encodeURIComponent(code) + '/tracks', {
     method: 'POST',
-    body: JSON.stringify({ owner, events, instrument, style }),
+    body: JSON.stringify({ owner, events, instrument, style, author_key: authorKey }),
   });
 }
 
@@ -141,8 +143,10 @@ export interface Comment {
 
 /** 보드 목록(최근 공유물). me(anonKey)를 넘기면 항목별 내 좋아요 여부(liked)도 채워진다. 실패 시 예외. */
 export async function listCommunity(limit = 30, me?: string): Promise<CommunityItem[]> {
-  const q = '/community?limit=' + limit + (me ? '&me=' + encodeURIComponent(me) : '');
-  const r = (await req(q)) as { items?: CommunityItem[] };
+  // me(anonKey)는 x-anon-key 헤더로 전송 — URL 쿼리·프록시 로그에 안정 식별자가 노출되지 않도록(Codex MED).
+  const r = (await req('/community?limit=' + limit, {
+    headers: me ? { 'x-anon-key': me } : undefined,
+  })) as { items?: CommunityItem[] };
   return r.items ?? [];
 }
 

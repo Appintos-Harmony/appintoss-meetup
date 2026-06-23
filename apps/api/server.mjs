@@ -48,7 +48,8 @@ function genCode() {
 const VALID_INSTRUMENTS = new Set(['piano', 'guitar', 'bass', 'drum']);
 const MAX_TRACKS = 16;
 // 서로 다른 신고자 N명 누적 시 댓글 자동 숨김. 변경은 신규 신고부터 적용(기존 누적 소급 없음).
-// ⚠️ reporter_key=클라 자기신고라 키 회전으로 1인이 distinct N명을 위조해 트리거 가능(정책준수표 Known Limitation, OQ-B).
+// 신고자 식별 = 서버 도출 IP(XFF 하드닝 전제)라 클라 author_key 회전으로 1인이 distinct N명을 위조할 수 없다(Codex P0 수정).
+// 한계: 프록시 뒤 공유 IP에선 다른 사용자가 한 버킷으로 묶일 수 있음(OQ-B·DECISION-001 정책 판정 대상).
 const REPORT_HIDE_THRESHOLD = 3;
 function badEvents(events) {
   if (!Array.isArray(events) || events.length > 5000) return true;
@@ -87,11 +88,17 @@ function cleanText(s, max) {
   return { ok: true, text: t };
 }
 
-// 클라이언트 IP(레이트리밋 버킷). nginx 리버스프록시 뒤에서는 X-Forwarded-For 첫 홉을 신뢰한다
-// (데모 한정 — 프록시가 세팅하는 값. 직접 노출 환경에선 위조 가능하므로 production은 신뢰 프록시 allowlist가 전제).
+// 클라이언트 IP(레이트리밋 버킷). 기본은 소켓 주소만 사용 — 클라가 X-Forwarded-For를 위조해도
+// 레이트리밋을 우회할 수 없다(Codex P0). 신뢰 프록시(TRUST_PROXY=1, 로컬 nginx 뒤) 환경에서만
+// 프록시가 세팅한 X-Real-IP / nginx가 remote_addr로 덮어쓴 단일 XFF의 마지막 값을 신뢰한다.
+const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 function clientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
+  if (TRUST_PROXY) {
+    const real = req.headers['x-real-ip'];
+    if (typeof real === 'string' && real.trim()) return real.trim();
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string' && xff.length) return xff.split(',').pop().trim();
+  }
   return req.socket.remoteAddress || 'anon';
 }
 // 레이트리밋(데모 한정, 메모리). IP당 분당 N건. 자기신고 author_key가 아니라 IP로 버킷팅해 키 회전 우회를 막는다.
@@ -123,17 +130,19 @@ function send(res, status, body) {
     'content-type': 'application/json; charset=utf-8',
     'access-control-allow-origin': '*', // 데모 한정 — production은 오리진 allowlist(사람 게이트)
     'access-control-allow-methods': 'GET,POST,OPTIONS',
-    'access-control-allow-headers': 'content-type',
+    'access-control-allow-headers': 'content-type, x-anon-key',
   });
   res.end(JSON.stringify(body));
 }
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
+    const len = Number(req.headers['content-length'] || 0);
+    if (len > 1_000_000) { req.destroy(); return reject(new Error('payload too large')); } // 선검사 후 즉시 연결 종료
     let data = '';
     req.on('data', (c) => {
       data += c;
-      if (data.length > 1_000_000) reject(new Error('payload too large'));
+      if (data.length > 1_000_000) { req.destroy(); reject(new Error('payload too large')); }
     });
     req.on('end', () => {
       try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); }
@@ -190,7 +199,9 @@ const server = createServer(async (req, res) => {
       const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 20, 1), 50);
       const beforeAt = url.searchParams.get('beforeAt');
       const beforeCode = url.searchParams.get('beforeCode');
-      const me = url.searchParams.get('me'); // 있으면 항목별 내 좋아요 여부(liked)를 함께 반환.
+      // 내 좋아요 여부(liked)용 익명키. x-anon-key 헤더 우선(URL 쿼리·프록시 로그 노출 방지), ?me=는 호환용.
+      const meHeader = req.headers['x-anon-key'];
+      const me = (typeof meHeader === 'string' && meHeader) ? meHeader : url.searchParams.get('me');
       const meKey = typeof me === 'string' && me ? me.slice(0, 80) : null;
       let rows;
       if (beforeAt && beforeCode) {
@@ -229,9 +240,10 @@ const server = createServer(async (req, res) => {
       const { name, bpm, owner, events, instrument, style, published, author, author_key, origin_code, track_count, idempotencyToken } = body;
       const key = (typeof author_key === 'string' && author_key) ? author_key.slice(0, 80) : ip;
 
-      // 멱등: 같은 토큰이면 기존 code 반환(공유 연타·재시도 중복 방지).
-      if (typeof idempotencyToken === 'string' && IDEMP.has(idempotencyToken)) {
-        return send(res, 200, { code: IDEMP.get(idempotencyToken).code, idempotent: true });
+      // 멱등 토큰은 요청 주체(author_key/IP)별로 스코프 → 타인이 같은 토큰을 재사용해 내 code를 받지 못한다(Codex MED).
+      const idemKey = (typeof idempotencyToken === 'string' && idempotencyToken) ? key + ':' + idempotencyToken.slice(0, 120) : null;
+      if (idemKey && IDEMP.has(idemKey)) {
+        return send(res, 200, { code: IDEMP.get(idemKey).code, idempotent: true });
       }
       if (!rateOk('pub:' + ip, 12)) return send(res, 429, { error: 'rate limited' });
       if (events !== undefined && badEvents(events)) return send(res, 400, { error: 'invalid events' });
@@ -264,7 +276,7 @@ const server = createServer(async (req, res) => {
           'SELECT code FROM sessions WHERE author_key = ? AND content_hash = ? AND track_count = ? AND published = 1 AND hidden = 0 AND origin_code IS NULL LIMIT 1',
         ).get(key, contentHash, tc);
         if (dup) {
-          if (typeof idempotencyToken === 'string') IDEMP.set(idempotencyToken, { code: dup.code, at: Date.now() }); // dedup 경로도 멱등토큰 등록(#15)
+          if (idemKey) IDEMP.set(idemKey, { code: dup.code, at: Date.now() }); // dedup 경로도 멱등토큰 등록(#15)
           return send(res, 200, { code: dup.code, deduped: true });
         }
       }
@@ -284,7 +296,7 @@ const server = createServer(async (req, res) => {
         db.exec('ROLLBACK');
         throw e;
       }
-      if (typeof idempotencyToken === 'string') IDEMP.set(idempotencyToken, { code, at: now });
+      if (idemKey) IDEMP.set(idemKey, { code, at: now });
       return send(res, 201, { code });
     }
 
@@ -294,8 +306,9 @@ const server = createServer(async (req, res) => {
       const code = mReport[1];
       const cid = Number(mReport[2]);
       if (!rateOk('rpt:' + ip, 30)) return send(res, 429, { error: 'rate limited' });
-      const { author_key } = await readBody(req);
-      const reporter = (typeof author_key === 'string' && author_key) ? author_key.slice(0, 80) : ip;
+      await readBody(req); // body 소비. 자기신고 author_key는 신고자 식별에 쓰지 않는다.
+      // 신고자 = 서버 도출 IP. 클라 author_key 회전으로 distinct 신고자를 위조해 자동숨김을 트리거하지 못한다(Codex P0).
+      const reporter = ip;
       const c = db.prepare('SELECT id FROM comments WHERE id = ? AND code = ?').get(cid, code);
       if (!c) return send(res, 404, { error: 'comment not found' });
       const ins = db.prepare('INSERT OR IGNORE INTO comment_reports (comment_id, reporter_key, created_at) VALUES (?, ?, ?)').run(cid, reporter, Date.now());
@@ -309,7 +322,8 @@ const server = createServer(async (req, res) => {
     const mComments = path.match(/^\/sessions\/([^/]+)\/comments$/);
     if (mComments) {
       const code = mComments[1];
-      if (!sessionExists(code)) return send(res, 404, { error: 'session not found' });
+      const cs = db.prepare('SELECT hidden FROM sessions WHERE code = ?').get(code);
+      if (!cs || cs.hidden) return send(res, 404, { error: 'session not found' }); // 숨김 세션엔 코멘트 비공개
       if (req.method === 'GET') {
         const rows = db.prepare('SELECT id, author, text, created_at FROM comments WHERE code = ? AND hidden = 0 ORDER BY created_at DESC LIMIT 100').all(code);
         return send(res, 200, { comments: rows.map((r) => ({ id: r.id, author: r.author || '익명', text: r.text, createdAt: r.created_at })) });
@@ -332,11 +346,17 @@ const server = createServer(async (req, res) => {
     const mTracks = path.match(/^\/sessions\/([^/]+)\/tracks$/);
     if (req.method === 'POST' && mTracks) {
       const code = mTracks[1];
-      if (!sessionExists(code)) return send(res, 404, { error: 'session not found' });
+      const sess = db.prepare('SELECT author_key, published, hidden FROM sessions WHERE code = ?').get(code);
+      if (!sess || sess.hidden) return send(res, 404, { error: 'session not found' });
       if (trackCount(code) >= MAX_TRACKS) return send(res, 409, { error: 'too many tracks' });
       const { owner, events, instrument, style, author_key } = await readBody(req);
       const key = (typeof author_key === 'string' && author_key) ? author_key.slice(0, 80) : ip;
       if (!rateOk('trk:' + ip, 30)) return send(res, 429, { error: 'rate limited' });
+      // 공개(published) 세션은 소유자만 트랙 추가 가능 — 공개 code로 타인 곡을 오염시키지 못한다(Codex P0).
+      // 파생은 새 POST /sessions + origin_code로. 비공개(친구공유 code=접근)는 '얹기' 협업 유지.
+      if (sess.published && (sess.author_key === 'seed' || !sess.author_key || sess.author_key !== key)) {
+        return send(res, 403, { error: 'published sessions: only owner can add tracks; fork via origin_code' });
+      }
       if (badEvents(events)) return send(res, 400, { error: 'invalid events' });
       if (!okInstrument(instrument)) return send(res, 400, { error: 'invalid instrument' });
       const info = db.prepare('INSERT INTO tracks (code, owner, events, instrument, style, author_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
@@ -351,7 +371,8 @@ const server = createServer(async (req, res) => {
       if (!rateOk('like:' + ip, 60)) return send(res, 429, { error: 'rate limited' });
       const { author_key } = await readBody(req);
       const key = (typeof author_key === 'string' && author_key) ? author_key.slice(0, 80) : ip;
-      if (!sessionExists(code)) return send(res, 404, { error: 'session not found' });
+      const ls = db.prepare('SELECT hidden FROM sessions WHERE code = ?').get(code);
+      if (!ls || ls.hidden) return send(res, 404, { error: 'session not found' }); // 숨김 세션엔 좋아요 불가
       const existing = db.prepare('SELECT 1 FROM reactions WHERE code = ? AND anon_key = ?').get(code, key);
       let liked;
       if (existing) {
@@ -383,8 +404,8 @@ const server = createServer(async (req, res) => {
     const mSession = path.match(/^\/sessions\/([^/]+)$/);
     if (req.method === 'GET' && mSession) {
       const code = mSession[1];
-      const sess = db.prepare('SELECT code, name, bpm, created_at, origin_code FROM sessions WHERE code = ?').get(code);
-      if (!sess) return send(res, 404, { error: 'session not found' });
+      const sess = db.prepare('SELECT code, name, bpm, created_at, origin_code, hidden FROM sessions WHERE code = ?').get(code);
+      if (!sess || sess.hidden) return send(res, 404, { error: 'session not found' }); // 숨김 세션은 공개 GET 차단(Codex MED)
       db.prepare('UPDATE sessions SET play_count = COALESCE(play_count, 0) + 1 WHERE code = ?').run(code);
       const tracks = db
         .prepare('SELECT owner, events, instrument, style, created_at FROM tracks WHERE code = ? ORDER BY id')

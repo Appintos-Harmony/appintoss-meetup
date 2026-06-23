@@ -1058,7 +1058,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       if (!deduped) {
         for (let i = 1; i < layered.length; i++) {
           const t = layered[i];
-          await addTrack(code, t.owner, t.events, t.instrument, t.style);
+          await addTrack(code, t.owner, t.events, t.instrument, t.style, key); // 공개 세션 소유자 검증용 키
         }
       }
       flashToast(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
