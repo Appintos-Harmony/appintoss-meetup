@@ -17,14 +17,23 @@ sudo cp server.mjs package.json "$APP_DIR/"
 id harmony &>/dev/null || sudo useradd -r -s /usr/sbin/nologin harmony
 sudo chown -R harmony:harmony "$APP_DIR"
 
-# 3) systemd 등록·기동
+# 3) systemd 등록·기동·재시작(코드 변경 반영 — enable --now는 running 서비스를 재시작하지 않음)
 sudo cp deploy/harmony-api.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now harmony-api
+sudo systemctl enable harmony-api
+sudo systemctl restart harmony-api   # server.mjs 갱신 반영. 앱은 127.0.0.1:8080에 바인드(외부 직접 노출 차단).
 
-# 4) 헬스체크
+# 3.5) nginx 설정 반영(X-Real-IP/XFF 덮어쓰기 = XFF 위조 차단). nginx 사용 토폴로지일 때만.
+if command -v nginx >/dev/null 2>&1; then
+  # conf 위치는 환경별로 다를 수 있음(아래는 일반적 sites-available). 이미 배치돼 있으면 cp 생략 가능.
+  sudo cp deploy/nginx-harmony-api.conf /etc/nginx/sites-available/harmony-api.conf 2>/dev/null || true
+  sudo nginx -t && sudo systemctl reload nginx && echo "  ✅ nginx reloaded (X-Real-IP/XFF 덮어쓰기 적용)"
+fi
+
+# 4) 헬스체크 (앱은 127.0.0.1 바인드 — 서버 로컬에서 확인)
 sleep 1
-curl -fsS http://localhost:8080/healthz && echo "  ✅ harmony-api up on :8080"
+curl -fsS http://127.0.0.1:8080/healthz && echo "  ✅ harmony-api up on 127.0.0.1:8080"
+# 배포 후 점검(런북): ss -ltnp | grep 8080 → 127.0.0.1:8080 인지 확인(0.0.0.0 아님).
 
 echo ""
 echo "다음(HTTPS — 토스 WebView 필수, 둘 중 하나):"
