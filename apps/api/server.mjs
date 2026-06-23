@@ -5,6 +5,7 @@
 // 인증 없음(code=접근, author_key=클라 자기신고 약한 소유권 — 데모 한정). 식별=클라 getAnonymousKey/닉네임. 실시간 아님(1.5s polling).
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
+import { createHash } from 'node:crypto';
 
 const PORT = Number(process.env.PORT) || 8080;
 const db = new DatabaseSync(process.env.DB_PATH || 'harmony.db');
@@ -26,11 +27,13 @@ const MIGRATIONS = [
   'ALTER TABLE sessions ADD COLUMN origin_code TEXT',
   'ALTER TABLE sessions ADD COLUMN play_count INTEGER DEFAULT 0',
   'ALTER TABLE sessions ADD COLUMN hidden INTEGER DEFAULT 0',
+  'ALTER TABLE sessions ADD COLUMN content_hash TEXT', // 콘텐츠 중복방지(첫 트랙 해시). origin 없는 원곡 publish에만 사용.
 ];
 for (const m of MIGRATIONS) {
   try { db.exec(m); } catch { /* 이미 존재 */ }
 }
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_board ON sessions(published, created_at)'); } catch { /* noop */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_dedup ON sessions(author_key, content_hash, published, hidden)'); } catch { /* noop */ }
 
 // 혼동 문자(0/O/1/I) 제외한 코드.
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -43,6 +46,9 @@ function genCode() {
 // 입력 검증(데모는 무인증 — code=접근권한. 최소 방어로 오염 payload 차단).
 const VALID_INSTRUMENTS = new Set(['piano', 'guitar', 'bass', 'drum']);
 const MAX_TRACKS = 16;
+// 서로 다른 신고자 N명 누적 시 댓글 자동 숨김. 변경은 신규 신고부터 적용(기존 누적 소급 없음).
+// ⚠️ reporter_key=클라 자기신고라 키 회전으로 1인이 distinct N명을 위조해 트리거 가능(정책준수표 Known Limitation, OQ-B).
+const REPORT_HIDE_THRESHOLD = 3;
 function badEvents(events) {
   if (!Array.isArray(events) || events.length > 5000) return true;
   for (const e of events) {
@@ -55,6 +61,18 @@ function badEvents(events) {
 }
 const okInstrument = (i) => i == null || (typeof i === 'string' && VALID_INSTRUMENTS.has(i));
 const clip = (s, n, dflt) => (typeof s === 'string' ? s.slice(0, n) : dflt);
+
+// 콘텐츠 해시(중복방지용). 키 순서·표현 차이에 무관하도록 결정적 직렬화 후 sha1 prefix.
+// 첫 트랙 events + instrument + style 기준(리허설 FB2: 실DB상 사용자의 '같은 곡'은 첫 트랙 동일).
+function stableStringify(v) {
+  if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+  return JSON.stringify(v);
+}
+function firstTrackHash(events, instrument, style) {
+  const norm = stableStringify({ events: events ?? [], instrument: instrument ?? null, style: style ?? null });
+  return createHash('sha1').update(norm).digest('hex').slice(0, 16);
+}
 
 // UGC 텍스트 최소 정화: trim·제어문자 제거·길이 제한. 링크/연락처는 거부(PII·스팸 최소 방어).
 const URL_RE = /(https?:\/\/|www\.)/i;
@@ -233,13 +251,24 @@ const server = createServer(async (req, res) => {
       } else {
         nm = clip(name, 40, '하모니 세션');
       }
+      // 콘텐츠 중복방지(FB2): origin 없는 원곡 publish + 실제 클라 키일 때만. 같은 (author_key, 첫트랙 해시)가
+      // 이미 published·미숨김으로 있으면 새 세션을 만들지 않고 기존 code를 멱등 반환. 파생(origin 있음)은 우회.
+      // SELECT~INSERT~COMMIT 사이에 await가 없어 node:sqlite 동기 API로 원자적이다(레이스 없음).
+      const hasClientKey = typeof author_key === 'string' && !!author_key;
+      const contentHash = isPublished ? firstTrackHash(events, instrument, style) : null;
+      if (isPublished && origin === null && hasClientKey) {
+        const dup = db.prepare(
+          'SELECT code FROM sessions WHERE author_key = ? AND content_hash = ? AND published = 1 AND hidden = 0 AND origin_code IS NULL LIMIT 1',
+        ).get(key, contentHash);
+        if (dup) return send(res, 200, { code: dup.code, deduped: true });
+      }
       let code = genCode();
       while (sessionExists(code)) code = genCode();
       const now = Date.now();
       db.exec('BEGIN');
       try {
-        db.prepare('INSERT INTO sessions (code, name, bpm, created_at, published, author, author_key, origin_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-          .run(code, nm, Number(bpm) || 100, now, isPublished, clip(author, 60, '익명'), key, origin);
+        db.prepare('INSERT INTO sessions (code, name, bpm, created_at, published, author, author_key, origin_code, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(code, nm, Number(bpm) || 100, now, isPublished, clip(author, 60, '익명'), key, origin, contentHash);
         if (Array.isArray(events) && events.length) {
           db.prepare('INSERT INTO tracks (code, owner, events, instrument, style, author_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
             .run(code, clip(owner, 60, '익명'), JSON.stringify(events), instrument || null, clip(style, 40, null), key, now);
@@ -266,7 +295,7 @@ const server = createServer(async (req, res) => {
       const ins = db.prepare('INSERT OR IGNORE INTO comment_reports (comment_id, reporter_key, created_at) VALUES (?, ?, ?)').run(cid, reporter, Date.now());
       if (ins.changes) {
         const n = db.prepare('SELECT COUNT(*) n FROM comment_reports WHERE comment_id = ?').get(cid).n;
-        db.prepare('UPDATE comments SET reports = ?, hidden = ? WHERE id = ?').run(n, n >= 3 ? 1 : 0, cid);
+        db.prepare('UPDATE comments SET reports = ?, hidden = ? WHERE id = ?').run(n, n >= REPORT_HIDE_THRESHOLD ? 1 : 0, cid);
       }
       return send(res, 200, { ok: true });
     }
