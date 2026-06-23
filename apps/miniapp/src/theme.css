@@ -132,3 +132,11 @@ body {
   25% { opacity: 1; }
   100% { transform: translate(-50%, -90%) scale(1.7) rotate(10deg); opacity: 0; }
 }
+
+/* 기타/베이스 제스처 프렛보드 — 코드 울릴 때 현(가로선) 진동 */
+.gstring-vib { animation: gstring .11s linear infinite; will-change: transform; }
+@keyframes gstring {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-1.6px); }
+  75% { transform: translateY(1.6px); }
+}

@@ -45,72 +45,97 @@ export interface FxHit {
   x: number; // 카메라 정규화 좌표(미러 전)
   y: number;
 }
+export interface FxResult {
+  hits: FxHit[];
+  handWaving: [boolean, boolean]; // 손별 '팔랑팔랑 흔드는 중'(1명 모드에서 연주 억제용)
+}
 
-interface AxisHist {
+// 한 축의 '흔들림(flutter)' 추적: 짧은 시간 창 안의 방향전환 횟수로 판정 → 우발적 1회 이동은 무시.
+interface Flutter {
   v: number;
   dir: number; // -1/0/1
-  reversalV: number; // 마지막 방향전환 지점
+  reversalV: number; // 마지막 방향전환 기준점
+  reversals: number[]; // 최근 방향전환 시각들(창 안)
   lastTrig: number;
 }
-let handX: (AxisHist | null)[] = [null, null];
+let handF: (Flutter | null)[] = [null, null];
+let faceF: Flutter | null = null;
 let clapPrevD = 1;
 let clapArmed = true;
 let clapLast = 0;
-let faceY: AxisHist | null = null;
 
 const MOVE_EPS = 0.012; // 방향 갱신 최소 이동
-const WAVE_AMP = 0.06; // 흔들기 진폭(반전 사이)
-const WAVE_GAP = 110; // ms, 탬버린 최소 간격
-const CLAP_NEAR = 0.16; // 두 손 가까움
-const CLAP_FAR = 0.3; // 재무장 거리
+// 손 흔들기 = "팔랑팔랑": 창(WINDOW)에서 방향전환 MIN_REV회 이상이어야 인정(엄격).
+const WAVE_AMP = 0.045;
+const WAVE_WINDOW = 650;
+const WAVE_MIN_REV = 3;
+const WAVE_GAP = 110;
+// 헤드뱅잉 = 위아래 끄덕임 2회+.
+const FACE_AMP = 0.03;
+const FACE_WINDOW = 750;
+const FACE_MIN_REV = 2;
+const FACE_GAP = 170;
+// 박수 = 양손 근접 엣지.
+const CLAP_NEAR = 0.16;
+const CLAP_FAR = 0.3;
 const CLAP_GAP = 250;
-const FACE_AMP = 0.035; // 헤드뱅잉 상하 진폭
-const FACE_GAP = 200;
 
 export function resetFx(): void {
-  handX = [null, null];
+  handF = [null, null];
+  faceF = null;
   clapPrevD = 1;
   clapArmed = true;
   clapLast = 0;
-  faceY = null;
 }
 
-// 한 축(가로 손 x / 세로 얼굴 y) 흔들림 → 방향전환마다 트리거.
-function axisShake(h: AxisHist | null, v: number, amp: number, gap: number, now: number): { hist: AxisHist; trig: boolean } {
-  if (!h) return { hist: { v, dir: 0, reversalV: v, lastTrig: 0 }, trig: false };
+// 한 축의 flutter 갱신. active=흔드는 중, fired=이번 프레임 트리거.
+function flutter(
+  h: Flutter | null,
+  v: number,
+  amp: number,
+  win: number,
+  minRev: number,
+  gap: number,
+  now: number,
+): { hist: Flutter; active: boolean; fired: boolean } {
+  if (!h) return { hist: { v, dir: 0, reversalV: v, reversals: [], lastTrig: 0 }, active: false, fired: false };
   const dv = v - h.v;
   let dir = h.dir;
-  let trig = false;
   let reversalV = h.reversalV;
   let lastTrig = h.lastTrig;
+  let reversals = h.reversals.filter((t) => now - t < win);
   if (Math.abs(dv) > MOVE_EPS) {
     const nd = dv > 0 ? 1 : -1;
-    if (nd !== h.dir && h.dir !== 0) {
-      // 방향 전환 — 직전 전환점 대비 진폭 충분 + 간격 충분이면 트리거
-      if (Math.abs(v - h.reversalV) > amp && now - h.lastTrig > gap) {
-        trig = true;
-        lastTrig = now;
-      }
+    if (nd !== dir && dir !== 0) {
+      if (Math.abs(v - reversalV) > amp) reversals = [...reversals, now]; // 진폭 충분한 반전만 카운트
       reversalV = v;
     }
     dir = nd;
   }
-  return { hist: { v, dir, reversalV, lastTrig }, trig };
+  const active = reversals.length >= minRev;
+  let fired = false;
+  if (active && now - lastTrig > gap) {
+    fired = true;
+    lastTrig = now;
+  }
+  return { hist: { v, dir, reversalV, reversals, lastTrig }, active, fired };
 }
 
-/** 손 프레임 + (옵션)얼굴 중심으로 효과 감지. 트리거된 효과 목록 반환. */
-export function detectFx(frames: { pos: Pt | null }[], face: Pt | null, now: number): FxHit[] {
+/** 손 프레임 + (옵션)얼굴 중심으로 효과 감지. 효과 hit + 손별 흔드는중 상태 반환. */
+export function detectFx(frames: { pos: Pt | null }[], face: Pt | null, now: number): FxResult {
   const hits: FxHit[] = [];
-  // 손 흔들기(손별) → 탬버린
+  const handWaving: [boolean, boolean] = [false, false];
+  // 손 흔들기(손별, flutter) → 탬버린
   for (let i = 0; i < 2; i++) {
     const p = frames[i]?.pos ?? null;
     if (!p) {
-      handX[i] = null;
+      handF[i] = null;
       continue;
     }
-    const r = axisShake(handX[i], p.x, WAVE_AMP, WAVE_GAP, now);
-    handX[i] = r.hist;
-    if (r.trig) hits.push({ kind: 'tambourine', x: p.x, y: p.y });
+    const r = flutter(handF[i], p.x, WAVE_AMP, WAVE_WINDOW, WAVE_MIN_REV, WAVE_GAP, now);
+    handF[i] = r.hist;
+    handWaving[i] = r.active;
+    if (r.fired) hits.push({ kind: 'tambourine', x: p.x, y: p.y });
   }
   // 박수(양손 근접) → 박수
   const a = frames[0]?.pos ?? null;
@@ -128,15 +153,15 @@ export function detectFx(frames: { pos: Pt | null }[], face: Pt | null, now: num
     clapPrevD = 1;
     clapArmed = true;
   }
-  // 헤드뱅잉(얼굴 상하) → 귀여운 효과음
+  // 헤드뱅잉(얼굴 상하 끄덕임) → 귀여운 효과음
   if (face) {
-    const r = axisShake(faceY, face.y, FACE_AMP, FACE_GAP, now);
-    faceY = r.hist;
-    if (r.trig) hits.push({ kind: 'cute', x: face.x, y: face.y });
+    const r = flutter(faceF, face.y, FACE_AMP, FACE_WINDOW, FACE_MIN_REV, FACE_GAP, now);
+    faceF = r.hist;
+    if (r.fired) hits.push({ kind: 'cute', x: face.x, y: face.y });
   } else {
-    faceY = null;
+    faceF = null;
   }
-  return hits;
+  return { hits, handWaving };
 }
 
 export function playFx(kind: FxHit['kind']): void {
