@@ -1401,13 +1401,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 })}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {hasTake && !busy && (
-                <button className="btn" style={{ flex: 1, background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어 추가</button>
+                <button className="btn" style={{ flex: '1 1 30%', background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어</button>
               )}
-              <button className="btn" style={{ flex: 1, background: jamming ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
+              <button className="btn" style={{ flex: '1 1 30%', background: jamming ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
                 {jamming ? '■ 정지' : '🎶 합주 듣기'}
               </button>
+              {!busy && (
+                <button className="btn" style={{ flex: '1 1 30%', background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={openSave}>💾 저장</button>
+              )}
             </div>
           </div>
         )}
@@ -1482,11 +1485,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 <span className="t-cap c-sub">{forked && !forked.code.startsWith('LOCAL') ? `「${forked.name}」 음원으로 이어 만들기 (출처 표시됨)` : '내 합주를 보드에 공개'}</span>
               </span>
             </button>
-            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); openSave(); }}>
+            <button className="sheet-row" disabled={(!hasTake && sessionTracks.length === 0) || busy} style={{ opacity: (hasTake || sessionTracks.length > 0) && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); openSave(); }}>
               <span style={{ fontSize: 22 }}>💾</span>
               <span style={{ flex: 1, textAlign: 'left' }}>
                 <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>저장</span>
-                <span className="t-cap c-sub">{hasTake ? '이름 지어 내 기기에 저장' : '녹음 후 사용 가능'}</span>
+                <span className="t-cap c-sub">{(hasTake || sessionTracks.length > 0) ? '이름 지어 내 기기에만 저장(나만 간직)' : '녹음 후 사용 가능'}</span>
               </span>
             </button>
             <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); setEditing(true); }}>
