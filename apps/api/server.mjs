@@ -427,4 +427,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`harmony-api listening on :${PORT}`));
+// 기본 바인드는 127.0.0.1 — 같은 호스트의 nginx 리버스프록시만 접근 가능(8080 외부 직접 노출·X-Real-IP spoof 차단, Codex R039 조건).
+// 다른 토폴로지가 필요하면 HOST로 명시(예: HOST=0.0.0.0). production은 127.0.0.1 유지 권장.
+const HOST = process.env.HOST || '127.0.0.1';
+server.listen(PORT, HOST, () => console.log(`harmony-api listening on ${HOST}:${PORT}`));
