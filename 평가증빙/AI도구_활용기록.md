@@ -126,6 +126,20 @@ related_adrs: []
 - correction_made: 없음
 - accepted/rejected: accepted
 - reusable_asset: 무의존 백엔드(node:http+node:sqlite)·HTTPS 동일출처 배포 절차
+
+- date: 2026-06-23
+- phase: 검증/구현 (2장비 리허설 피드백)
+- task_id: TASK-20260623-009 (커뮤니티 리허설 수정)
+- tool: Claude Code (Opus) + 멀티에이전트 자체회의(6에이전트 워크플로)
+- role: 오케스트레이션 + 역할별 적대적 자체검증 + 구현
+- task: 리허설 피드백 6건(재생바·중복방지·신고버그·신고정책) → 아키텍트 설계 초안 → 백엔드·QA·정책·레드팀 4역할 적대적 검토 → 수렴(타당 수용/부당 기각) → 구현·재테스트
+- input_artifact: 리허설 사용자 피드백, 실DB 디핑(rehearsal.db sessions/tracks/reactions/comments)
+- output_artifact: server.mjs·share.ts·Community.tsx·Studio.tsx 수정, 기능명세서 v4, DECISION-20260623-001
+- automated_checks: tsc 0, vitest 58/58, 백엔드 회귀 11/11, FB2/FB6 9/9, 좋아요 8/8, build:web PASS
+- human_reviewer: 이상혁(정책 결정 DECISION-001 대기), 푸시 사람 승인
+- correction_made: 자체회의가 설계의 핵심 전제(중복 2건 콘텐츠 동일)를 실DB로 반증→whole-content 해시 기각·first-track 해시 채택. 파생 collapse 회귀(origin_code IS NULL 가드 누락)를 사전 차단. 키 회전 검열 벡터를 4역할 중 3역할이 일치 지적→결정요청서로 상신.
+- accepted/rejected: accepted (정책 의존부는 사람 게이트 대기)
+- reusable_asset: 멀티에이전트 자체회의 워크플로(설계→역할별 적대적 검증→수렴), 실DB 디핑으로 설계 전제 반증 패턴
 ```
 
 ## §19 필수 사례 충족 현황
@@ -148,3 +162,4 @@ related_adrs: []
 - 적대적 코드리뷰가 차단한 결함: 멜로디 폴리포니 HIGH 3건(clearMelody desync 등)을 머지 전에 잡아 수정했다.
 - 배포: develop 통합·푸시 완료(마지막 feature 6372dc3, 그 위 조장 docs 커밋 ebdad0a가 develop tip), AWS EC2에 HTTPS 동일출처로 운영(https://3.39.167.74.nip.io). 커밋은 자동, 푸시는 사람 게이트.
 - 한계: 실기기 멀티터치·실제 음색 청취·제품 통합테스트(EV-101 이후)는 사람 확인이 남았다.
+- 멀티에이전트 자체회의(6/23): 2장비 리허설 피드백을 6에이전트 워크플로(설계→백엔드·QA·정책·레드팀 적대적 검토→수렴)로 처리. 사례 3·4 강화 — 자체검토가 설계의 틀린 전제를 **실DB 디핑으로 반증**(whole-content 해시→first-track 해시)하고, 파생 collapse 회귀를 사전 차단했다. 사례 5 강화 — 자동 스모크(회귀 11/11)가 dedup·신고 동작을 게이트했다. 정책 의존부(shadow moderation·키회전 검열)는 DECISION-20260623-001로 사람 판정에 상신해 AI 단정을 회피했다.
