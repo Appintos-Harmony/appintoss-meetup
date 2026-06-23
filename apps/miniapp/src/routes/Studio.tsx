@@ -148,6 +148,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [showMore, setShowMore] = useState(false); // 하단 '더보기' 시트(부차 액션 모음)
   const [nameModal, setNameModal] = useState<null | 'save' | 'publish'>(null); // 곡 이름 입력 모달(저장/커뮤니티 올리기 공통)
   const [songName, setSongName] = useState('');
+  const [monitorLoop, setMonitorLoop] = useState(true); // 녹음 중 합주(레이어) 반복 재생 여부
+  const [monMs, setMonMs] = useState(0); // 모니터 재생 위치(녹음 중 진행 바)
+  const [monDur, setMonDur] = useState(0); // 모니터(합주) 총 길이
   const [brightness, setBrightness] = useState(1); // 개발자 모드 오버레이 창 자체의 밝기/투명도
   const [modeSheet, setModeSheet] = useState(false); // 연주법(코드/멜로디) 시트
   const [inputSheet, setInputSheet] = useState(false); // 입력 방식(터치/제스처) 시트
@@ -177,7 +180,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const barDragRef = useRef(false);
   const wasPlayingRef = useRef(false); // 스크럽 시작 시 재생 중이었나(놓으면 재개)
   const seekMsRef = useRef(0); // 드래그 중 목표 위치
-  const monitorRef = useRef<{ voices: Voice[]; timers: number[] }>({ voices: [], timers: [] }); // 녹음 중 기존 레이어 모니터링
+  const monitorRef = useRef<{ voices: Voice[]; timers: number[]; raf: number; loopTimer: number; startPerf: number }>({ voices: [], timers: [], raf: 0, loopTimer: 0, startPerf: 0 }); // 녹음 중 기존 레이어 모니터링(반복·진행도)
   const loopOriginalRef = useRef<ChordEvent[] | null>(null); // 구간 반복 적용 전 원본(해제용)
   const selectedRef = useRef<string[]>(selected);
   selectedRef.current = selected;
@@ -204,6 +207,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const sparkleIdRef = useRef(0);
   const effectsOnRef = useRef(effectsOn);
   effectsOnRef.current = effectsOn;
+  const monitorLoopRef = useRef(monitorLoop); // 반복 토글의 최신값(스케줄러가 읽음)
+  monitorLoopRef.current = monitorLoop;
   const chordPointerRef = useRef<Set<number>>(new Set()); // 터치 코드 패드: 눌린 포인터 추적(지연-down 레이스·취소 방지)
 
   useEffect(() => {
@@ -454,19 +459,21 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   // 녹음 중 기존 레이어를 함께 들려줌(같이 연주하도록). 녹음 시작 시점 기준으로 스케줄.
   function stopMonitor() {
-    monitorRef.current.timers.forEach((id) => window.clearTimeout(id));
-    monitorRef.current.voices.forEach((v) => v.dispose());
-    monitorRef.current = { voices: [], timers: [] };
+    const m = monitorRef.current;
+    if (m.raf) cancelAnimationFrame(m.raf);
+    if (m.loopTimer) window.clearTimeout(m.loopTimer);
+    m.timers.forEach((id) => window.clearTimeout(id));
+    m.voices.forEach((v) => v.dispose());
+    monitorRef.current = { voices: [], timers: [], raf: 0, loopTimer: 0, startPerf: 0 };
+    setMonMs(0);
+    setMonDur(0);
   }
-  function startMonitor() {
-    stopMonitor();
-    const voices: Voice[] = [];
-    const timers: number[] = [];
-    const t0 = audioNow(); // 모니터도 오디오 클럭 — 메트로놈과 샘플정확으로 그루브 락(내 연주와 싱크)
-    for (const t of sessionTracks) {
-      const inst = t.instrument ?? inferInstrument(t.events);
-      const v = createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
-      voices.push(v);
+
+  // 합주(레이어) 한 패스를 audioNow 기준으로 스케줄. 반복 시 매 경계에서 다시 호출.
+  function scheduleMonitorPass(voices: Voice[], t0: number) {
+    sessionTracks.forEach((t, vi) => {
+      const v = voices[vi];
+      if (!v) return;
       for (const ev of normalizeEvents(t.events)) {
         const at = t0 + tickToMs(ev.tick) / 1000;
         if (ev.kind === 'drum') v.hit(ev.piece, at);
@@ -478,8 +485,38 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           else v.off(ev.chord, at);
         }
       }
-    }
-    monitorRef.current = { voices, timers };
+    });
+  }
+
+  function startMonitor() {
+    stopMonitor();
+    let maxTick = 0;
+    for (const t of sessionTracks) for (const ev of t.events) if (ev.tick > maxTick) maxTick = ev.tick;
+    const dur = tickToMs(maxTick);
+    if (dur <= 0 || !sessionTracks.length) return;
+    const voices = sessionTracks.map((t) => {
+      const inst = t.instrument ?? inferInstrument(t.events);
+      return createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
+    });
+    scheduleMonitorPass(voices, audioNow()); // 모니터도 오디오 클럭 — 메트로놈과 샘플정확 그루브 락(내 연주와 싱크)
+    const startPerf = performance.now();
+    monitorRef.current = { voices, timers: [], raf: 0, loopTimer: 0, startPerf };
+    setMonDur(dur);
+    setMonMs(0);
+    // 진행 바(녹음 중 합주 위치). 반복이면 wrap, 아니면 끝에서 멈춤.
+    const tick = () => {
+      const el = performance.now() - startPerf;
+      setMonMs(monitorLoopRef.current ? el % dur : Math.min(el, dur));
+      monitorRef.current.raf = requestAnimationFrame(tick);
+    };
+    monitorRef.current.raf = requestAnimationFrame(tick);
+    // 반복: 매 경계에서 다음 패스 스케줄. 토글이 꺼지면 중단(이미 예약된 패스는 끝까지 재생).
+    const loopNext = () => {
+      if (!monitorLoopRef.current) return;
+      scheduleMonitorPass(monitorRef.current.voices, audioNow());
+      monitorRef.current.loopTimer = window.setTimeout(loopNext, dur);
+    };
+    if (monitorLoopRef.current) monitorRef.current.loopTimer = window.setTimeout(loopNext, dur);
   }
 
   function shiftOctave(d: number) {
@@ -1401,6 +1438,15 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 })}
               </div>
             )}
+            {sessionTracks.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 4px', borderTop: '1px solid var(--line-2)', marginTop: 2 }}>
+                <div style={{ flex: 1 }}>
+                  <div className="t-cap c-sub2" style={{ fontWeight: 700 }}>🔁 녹음할 때 합주 반복</div>
+                  <div className="t-cap c-sub" style={{ marginTop: 1 }}>녹음 끝날 때까지 합주가 계속 돌아요</div>
+                </div>
+                <button className="chip" onClick={() => setMonitorLoop((v) => !v)} style={{ background: monitorLoop ? 'var(--blue)' : 'var(--bg)', color: monitorLoop ? '#fff' : 'var(--text-2)', fontWeight: 700, padding: '8px 18px', minWidth: 58 }}>{monitorLoop ? '켜짐' : '꺼짐'}</button>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {hasTake && !busy && (
                 <button className="btn" style={{ flex: '1 1 30%', background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어</button>
@@ -1439,6 +1485,17 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 </div>
               </div>
               <span className="t-cap c-sub" style={{ minWidth: 30, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(takeMs)}</span>
+            </div>
+          )}
+          {/* 녹음 중 합주(모니터) 진행 바 — 기존 레이어가 어디까지 재생됐는지. 반복 시 🔁 */}
+          {phase === 'recording' && monDur > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+              <span className="t-cap" style={{ fontSize: 11, fontWeight: 800, color: 'var(--coral)' }}>합주</span>
+              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMs(monMs)}</span>
+              <div style={{ flex: 1, height: 6, borderRadius: 999, background: 'var(--line-2)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.min(100, (monMs / monDur) * 100)}%`, background: 'var(--coral)', borderRadius: 999 }} />
+              </div>
+              <span className="t-cap c-sub" style={{ minWidth: 46, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(monDur)}{monitorLoop ? ' 🔁' : ''}</span>
             </div>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
