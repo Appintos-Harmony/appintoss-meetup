@@ -36,15 +36,18 @@ export const PROTECTED_PATHS = [
 // 게이팅 키: 중복되면 의미가 모호하므로 해당 작업을 무효(fail-closed)로 본다.
 const GATING_KEYS = new Set(['id', 'status', 'allowed_paths', 'forbidden_paths']);
 
-// 경로 정규화: 역슬래시→슬래시, '.'·'..' 해소, 절대경로/드라이브/앞슬래시 제거, 소문자.
-// Windows 대소문자 무시 FS와 traversal 우회를 한 형태로 모은다.
+// 경로 정규화: 유니코드 NFC, 역슬래시→슬래시, '.'·'..' 해소, 절대경로/드라이브/앞슬래시 제거,
+// 세그먼트 후행 점·공백 제거(Win32가 'tooling.'→'tooling'으로 실제 자원을 엶), 소문자.
+// 대소문자 무시 FS·NFD/NFC·traversal·후행점 우회를 한 형태로 모은다(REVIEW요청_Codex BYPASS #1·#2).
 export function canonicalize(p) {
-  let s = String(p).replace(/\\/g, '/').trim();
+  let s = String(p).normalize('NFC').replace(/\\/g, '/').trim();
   s = s.replace(/^[a-zA-Z]:\//, '').replace(/^\/+/, '');
   const parts = [];
-  for (const seg of s.split('/')) {
-    if (seg === '' || seg === '.') continue;
+  for (let seg of s.split('/')) {
     if (seg === '..') { parts.pop(); continue; }
+    if (seg === '.' || seg === '') continue;
+    seg = seg.replace(/[.\s]+$/, ''); // 후행 점·공백 제거(traversal 판정 뒤)
+    if (seg === '') continue;
     parts.push(seg);
   }
   return parts.join('/').toLowerCase();

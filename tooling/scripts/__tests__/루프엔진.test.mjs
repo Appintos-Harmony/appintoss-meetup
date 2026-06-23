@@ -52,6 +52,24 @@ test('canonicalize: 대소문자·역슬래시·.. 정규화', () => {
   assert.equal(canonicalize('C:/x/Y'), 'x/y');
 });
 
+test('canonicalize: NFD→NFC·후행점·공백 (Codex BYPASS #1·#2)', () => {
+  const prot = '프로젝트_운영/00_팀공유/00_진행사항.md';
+  assert.equal(canonicalize(prot.normalize('NFD')), canonicalize(prot)); // NFD==NFC
+  assert.equal(canonicalize('tooling./scripts/x'), 'tooling/scripts/x'); // 후행 점
+  assert.equal(canonicalize('CLAUDE.md.'), 'claude.md');
+  assert.equal(canonicalize('a/b /c'), 'a/b/c');                          // 후행 공백
+  assert.equal(canonicalize('a/../b'), 'b');                              // traversal 유지
+});
+
+test('보호경로 우회 차단: NFD·후행점 (Codex BYPASS #1·#2)', () => {
+  const prot = '프로젝트_운영/00_팀공유/00_진행사항.md';
+  assert.ok(isUnderProtected(prot.normalize('NFD')));                          // #1
+  assert.ok(!pathSafety({ allowed_paths: [prot.normalize('NFD')] }).safe);
+  assert.ok(isUnderProtected('tooling./scripts/x.mjs'));                       // #2
+  assert.ok(isUnderProtected('CLAUDE.md.'));
+  assert.ok(!pathSafety({ allowed_paths: ['tooling./scripts/커밋.mjs'] }).safe);
+});
+
 // --- glob ---
 test('globMatches: ** 포함, * 미포함, 대소문자 무관', () => {
   assert.ok(globMatches('apps/**', 'apps/miniapp/src/x.ts'));
