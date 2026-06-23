@@ -126,6 +126,21 @@ related_adrs: []
 - correction_made: 없음
 - accepted/rejected: accepted
 - reusable_asset: 무의존 백엔드(node:http+node:sqlite)·HTTPS 동일출처 배포 절차
+
+- date: 2026-06-23
+- phase: 구현/하네스
+- task_id: TASK-20260623-010
+- tool: Claude Code (Opus). 게이트는 tooling/scripts가 코드로 강제
+- role: 주 구현(엔진·드라이버·테스트)
+- task: 자율 엔지니어링 루프 구축 — 작업 선택·tsc/vitest 게이트·경로/보호구역/반복캡을 순수 Node로 강제(외부 API 0), AI 스테이지는 Claude Code 내장 /loop으로 구동(API 키 코드 없음)
+- input_artifact: 워크플로 타당성 분석(12에이전트, Conditional YES), CLAUDE.md §7, rules/git.md DL-012
+- output_artifact: tooling/scripts/{작업_인덱서,루프_가드,루프엔진_검증}.mjs·__tests__/루프엔진.test.mjs·커밋.mjs(--guard-task), .claude/commands/loop-engineer.md, 산출물/09…/{루프엔지니어링_설계, 독립검토서/REVIEW-20260623-035}, 평가증빙/루프실행_로그/2026-06-23_TASK-20260623-010.md
+- automated_checks: node:test 16/16 PASS, 검증_전체 --code(tsc+vitest 58/58) PASS, pre-commit 비밀값 스캔 PASS
+- independent_reviewer: Claude 적대적 워크플로(4렌즈, same-family 초안) → REVIEW-035: blocker 11건 실증. Codex 진짜 교차검토는 사람 구동 대기
+- human_reviewer: 이상혁(머지·푸시 사람 게이트)
+- correction_made: 자동 검증+독립검토가 오류 다수 차단 — ① 빌드 중 게이트가 2건(파서 CRLF/구형yaml, 가드 마커 자기참조) ② 독립검토가 blocker 11건(코드게이트 no-op·보호경로 누락·대소문자 우회·글롭 경계·forbidden 미강제·캡 우회 등) 실증 → 코드게이트 폐기(검증_전체 --code로 통합)·canonicalize·보호경로 확장·--guard-task 등으로 전부 조치·재검증
+- accepted/rejected: accepted(커밋 a4be0aa), 머지 대기
+- reusable_asset: 결정론 게이트 3종·loop-engineer 드라이버·node:test 무의존 테스트 패턴(새 프로젝트 복사 가능)
 ```
 
 ## §19 필수 사례 충족 현황

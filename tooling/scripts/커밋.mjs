@@ -24,7 +24,7 @@ const USAGE = '사용: node tooling/scripts/커밋.mjs --message "type(scope): �
 const argv = process.argv.slice(2);
 let message = '', body = '';
 const paths = [];
-let useAll = false, allowMain = false, includeStaged = false;
+let useAll = false, allowMain = false, includeStaged = false, guardTask = '';
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--message') message = argv[++i] ?? '';
@@ -33,6 +33,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--all') useAll = true;
   else if (a === '--allow-main') allowMain = true;
   else if (a === '--include-staged') includeStaged = true;
+  else if (a === '--guard-task') guardTask = argv[++i] ?? ''; // 루프용: 스테이징 집합을 작업 범위로 강제
   else fail(`알 수 없는 인자: ${a}\n${USAGE}`, 2);
 }
 
@@ -86,6 +87,21 @@ if (useAll) {
 
 // --- ③ 빈 스테이징 차단 ---
 if (tryGit(['diff', '--cached', '--quiet'])) fail('스테이징된 변경이 없습니다. 커밋 중단.', 1);
+
+// --- 루프 가드(--guard-task): 스테이징될 변경이 작업 범위·보호구역을 벗어나면 커밋 경계에서 차단 ---
+// 사람 커밋은 --guard-task 없이 동작(영향 없음). 루프는 항상 이 옵션으로 커밋해 코드가 경계를 강제한다.
+if (guardTask) {
+  const { loadTasks } = await import('./작업_인덱서.mjs');
+  const { diffGuard } = await import('./루프_가드.mjs');
+  const task = loadTasks().find((t) => t.id === guardTask);
+  if (!task) { tryGit(['reset', '--quiet']); fail(`--guard-task: 작업 ${guardTask} 없음. 스테이징 해제·중단.`, 1); }
+  const r = diffGuard(task, { staged: true });
+  if (!r.ok) {
+    tryGit(['reset', '--quiet']);
+    fail(`커밋 가드 차단(작업 ${guardTask}) — 스테이징 해제:\n - ${r.violations.join('\n - ')}`, 1);
+  }
+  out(`커밋 가드 통과(작업 ${guardTask}): 스테이징 ${r.changed.length}건 범위 내.`);
+}
 
 // --- ⑦ 커밋 직전 원문 출력 ---
 out('\n=== git diff --cached --name-status ===');

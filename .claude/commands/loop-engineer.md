@@ -44,30 +44,31 @@ STOP(10)이면 사유 그대로 보고·종료(브랜치가 main·detached·경�
 작업지시서의 수락 기준을 읽고 **`allowed_paths` 안에서만** 구현한다. 작업 유형에 맞는 스킬(`implement-vertical-slice` 등)을 사용한다.
 가정·미확정은 명시한다. 범위를 임의로 넓히지 않는다.
 
-### 5. VERIFY — 게이트(코드로 강제, AND)
-변경 파일 목록으로 코드 게이트를 돌린다(문서만이면 자동 생략):
+### 5. VERIFY — 단일 AND 게이트(코드로 강제, 항상 실행)
+문서·링크·비밀값 + 타입체크 + 단위테스트를 한 번에:
 ```
-node tooling/scripts/코드게이트.mjs --staged           # 또는 --changed <경로…>
-node tooling/scripts/검증_전체.mjs
+node tooling/scripts/검증_전체.mjs --code
 ```
-- 코드게이트 종료코드 2(게이트 없는 apps/api 등) → **HARD STOP**, 사람 검증 요청.
-- 둘 중 하나라도 FAIL이면 → **6. REPAIR**로. 둘 다 PASS여야 다음으로.
+`--code`가 apps/miniapp `tsc --noEmit` + `vitest run`을 hardFail로 포함한다(`코드검증.mjs` — 변경과 무관하게 **항상 실행**, 빈 staging no-op 없음).
+- FAIL이면 → **6. REPAIR**. PASS여야 다음.
+- apps/api·packages·infra 변경이 있으면 자동 게이트가 없으므로 7의 check-diff가 STOP(사람 검증).
 
 ### 6. REPAIR — 복구(최대 1~2회)
 FAIL 원인이 `allowed_paths` 안에서 고칠 수 있으면 고치고 5로 돌아간다.
 2회 안에 green이 안 되거나 원인이 범위 밖이면 → 변경 revert, status `Rework`/`Blocked` 사유 기록, STOP·보고.
 
-### 7. CHECK-DIFF — 변경 범위 재확인
+### 7. CHECK-DIFF — 변경 범위 확인(커밋 전 사전 점검)
 ```
 node tooling/scripts/루프_가드.mjs --check-diff --task <id>
 ```
-STOP(11)이면(범위 밖·보호구역 수정) 해당 변경을 되돌리고 STOP·보고. **커밋하지 않는다.**
+STOP(11)이면(범위 밖·forbidden_paths·보호구역·무게이트 코드) 해당 변경을 되돌리고 STOP·보고. **커밋하지 않는다.**
 
-### 8. COMMIT — green일 때만
+### 8. COMMIT — green일 때만(커밋 경계를 코드로 재강제)
+커밋할 경로를 `--path`로 명시한다. `커밋.mjs`가 스테이징 후 **그 집합**에 diffGuard를 다시 돌려, 위반 시 자동 unstage·중단한다(검사=커밋 대상, TOCTOU 차단·LLM 준수 비의존):
 ```
-node tooling/scripts/커밋.mjs --message "<type>(<scope>): <설명>" --path <경로> …
+node tooling/scripts/커밋.mjs --guard-task <id> --path <경로> [--path <경로> …] --message "<type>(<scope>): <설명>"
 ```
-`--all`·`--allow-main`·push 금지. pre-commit 비밀값 훅이 차단하면 `--no-verify` 절대 쓰지 말고 STOP·보고.
+`--all`·`--allow-main`·push 금지. pre-commit 비밀값 훅 차단 시 `--no-verify` 절대 금지·STOP.
 
 ### 9. REVIEW — 독립검토 초안
 `verify-change` 스킬로 diff·게이트 증거를 검토하고 `산출물/09_AI개발파이프라인/독립검토서/REVIEW-…`를 작성한다.

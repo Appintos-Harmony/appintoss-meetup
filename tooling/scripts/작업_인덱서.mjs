@@ -3,6 +3,9 @@
 // 루프가 자율로 집을 수 있는 "다음 작업" 1건을 결정론적으로 고른다.
 // 순수 Node(외부 의존성·API 없음). 함수는 node:test에서 단위검증한다.
 //
+// 경로 비교는 전부 canonicalize()(역슬래시·대소문자·'..'·절대경로 정규화)를 거쳐
+// 인덱스 게이트(여기)와 런타임 게이트(루프_가드.mjs)의 의미가 갈라지지 않게 한다.
+//
 // 사용:
 //   node tooling/scripts/작업_인덱서.mjs            # Ready 큐 사람용 요약
 //   node tooling/scripts/작업_인덱서.mjs --json      # 전체 작업 기계 JSON
@@ -15,22 +18,95 @@ import { dirname, resolve, join } from 'node:path';
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const TASK_DIR = join(ROOT, '산출물/09_AI개발파이프라인/작업지시서');
 
-// 루프가 절대 건드리면 안 되는 보호 경로(작업의 allowed_paths가 이들을 덮으면 자율 부적격).
-// 사람 승인 구역·하네스 자기보호·게이트 자체. 루프_가드.mjs와 단일 기준을 공유한다.
+// 루프가 절대 건드리면 안 되는 보호 경로. 디렉터리는 하위 전체를 보호한다(자기보호 포함).
 export const PROTECTED_PATHS = [
   '프로젝트_운영/00_팀공유/00_진행사항.md',
   '프로젝트_운영/00_팀공유/01_인수인계.md',
-  '.claude/settings.json',
-  '.claude/rules',
-  'tooling/git-hooks',
+  '.claude',          // settings·rules·commands·agents·skills 전체
+  '.git',
+  '.github',
+  'tooling',          // git-hooks·scripts(게이트 자기수정 금지) 전체
+  '.gitignore',
+  '.gitattributes',
   'CLAUDE.md',
   'AGENTS.md',
   'CHATGPT_PRO_운영지침.md',
 ];
 
+// 게이팅 키: 중복되면 의미가 모호하므로 해당 작업을 무효(fail-closed)로 본다.
+const GATING_KEYS = new Set(['id', 'status', 'allowed_paths', 'forbidden_paths']);
+
+// 경로 정규화: 역슬래시→슬래시, '.'·'..' 해소, 절대경로/드라이브/앞슬래시 제거, 소문자.
+// Windows 대소문자 무시 FS와 traversal 우회를 한 형태로 모은다.
+export function canonicalize(p) {
+  let s = String(p).replace(/\\/g, '/').trim();
+  s = s.replace(/^[a-zA-Z]:\//, '').replace(/^\/+/, '');
+  const parts = [];
+  for (const seg of s.split('/')) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') { parts.pop(); continue; }
+    parts.push(seg);
+  }
+  return parts.join('/').toLowerCase();
+}
+
+// glob의 리터럴 접두(첫 '*' 이전 디렉터리)를 반환.
+function globPrefix(cglob) {
+  const i = cglob.indexOf('*');
+  return (i < 0 ? cglob : cglob.slice(0, i)).replace(/\/+$/, '');
+}
+
+// glob(`a/**`, `a/*.ts`)을 앵커 정규식으로. `**`=경로구분 포함, `*`=구분 제외.
+export function globToRegExp(glob) {
+  const g = canonicalize(glob);
+  let re = '';
+  for (let i = 0; i < g.length; i++) {
+    const c = g[i];
+    if (c === '*') {
+      if (g[i + 1] === '*') { re += '.*'; i++; if (g[i + 1] === '/') i++; }
+      else re += '[^/]*';
+    } else if ('\\^$.|?+()[]{}'.includes(c)) re += '\\' + c;
+    else re += c;
+  }
+  return new RegExp('^' + re + '$');
+}
+
+export function globMatches(glob, path) {
+  return globToRegExp(glob).test(canonicalize(path));
+}
+
+// path가 보호 경로(파일 또는 디렉터리 하위)에 속하는가. canonicalize 일원화.
+export function isUnderProtected(path) {
+  const p = canonicalize(path);
+  return PROTECTED_PATHS.some((prot) => {
+    const c = canonicalize(prot);
+    return p === c || p.startsWith(c + '/');
+  });
+}
+
+// 작업의 allowed_paths가 보호 경로를 덮거나 위험하게 넓으면 위반 사유를 반환.
+export function pathSafety(task) {
+  if (task && task.invalid) return { safe: false, violations: ['작업지시서 파싱 무효(게이팅 키 중복 등)'] };
+  const allowed = (task && task.allowed_paths) || [];
+  const violations = [];
+  if (allowed.length === 0) violations.push('allowed_paths가 비어 있음 — 자율 실행 범위 불명확');
+  for (const g of allowed) {
+    const cg = canonicalize(g);
+    if (cg === '' || cg === '*' || cg === '**') { violations.push(`allowed_paths '${g}'가 과도하게 넓음`); continue; }
+    if (/[?{}\[\]]/.test(g)) { violations.push(`allowed_paths '${g}'에 미지원 글롭 메타문자`); continue; }
+    const gp = globPrefix(cg);
+    for (const prot of PROTECTED_PATHS) {
+      const cp = canonicalize(prot);
+      if (gp === cp || gp.startsWith(cp + '/') || cp.startsWith(gp + '/') || globMatches(g, prot)) {
+        violations.push(`allowed_paths '${g}'가 보호 경로 '${prot}'와 충돌`);
+      }
+    }
+  }
+  return { safe: violations.length === 0, violations };
+}
+
 // --- 프런트매터 파서 ---
-// 두 포맷 모두 지원: (1) 선행 `---...---` 구분 블록(신형 TASK),
-// (2) 제목 뒤 첫 ```yaml 펜스 블록(구형 TASK·템플릿). CRLF는 LF로 정규화한다.
+// (1) 선행 `---...---` 또는 (2) 제목 뒤 첫 ```yaml 펜스. CRLF→LF. 게이팅 키 중복=무효.
 export function extractFrontmatter(text) {
   const t = text.replace(/^﻿/, '').replace(/\r\n/g, '\n');
   const dashed = t.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
@@ -40,91 +116,56 @@ export function extractFrontmatter(text) {
   return '';
 }
 
-// 인라인 배열 `[a, b]`·멀티라인 `- item` 리스트·스칼라를 파싱한다.
 export function parseFrontmatter(text) {
   const fm = extractFrontmatter(text);
   const obj = {};
+  const dup = [];
   const lines = fm.split('\n');
+  const setKey = (key, val) => {
+    if (key in obj && GATING_KEYS.has(key)) dup.push(key);
+    obj[key] = val;
+  };
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const m = line.match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
+    const m = lines[i].match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
     if (!m) continue;
     const key = m[1];
     let raw = m[2].trim();
-    if (raw === '' ) {
-      // 멀티라인 리스트 수집(다음 줄들이 `- `로 시작).
+    if (raw === '') {
       const items = [];
       let j = i + 1;
       while (j < lines.length && /^\s*-\s+/.test(lines[j])) {
         items.push(lines[j].replace(/^\s*-\s+/, '').trim().replace(/^["']|["']$/g, ''));
         j++;
       }
-      if (items.length) { obj[key] = items; i = j - 1; continue; }
-      obj[key] = '';
+      if (items.length) { setKey(key, items); i = j - 1; continue; }
+      setKey(key, '');
       continue;
     }
     if (raw.startsWith('[')) {
-      // 닫는 ']' 뒤 인라인 주석(`] # …`)은 버린다.
       const end = raw.indexOf(']');
       const inner = (end >= 0 ? raw.slice(1, end) : raw.slice(1)).trim();
-      obj[key] = inner === '' ? [] : inner.split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      setKey(key, inner === '' ? [] : inner.split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean));
       continue;
     }
-    // 스칼라의 YAML 인라인 주석(` # …`) 제거.
     raw = raw.replace(/\s+#.*$/, '').trim();
-    obj[key] = raw.replace(/^["']|["']$/g, '');
+    setKey(key, raw.replace(/^["']|["']$/g, ''));
   }
+  if (dup.length) obj.__dupGatingKeys = [...new Set(dup)];
   return obj;
-}
-
-// glob(`a/**`, `a/*.ts`)을 앵커 정규식으로. `**`=경로구분 포함, `*`=구분 제외.
-export function globToRegExp(glob) {
-  let re = '';
-  for (let i = 0; i < glob.length; i++) {
-    const c = glob[i];
-    if (c === '*') {
-      if (glob[i + 1] === '*') { re += '.*'; i++; if (glob[i + 1] === '/') i++; }
-      else re += '[^/]*';
-    } else if ('\\^$.|?+()[]{}'.includes(c)) re += '\\' + c;
-    else re += c;
-  }
-  return new RegExp('^' + re + '$');
-}
-
-export function globMatches(glob, path) {
-  return globToRegExp(glob).test(path);
-}
-
-// 작업의 allowed_paths가 보호 경로를 하나라도 덮으면 위반 사유를 반환.
-export function pathSafety(task) {
-  const allowed = task.allowed_paths || [];
-  const violations = [];
-  if (allowed.length === 0) {
-    violations.push('allowed_paths가 비어 있음 — 자율 실행 범위 불명확');
-  }
-  for (const g of allowed) {
-    for (const p of PROTECTED_PATHS) {
-      // allowed glob이 보호 경로를 덮거나, 보호 경로가 allowed 접두를 덮는 경우 모두 차단.
-      if (globMatches(g, p) || p.startsWith(g.replace(/\/\*+$/, '/')) || g.startsWith(p)) {
-        violations.push(`allowed_paths '${g}'가 보호 경로 '${p}'와 충돌`);
-      }
-    }
-  }
-  return { safe: violations.length === 0, violations };
 }
 
 export function parseTaskFile(file) {
   const text = readFileSync(file, 'utf8');
   const fm = parseFrontmatter(text);
-  const id = fm.id || '';
   return {
     file: file.replace(ROOT + '\\', '').replace(ROOT + '/', '').replace(/\\/g, '/'),
-    id,
+    id: fm.id || '',
     status: (fm.status || '').trim(),
     primary_agent: fm.primary_agent || '',
     review_agent: fm.review_agent || '',
     allowed_paths: fm.allowed_paths || [],
     forbidden_paths: fm.forbidden_paths || [],
+    invalid: !!fm.__dupGatingKeys,
   };
 }
 
@@ -137,10 +178,10 @@ export function loadTasks(dir = TASK_DIR) {
 }
 
 export function isReady(task) {
-  return /^ready$/i.test(task.status);
+  return !task.invalid && /^ready$/i.test(task.status);
 }
 
-// 결정론 선택: Ready만, ID 오름차순(단조), skip 제외, 경로안전 통과한 첫 작업.
+// 결정론 선택: Ready·유효만, ID 오름차순(단조), skip 제외, 경로안전 통과한 첫 작업.
 export function selectNext(tasks, { skip = [] } = {}) {
   const skipSet = new Set(skip);
   const candidates = tasks
@@ -175,12 +216,8 @@ function main() {
     return;
   }
 
-  if (json) {
-    out(JSON.stringify({ count: tasks.length, tasks }, null, 2));
-    return;
-  }
+  if (json) { out(JSON.stringify({ count: tasks.length, tasks }, null, 2)); return; }
 
-  // 사람용 요약
   out('# 작업 인덱서 — Ready 큐');
   const ready = tasks.filter(isReady).sort((a, b) => a.id.localeCompare(b.id));
   out(`전체 ${tasks.length}건 · Ready ${ready.length}건\n`);
