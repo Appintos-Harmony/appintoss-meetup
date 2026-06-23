@@ -295,7 +295,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                   </div>
                   {item.originCode && (
                     <div className="t-cap c-sub" style={{ marginTop: 2, color: '#8b5cf6' }}>
-                      🎵 {item.originAuthor}님의 {item.originName} 위에 쌓음
+                      🎵 소스: {item.originAuthor}님의 「{item.originName}」 음원 사용
                     </div>
                   )}
                 </div>

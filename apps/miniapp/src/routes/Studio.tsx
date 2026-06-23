@@ -971,7 +971,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const key = await getUserKey();
       const nick = getNickname() || '익명';
       const first = layered[0];
-      const name = origin && forked ? `${forked.name} 위에 쌓음` : '내 합주';
+      const name = origin && forked ? `${forked.name} (이어 만든 곡)` : '내 합주';
       const code = await publishSession({
         name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
@@ -981,7 +981,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         const t = layered[i];
         await addTrack(code, t.owner, t.events, t.instrument, t.style);
       }
-      flashToast(origin ? '커뮤니티에 올렸어요 — 출처가 함께 남아요' : '커뮤니티에 올렸어요');
+      flashToast(origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
     } catch {
       flashToast('올리기 실패 — 네트워크 확인');
     }
@@ -1447,7 +1447,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               <span style={{ fontSize: 22 }}>🌱</span>
               <span style={{ flex: 1, textAlign: 'left' }}>
                 <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>커뮤니티에 올리기</span>
-                <span className="t-cap c-sub">{forked && !forked.code.startsWith('LOCAL') ? `${forked.name} 위에 쌓아 올리기 (출처 박힘)` : '내 합주를 보드에 공개'}</span>
+                <span className="t-cap c-sub">{forked && !forked.code.startsWith('LOCAL') ? `「${forked.name}」 음원으로 이어 만들기 (출처 표시됨)` : '내 합주를 보드에 공개'}</span>
               </span>
             </button>
             <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); saveCurrent(); }}>
