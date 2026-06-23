@@ -140,6 +140,34 @@ related_adrs: []
 - correction_made: 자체회의가 설계의 핵심 전제(중복 2건 콘텐츠 동일)를 실DB로 반증→whole-content 해시 기각·first-track 해시 채택. 파생 collapse 회귀(origin_code IS NULL 가드 누락)를 사전 차단. 키 회전 검열 벡터를 4역할 중 3역할이 일치 지적→결정요청서로 상신.
 - accepted/rejected: accepted (정책 의존부는 사람 게이트 대기)
 - reusable_asset: 멀티에이전트 자체회의 워크플로(설계→역할별 적대적 검증→수렴), 실DB 디핑으로 설계 전제 반증 패턴
+
+- date: 2026-06-23
+- phase: 검증/수정 (리허설 후속 변경 적대적 자체검증)
+- task_id: TASK-20260623-009 (검증)
+- tool: Claude Code (Opus) + 멀티에이전트 검증 워크플로(20 에이전트)
+- role: 적대적 자체검증 + 수정
+- task: 이번 세션 전체 변경(홈 연결·이름 지정·레이어 제거·로컬 저장·모니터 반복/진행바·dedup)을 5차원(상태·오디오·데이터·UX·레드팀) 검토 → 적대적 verify → 수렴
+- input_artifact: 실파일(server.mjs·Studio.tsx·Community.tsx·share.ts·App.tsx·identity.ts)
+- output_artifact: 15결함(전부 verify 통과) → 7건 수정(confirmReceive 신원·이름 소실·dedup track_count·모니터 타이밍·PII·멱등), 나머지 문서화(DECISION-001·minor)
+- automated_checks: tsc 0, vitest 58/58, 백엔드 수정 스모크 7/7
+- human_reviewer: 이상혁(정책 게이트), 푸시 사람 승인
+- correction_made: 검증이 내 변경의 데이터 오염(이어하기→가져오기→저장 시 원곡 덮어씀)·멀티트랙 dedup collapse·모니터 stuck/드리프트를 잡아냄. 자기 변경을 다른 시각으로 적대 검증한 사례.
+- accepted/rejected: accepted (7건 반영)
+- reusable_asset: 자기 작업 적대적 재검증 워크플로(차원별 find→verify→수렴)
+
+- date: 2026-06-23
+- phase: 문서/발표 (전체 앱 가이드 산출)
+- task_id: TASK-20260623-009 (가이드)
+- tool: Claude Code (Opus) + 멀티에이전트 가이드 작성(4 에이전트)
+- role: 산출물 생성 + 검수
+- task: 커뮤니티 가이드를 템플릿으로 화면별 가이드(홈·스튜디오·설정·전체흐름) 병렬 초안 → 렌더 검수 → SVG+PNG(2x, resvg)
+- input_artifact: 커뮤니티_도움말_가이드.svg(템플릿), 실제 화면(Home/Studio/Settings/App)
+- output_artifact: 앱_가이드/00~04 SVG 5종 + PNG 5종 + 안내 문서
+- automated_checks: SVG 적격성·PNG 렌더(이미지 직접 확인) 검수
+- human_reviewer: 곽소정(디자인)·이상혁
+- correction_made: 에이전트 초안을 렌더 확인으로 검수(이모지 일부 PNG 단순화 한계 기록)
+- accepted/rejected: accepted
+- reusable_asset: 가이드 템플릿 + 멀티에이전트 화면별 가이드 생성·resvg SVG→PNG 파이프라인
 ```
 
 ## §19 필수 사례 충족 현황
