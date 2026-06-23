@@ -241,7 +241,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       <div className="appbar">
         <span onClick={() => { stopPreview(); go('studio'); }} style={{ cursor: 'pointer' }}>‹ 스튜디오</span>
         <span style={{ marginLeft: 'auto', fontWeight: 800 }}>커뮤니티</span>
-        <button className="chip" style={{ marginLeft: 'auto' }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
+        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={items === null} aria-label="새로고침" onClick={() => void load()}>↻</button>
+        <button className="chip" style={{ marginLeft: 8 }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
       </div>
 
       <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
