@@ -19,6 +19,7 @@ import { chordReducer, initialChordState, type ChordState, type Source, type Cho
 import { drumKey, normalizeEvents, type Instrument, type DrumPiece } from '../audio/events';
 import {
   BEATS_PER_BAR,
+  TICKS_PER_BEAT,
   BPM,
   msToTick,
   tickToMs,
@@ -469,22 +470,24 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     setMonDur(0);
   }
 
-  // 합주(레이어) 한 패스를 audioNow 기준으로 스케줄. 반복 시 매 경계에서 다시 호출.
-  function scheduleMonitorPass(voices: Voice[], t0: number) {
+  // 합주(레이어) 한 패스를 오디오 클럭으로 스케줄(t0~endAt). 패스 끝에 미해제(on-only) 노트를 off로 정리 → 반복 누적·stuck 방지(#4).
+  function scheduleMonitorPass(voices: Voice[], t0: number, endAt: number) {
     sessionTracks.forEach((t, vi) => {
       const v = voices[vi];
       if (!v) return;
+      const open = new Set<string>(); // 이 패스에서 아직 off 안 된 코드/멜로디
       for (const ev of normalizeEvents(t.events)) {
         const at = t0 + tickToMs(ev.tick) / 1000;
         if (ev.kind === 'drum') v.hit(ev.piece, at);
         else if (ev.kind === 'melody') {
-          if (ev.phase === 'on') v.on(ev.note, at);
-          else v.off(ev.note, at);
+          if (ev.phase === 'on') { v.on(ev.note, at); open.add(ev.note); }
+          else { v.off(ev.note, at); open.delete(ev.note); }
         } else {
-          if (ev.phase === 'on') v.on(ev.chord, at);
-          else v.off(ev.chord, at);
+          if (ev.phase === 'on') { v.on(ev.chord, at); open.add(ev.chord); }
+          else { v.off(ev.chord, at); open.delete(ev.chord); }
         }
       }
+      for (const name of open) v.off(name, endAt); // 녹음 정지 시 잡고 있던 코드 등 미해제 노트를 패스 끝에서 해제
     });
   }
 
@@ -492,13 +495,18 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     stopMonitor();
     let maxTick = 0;
     for (const t of sessionTracks) for (const ev of t.events) if (ev.tick > maxTick) maxTick = ev.tick;
-    const dur = tickToMs(maxTick);
-    if (dur <= 0 || !sessionTracks.length) return;
+    if (maxTick <= 0 || !sessionTracks.length) return;
+    // 루프 길이를 마디 그리드에 정렬(메트로놈과 드리프트 방지, #3).
+    const barTicks = BEATS_PER_BAR * TICKS_PER_BEAT;
+    const loopTicks = Math.ceil(maxTick / barTicks) * barTicks;
+    const dur = tickToMs(loopTicks);
+    const durSec = dur / 1000;
     const voices = sessionTracks.map((t) => {
       const inst = t.instrument ?? inferInstrument(t.events);
       return createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
     });
-    scheduleMonitorPass(voices, audioNow()); // 모니터도 오디오 클럭 — 메트로놈과 샘플정확 그루브 락(내 연주와 싱크)
+    const t0Audio = audioNow(); // 단일 오디오 앵커 — 모든 패스를 누적 절대시각으로 스케줄(audioNow 재읽기 금지 = 드리프트 방지, #3)
+    scheduleMonitorPass(voices, t0Audio, t0Audio + durSec);
     const startPerf = performance.now();
     monitorRef.current = { voices, timers: [], raf: 0, loopTimer: 0, startPerf };
     setMonDur(dur);
@@ -510,10 +518,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       monitorRef.current.raf = requestAnimationFrame(tick);
     };
     monitorRef.current.raf = requestAnimationFrame(tick);
-    // 반복: 매 경계에서 다음 패스 스케줄. 토글이 꺼지면 중단(이미 예약된 패스는 끝까지 재생).
+    // 반복: 누적 절대 오디오시각(t0Audio + pass*durSec)으로 다음 패스 스케줄. 토글 꺼지면 중단.
+    let pass = 1;
     const loopNext = () => {
       if (!monitorLoopRef.current) return;
-      scheduleMonitorPass(monitorRef.current.voices, audioNow());
+      const passStart = t0Audio + pass * durSec;
+      scheduleMonitorPass(monitorRef.current.voices, passStart, passStart + durSec);
+      pass += 1;
       monitorRef.current.loopTimer = window.setTimeout(loopNext, dur);
     };
     if (monitorLoopRef.current) monitorRef.current.loopTimer = window.setTimeout(loopNext, dur);
@@ -954,9 +965,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   function doSave() {
     const layered = buildLayered();
     if (!layered.length) return;
-    const name = songName.trim() || `내 곡 ${listSongs().length + 1}`;
-    // 이어하기로 연 곡이면 같은 id로 갱신(원곡 보존), 아니면 새 곡. 이름은 사용자가 지정한 값.
+    // 이어하기로 연 곡이면 같은 id로 갱신(원곡 보존), 아니면 새 곡. 빈 이름이면 이어하기는 기존 이름 유지(#11), 새 곡은 자동명.
     const cur = currentSongRef.current;
+    const name = songName.trim() || (cur ? cur.name : `내 곡 ${listSongs().length + 1}`);
     const id = cur ? cur.id : newSongId();
     saveSong({ id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
     currentSongRef.current = { id, name };
@@ -1041,7 +1052,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const { code, deduped } = await publishSession({
         name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
-        originCode: origin, idempotencyToken: randomId(),
+        originCode: origin, trackCount: layered.length, idempotencyToken: randomId(),
       });
       // 파생(origin 있음)은 서버에서 dedup 우회됨. deduped는 origin 없는 자기 곡 재게시일 때만 true.
       if (!deduped) {
@@ -1051,8 +1062,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         }
       }
       flashToast(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
-    } catch {
-      flashToast('올리기 실패 — 네트워크 확인');
+    } catch (e) {
+      const m = e instanceof Error ? e.message : '';
+      flashToast(m.includes('400') ? '곡 이름에 연락처·링크는 넣을 수 없어요' : '올리기 실패 — 네트워크 확인');
     }
   }
 
@@ -1077,6 +1089,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     const base = pending.tracks[0];
     clearMelody();
     // 받은 트랙=레이어(sessionTracks)로만. take는 비움 → 내 악기로 새로 녹음해 얹는다(R34-001 이중재생 방지).
+    // 친구 세션으로 컨텍스트 전환이므로 곡 신원도 끊는다 — 저장 시 새 곡으로(이어하던 내 곡 id 덮어쓰기 방지, #1).
+    currentSongRef.current = null;
     stateRef.current = { ...initialChordState };
     setHasTake(false);
     setSessionCode(pending.code);

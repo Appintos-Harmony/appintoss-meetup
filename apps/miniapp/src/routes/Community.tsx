@@ -316,7 +316,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       const { code, deduped } = await publishSession({
         name: song.name, bpm: song.bpm, owner: nick, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
-        idempotencyToken: randomId(),
+        trackCount: tracks.length, idempotencyToken: randomId(),
       });
       // 같은 곡이 이미 있으면(deduped) 추가 트랙 적재를 건너뛴다(기존 세션 오염 방지).
       if (!deduped) for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style);
