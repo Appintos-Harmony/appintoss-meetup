@@ -122,6 +122,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [baseOwner, setBaseOwner] = useState('');
   const [, setTrackCount] = useState(0); // 세션 폴링 갱신 트리거(표시는 sessionTracks.length 사용)
   const [sessionTracks, setSessionTracks] = useState<SessionTrack[]>([]);
+  const currentSongRef = useRef<{ id: string; name: string } | null>(null); // 이어하기로 연 내 곡(저장 시 같은 id·이름으로 갱신). 새 곡/커뮤니티 포크면 null.
   const [jamming, setJamming] = useState(false);
   const [instrument, setInstrument] = useState<Instrument>(initVoice.instrument);
   const [style, setStyle] = useState<string>(initVoice.style);
@@ -228,6 +229,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   useEffect(() => {
     if (!loaded) return;
+    currentSongRef.current = { id: loaded.id, name: loaded.name }; // 이어하기 = 이 곡을 저장 시 갱신
     const tks = songTracks(loaded);
     if (tks.length > 1) {
       // 멀티트랙 곡: 전부 레이어로 올리고 새 take는 비움(이어서 추가·합주)
@@ -253,6 +255,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     if (!forked) return;
     const base = forked.tracks[0];
     if (!base) return;
+    currentSongRef.current = null; // 커뮤니티 포크는 새 파생곡 → 저장 시 새 곡으로
     clearMelody();
     // 받은 트랙은 sessionTracks 레이어로만 둔다. take는 비워 내 연주를 새로 녹음 → 얹기.
     // (take에도 base를 넣으면 합주 듣기에서 base가 두 번 재생됨 — R34-001)
@@ -898,9 +901,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
     }
     if (!layered.length) return;
-    const name = `내 곡 ${listSongs().length + 1}`;
-    saveSong({ id: newSongId(), name, bpm: BPM, createdAt: Date.now(), tracks: layered });
-    flashToast(`'${name}' 저장됨 (트랙 ${layered.length})`);
+    // 이어하기로 연 곡이면 같은 id·이름으로 갱신(원곡 보존), 아니면 새 곡 생성.
+    const cur = currentSongRef.current;
+    const id = cur ? cur.id : newSongId();
+    const name = cur ? cur.name : `내 곡 ${listSongs().length + 1}`;
+    saveSong({ id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
+    currentSongRef.current = { id, name }; // 이후 재저장도 같은 곡을 갱신(중복 방지)
+    flashToast(cur ? `'${name}' 업데이트됨 (트랙 ${layered.length})` : `'${name}' 저장됨 (트랙 ${layered.length})`);
   }
 
   // 구간 반복: 녹음 앞부분(loopBars 마디)을 잘라 loopCount회 이어붙인다. 이벤트 복제 방식(저장/공유/재생 일관).
