@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812" font-family="Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <!-- Navigation 헤더 -->
+  <text x="20" y="74" font-size="13" font-weight="600" fill="#4e5968">‹ 스튜디오</text>
+  <text x="20" y="96" font-size="18" font-weight="700" fill="#191f28">커뮤니티</text>
+
+  <!-- 세그먼트: 둘러보기 | 내 음원 -->
+  <rect x="20" y="110" width="335" height="44" rx="14" fill="#f2f4f6"/>
+  <rect x="23.5" y="113.5" width="164" height="37" rx="11" fill="#ffffff"/>
+  <text x="105.5" y="137" font-size="14.5" font-weight="700" fill="#191f28" text-anchor="middle">둘러보기</text>
+  <text x="269.5" y="137" font-size="14.5" font-weight="700" fill="#8b95a1" text-anchor="middle">내 음원</text>
+
+  <!-- 정렬 세그(작게): 최신 | 인기 -->
+  <rect x="251" y="164" width="104" height="32" rx="11" fill="#f2f4f6"/>
+  <rect x="253.5" y="166.5" width="49" height="27" rx="9" fill="#ffffff"/>
+  <text x="278" y="184" font-size="12.5" font-weight="700" fill="#191f28" text-anchor="middle">최신</text>
+  <text x="329" y="184" font-size="12.5" font-weight="700" fill="#8b95a1" text-anchor="middle">인기</text>
+
+  <!-- ===== 카드1 (재생중) ===== -->
+  <rect x="20" y="208" width="335" height="118" rx="18" fill="#ffffff" stroke="#3182f6" stroke-width="1.5"/>
+  <!-- 아바타 강조 -->
+  <circle cx="48" cy="244" r="23" fill="#3182f6" opacity="0.18"/>
+  <circle cx="48" cy="244" r="20" fill="#3182f6"/>
+  <text x="48" y="249" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">달</text>
+  <!-- 곡명 / 메타 -->
+  <text x="80" y="240" font-size="17" font-weight="700" fill="#191f28">달빛 산책</text>
+  <text x="80" y="260" font-size="13" fill="#8b95a1">민지 · 100BPM · 4마디</text>
+  <text x="338" y="240" font-size="18" font-weight="700" fill="#8b95a1" text-anchor="end">⋯</text>
+  <!-- 하단 행 -->
+  <rect x="36" y="282" width="76" height="30" rx="999" fill="#3182f6"/>
+  <text x="74" y="301" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">▶ 듣기</text>
+  <rect x="120" y="282" width="56" height="30" rx="999" fill="#f2f4f6"/>
+  <text x="148" y="301" font-size="13" font-weight="700" fill="#4e5968" text-anchor="middle">♡ 12</text>
+  <rect x="184" y="282" width="50" height="30" rx="999" fill="#e8f1fd"/>
+  <text x="209" y="301" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">얹기</text>
+  <!-- 진행바 (파랑 40%) -->
+  <rect x="18" y="322" width="339" height="3" rx="2" fill="#e8f1fd"/>
+  <rect x="18" y="322" width="135" height="3" rx="2" fill="#3182f6"/>
+
+  <!-- ===== 카드2 ===== -->
+  <rect x="20" y="338" width="335" height="114" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="48" cy="372" r="20" fill="#ff6b6b"/>
+  <text x="48" y="377" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">노</text>
+  <text x="80" y="368" font-size="17" font-weight="700" fill="#191f28">노을 베이스</text>
+  <text x="80" y="388" font-size="13" fill="#8b95a1">현우 · 100BPM · 4마디</text>
+  <text x="338" y="368" font-size="18" font-weight="700" fill="#8b95a1" text-anchor="end">⋯</text>
+  <rect x="36" y="410" width="76" height="30" rx="999" fill="#3182f6"/>
+  <text x="74" y="429" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">▶ 듣기</text>
+  <rect x="120" y="410" width="56" height="30" rx="999" fill="#f2f4f6"/>
+  <text x="148" y="429" font-size="13" font-weight="700" fill="#4e5968" text-anchor="middle">♡ 8</text>
+  <rect x="184" y="410" width="50" height="30" rx="999" fill="#e8f1fd"/>
+  <text x="209" y="429" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">얹기</text>
+
+  <!-- ===== 카드3 ===== -->
+  <rect x="20" y="464" width="335" height="114" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="48" cy="498" r="20" fill="#15c47e"/>
+  <text x="48" y="503" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">새</text>
+  <text x="80" y="494" font-size="17" font-weight="700" fill="#191f28">새벽 아르페지오</text>
+  <text x="80" y="514" font-size="13" fill="#8b95a1">서연 · 100BPM · 4마디</text>
+  <text x="338" y="494" font-size="18" font-weight="700" fill="#8b95a1" text-anchor="end">⋯</text>
+  <rect x="36" y="536" width="76" height="30" rx="999" fill="#3182f6"/>
+  <text x="74" y="555" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">▶ 듣기</text>
+  <rect x="120" y="536" width="56" height="30" rx="999" fill="#f2f4f6"/>
+  <text x="148" y="555" font-size="13" font-weight="700" fill="#4e5968" text-anchor="middle">♡ 21</text>
+  <rect x="184" y="536" width="50" height="30" rx="999" fill="#e8f1fd"/>
+  <text x="209" y="555" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">얹기</text>
+
+  <!-- 하단 BottomCTA -->
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">＋ 내 음원 올리기</text>
+</svg>

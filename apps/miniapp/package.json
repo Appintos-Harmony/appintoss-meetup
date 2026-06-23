@@ -15,12 +15,14 @@
     "@apps-in-toss/web-framework": "^2.9.2",
     "@emotion/react": "^11.14.0",
     "@mediapipe/tasks-vision": "^0.10.14",
-    "@toss/tds-mobile": "^2.5.0",
-    "@toss/tds-mobile-ait": "^2.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tone": "^14.8.49",
     "vite": "^6.4.3"
+  },
+  "optionalDependencies": {
+    "@toss-design-system/mobile": "^2.5.0",
+    "@toss-design-system/mobile-ait": "^2.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
