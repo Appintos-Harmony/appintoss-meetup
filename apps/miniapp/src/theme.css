@@ -124,3 +124,11 @@ body {
 @keyframes beat { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
 .pulse { animation: pulse 1.4s var(--ease) infinite; }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.03); opacity: .8; } }
+
+/* 제스처 효과 스파클(손 흔들기/박수/헤드뱅잉) — 손·머리 주변에서 튀어오르며 사라짐 */
+.fx-pop { animation: fxPop .62s var(--ease) forwards; will-change: transform, opacity; }
+@keyframes fxPop {
+  0% { transform: translate(-50%, -50%) scale(.4) rotate(-12deg); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(-50%, -90%) scale(1.7) rotate(10deg); opacity: 0; }
+}

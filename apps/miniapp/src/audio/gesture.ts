@@ -1,13 +1,17 @@
 // 카메라 손 제스처 입력 (MediaPipe HandLandmarker). 검증된 스파이크(gesture-spike.html, 커밋 923e545) 로직 이식 + 확장.
 // 손 위치 → N개 코드/드럼 존. 활성 판정 2모드: palm(편 손=지속) / finger(검지 1개=지속·드럼 타격).
 // 출력은 chordReducer에 source:'gesture'로 공급. 개발자 모드용 landmark(점)도 함께 반환.
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+import { FilesetResolver, HandLandmarker, FaceDetector } from '@mediapipe/tasks-vision';
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const MODEL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const FACE_MODEL =
+  'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.task';
 
 let landmarker: HandLandmarker | null = null;
+let faceDetector: FaceDetector | null = null;
+let faceTried = false; // 한 번만 로드 시도 — 실패해도 손 효과는 유지(헤드뱅잉만 비활성)
 
 export async function initHandTracking(): Promise<void> {
   if (landmarker) return;
@@ -17,6 +21,36 @@ export async function initHandTracking(): Promise<void> {
     runningMode: 'VIDEO',
     numHands: 2, // 양손 모드 지원(루프에서 1/2 손 제한)
   });
+}
+
+/** 헤드뱅잉 감지용 얼굴 검출기(베스트에포트). 실패 시 null 유지 → headbang만 꺼짐. */
+export async function initFaceDetection(): Promise<void> {
+  if (faceDetector || faceTried) return;
+  faceTried = true;
+  try {
+    const vision = await FilesetResolver.forVisionTasks(WASM);
+    faceDetector = await FaceDetector.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: FACE_MODEL, delegate: 'GPU' },
+      runningMode: 'VIDEO',
+    });
+  } catch {
+    faceDetector = null; // 모델/CSP 차단 등 — 조용히 헤드뱅잉 비활성
+  }
+}
+
+/** 얼굴 중심 정규화 좌표(0~1, 미러 전). 미검출·미초기화 시 null. */
+export function detectFace(video: HTMLVideoElement, tMs: number): { x: number; y: number } | null {
+  if (!faceDetector) return null;
+  const vw = video.videoWidth || 1;
+  const vh = video.videoHeight || 1;
+  try {
+    const res = faceDetector.detectForVideo(video, tMs);
+    const bb = res.detections?.[0]?.boundingBox;
+    if (!bb) return null;
+    return { x: (bb.originX + bb.width / 2) / vw, y: (bb.originY + bb.height / 2) / vh };
+  } catch {
+    return null;
+  }
 }
 
 /** 카메라 시작. facingMode: 'user'(전면·셀피) / 'environment'(후면). */

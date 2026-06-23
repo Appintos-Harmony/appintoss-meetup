@@ -28,7 +28,8 @@ import {
 } from '../audio/transport';
 import { saveSong, newSongId, listSongs, songTracks, type Song } from '../lib/storage';
 import { loopEvents } from '../lib/loop';
-import { initHandTracking, startCamera, stopCamera, detect, type GestureMode, type Pt } from '../audio/gesture';
+import { initHandTracking, initFaceDetection, detectFace, startCamera, stopCamera, detect, type GestureMode, type Pt } from '../audio/gesture';
+import { detectFx, playFx, resetFx, type FxHit } from '../audio/gestureFx';
 import {
   createSession,
   getSession,
@@ -131,6 +132,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [fps, setFps] = useState(0);
   const [latency, setLatency] = useState<number | null>(null);
   const [landmarks, setLandmarks] = useState<Pt[] | null>(null);
+  const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; kind: FxHit['kind'] }[]>([]); // 효과 스파클(손/머리 주변)
   const [flashPiece, setFlashPiece] = useState<DrumPiece | null>(null); // 드럼 타격 시 모양/패드 깜빡임
   const [hands, setHands] = useState<1 | 2>(1); // 제스처 한 손/양손
   const [gestureChords, setGestureChords] = useState<string[]>([]); // 제스처로 현재 울리는 코드(존 하이라이트)
@@ -179,6 +181,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   ]);
   const twoHandRef = useRef<(string | null)[]>([null, null]); // 양손 코드: 손별 현재 코드
   const flashTimerRef = useRef(0);
+  const faceRef = useRef<Pt | null>(null); // 헤드뱅잉용 캐시된 얼굴 중심
+  const fxFrameRef = useRef(0); // 효과 루프 프레임 카운터(얼굴 검출 3프레임마다)
+  const sparkleIdRef = useRef(0);
 
   useEffect(() => {
     onBeat((beatInBar, bar) => {
@@ -498,15 +503,28 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     setHasTake(true);
   }
 
-  // 제스처 루프: 코드(지속음) / 드럼(상승엣지 타격). 한 손/양손(최대 2).
+  // 효과 스파클 1개 띄움(자동 소멸). 동시 최대 ~9개.
+  function spawnSparkle(h: FxHit) {
+    const id = ++sparkleIdRef.current;
+    setSparkles((s) => [...s.slice(-8), { id, x: h.x, y: h.y, kind: h.kind }]);
+    window.setTimeout(() => setSparkles((s) => s.filter((p) => p.id !== id)), 650);
+  }
+
+  // 제스처 루프: 코드(지속음) / 드럼(상승엣지 타격) + 효과(흔들기/박수/헤드뱅잉, 모든 모드 공통).
   function loop() {
     const v = videoRef.current;
     if (v && v.readyState >= 2) {
       const mirror = facingRef.current === 'user';
       const maxHands = handsRef.current;
-      if (drumModeRef.current) {
-        const frames = detect(v, performance.now(), { zoneCount: 1, mode: gestureModeRef.current, mirror }).slice(0, maxHands);
-        if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
+      const now = performance.now();
+      const drumOn = drumModeRef.current;
+      const zones = drumOn ? [] : selectedRef.current.slice(0, fullscreenRef.current ? GESTURE_ZONES_FULL : GESTURE_ZONES);
+      const zoneCount = drumOn ? 1 : Math.max(1, zones.length);
+      const frames = detect(v, now, { zoneCount, mode: gestureModeRef.current, mirror }).slice(0, maxHands);
+      if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
+
+      // ---- 음악: 드럼(타격) / 코드(지속) ----
+      if (drumOn) {
         for (let i = 0; i < 2; i++) {
           const f = frames[i];
           let piece: DrumPiece | null = null;
@@ -518,36 +536,40 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           if (piece !== null && (!prev.active || prev.piece !== piece)) hitDrum(piece, 'gesture');
           drumPrevRef.current[i] = { active: piece !== null, piece };
         }
+      } else if (maxHands === 1) {
+        const f = frames[0];
+        if (f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
+        else upChord('gesture');
+        const a = stateRef.current.activeChord;
+        updateGestureChords(a ? [a] : []);
+        twoHandRef.current = [null, null];
       } else {
-        const zones = selectedRef.current.slice(0, fullscreenRef.current ? GESTURE_ZONES_FULL : GESTURE_ZONES);
-        const frames = detect(v, performance.now(), { zoneCount: Math.max(1, zones.length), mode: gestureModeRef.current, mirror }).slice(0, maxHands);
-        if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
-        if (maxHands === 1) {
-          const f = frames[0];
-          if (f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
-          else upChord('gesture');
-          const a = stateRef.current.activeChord;
-          updateGestureChords(a ? [a] : []);
-          twoHandRef.current = [null, null];
-        } else {
-          for (let i = 0; i < 2; i++) {
-            const f = frames[i];
-            const target = f && f.active && f.zone !== null && f.zone < zones.length ? zones[f.zone] : null;
-            const cur = twoHandRef.current[i];
-            if (target !== cur) {
-              if (cur) {
-                chordOff(cur);
-                recordRaw(cur, 'off');
-              }
-              if (target) {
-                chordOn(target);
-                recordRaw(target, 'on');
-              }
-              twoHandRef.current[i] = target;
+        for (let i = 0; i < 2; i++) {
+          const f = frames[i];
+          const target = f && f.active && f.zone !== null && f.zone < zones.length ? zones[f.zone] : null;
+          const cur = twoHandRef.current[i];
+          if (target !== cur) {
+            if (cur) {
+              chordOff(cur);
+              recordRaw(cur, 'off');
             }
+            if (target) {
+              chordOn(target);
+              recordRaw(target, 'on');
+            }
+            twoHandRef.current[i] = target;
           }
-          updateGestureChords(twoHandRef.current.filter((c): c is string => !!c));
         }
+        updateGestureChords(twoHandRef.current.filter((c): c is string => !!c));
+      }
+
+      // ---- 효과(모든 모드 공통): 손 흔들기→탬버린 · 박수→박수 · 헤드뱅잉→귀여운 효과음 + 스파클 ----
+      // 얼굴 검출은 3프레임마다(부하 절감), 사이 프레임은 캐시 사용. 미초기화 시 null → 헤드뱅잉만 비활성.
+      fxFrameRef.current = (fxFrameRef.current + 1) % 3;
+      if (fxFrameRef.current === 0) faceRef.current = detectFace(v, now);
+      for (const h of detectFx(frames, faceRef.current, now)) {
+        playFx(h.kind);
+        spawnSparkle(h);
       }
     }
     rafRef.current = requestAnimationFrame(loop);
@@ -559,6 +581,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     stopCamera(streamRef.current);
     streamRef.current = null;
     setLandmarks(null);
+    resetFx();
+    faceRef.current = null;
+    setSparkles([]);
     drumPrevRef.current = [
       { active: false, piece: null },
       { active: false, piece: null },
@@ -573,6 +598,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     try {
       await ensureAudio();
       await initHandTracking();
+      void initFaceDetection(); // 헤드뱅잉용(베스트에포트 — 실패해도 손 효과·연주는 진행)
       const v = videoRef.current;
       if (!v) throw new Error('no video');
       streamRef.current = await startCamera(v, facing);
@@ -970,6 +996,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         <div style={{ position: 'absolute', inset: 0, transform: `scaleX(${mirror ? -1 : 1}) scale(${camZoom})`, pointerEvents: 'none' }}>
           {landmarks.map((p, i) => (
             <span key={i} style={{ position: 'absolute', left: `${p.x * 100}%`, top: `${p.y * 100}%`, width: 7, height: 7, marginLeft: -3.5, marginTop: -3.5, borderRadius: '50%', background: '#7CFC9B', boxShadow: '0 0 5px #7CFC9B' }} />
+          ))}
+        </div>
+      )}
+      {sparkles.length > 0 && (
+        /* 효과 스파클: 손 흔들기/박수/헤드뱅잉 시 손·머리 주변에 튀는 이모지(영상과 동일 변환으로 정렬) */
+        <div style={{ position: 'absolute', inset: 0, transform: `scaleX(${mirror ? -1 : 1}) scale(${camZoom})`, pointerEvents: 'none', zIndex: 5 }}>
+          {sparkles.map((p) => (
+            <span key={p.id} className="fx-pop" style={{ position: 'absolute', left: `${p.x * 100}%`, top: `${p.y * 100}%`, fontSize: 30, lineHeight: 1, whiteSpace: 'nowrap' }}>
+              {p.kind === 'tambourine' ? '🔔✨' : p.kind === 'clap' ? '👏✨' : '💫✨'}
+            </span>
           ))}
         </div>
       )}
