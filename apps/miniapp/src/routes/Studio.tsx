@@ -146,6 +146,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [hands, setHands] = useState<1 | 2>(1); // 제스처 한 손/양손
   const [gestureChords, setGestureChords] = useState<string[]>([]); // 제스처로 현재 울리는 코드(존 하이라이트)
   const [showMore, setShowMore] = useState(false); // 하단 '더보기' 시트(부차 액션 모음)
+  const [nameModal, setNameModal] = useState<null | 'save' | 'publish'>(null); // 곡 이름 입력 모달(저장/커뮤니티 올리기 공통)
+  const [songName, setSongName] = useState('');
   const [brightness, setBrightness] = useState(1); // 개발자 모드 오버레이 창 자체의 밝기/투명도
   const [modeSheet, setModeSheet] = useState(false); // 연주법(코드/멜로디) 시트
   const [inputSheet, setInputSheet] = useState(false); // 입력 방식(터치/제스처) 시트
@@ -894,20 +896,33 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     });
   }
 
-  // 현재 프로젝트(모든 레이어 + 현재 take)를 멀티트랙 곡으로 저장.
-  function saveCurrent() {
+  // 모든 레이어 + 현재 take를 합친 멀티트랙(저장·올리기 공통 빌더).
+  function buildLayered(): SessionTrack[] {
     const layered = [...sessionTracks];
     if (stateRef.current.events.length) {
       layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
     }
+    return layered;
+  }
+
+  // 저장 = 이름 입력 모달을 연다(자동 '내 곡 N' 대신 사용자가 지정). 이어하기 곡이면 기존 이름을 채운다.
+  function openSave() {
+    if (!buildLayered().length) { flashToast('저장할 연주가 없어요'); return; }
+    const cur = currentSongRef.current;
+    setSongName(cur ? cur.name : `내 곡 ${listSongs().length + 1}`);
+    setNameModal('save');
+  }
+  function doSave() {
+    const layered = buildLayered();
     if (!layered.length) return;
-    // 이어하기로 연 곡이면 같은 id·이름으로 갱신(원곡 보존), 아니면 새 곡 생성.
+    const name = songName.trim() || `내 곡 ${listSongs().length + 1}`;
+    // 이어하기로 연 곡이면 같은 id로 갱신(원곡 보존), 아니면 새 곡. 이름은 사용자가 지정한 값.
     const cur = currentSongRef.current;
     const id = cur ? cur.id : newSongId();
-    const name = cur ? cur.name : `내 곡 ${listSongs().length + 1}`;
     saveSong({ id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
-    currentSongRef.current = { id, name }; // 이후 재저장도 같은 곡을 갱신(중복 방지)
-    flashToast(cur ? `'${name}' 업데이트됨 (트랙 ${layered.length})` : `'${name}' 저장됨 (트랙 ${layered.length})`);
+    currentSongRef.current = { id, name };
+    setNameModal(null);
+    flashToast(`'${name}' 저장됨 (트랙 ${layered.length})`);
   }
 
   // 구간 반복: 녹음 앞부분(loopBars 마디)을 잘라 loopCount회 이어붙인다. 이벤트 복제 방식(저장/공유/재생 일관).
@@ -965,20 +980,25 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     }
   }
 
-  // 커뮤니티에 올리기(파생): 모든 레이어 + 현재 take를 published 세션으로 공개. 가져온 곡 위면 출처(origin_code) 강제 기록.
-  async function publishDerivative() {
-    const layered = [...sessionTracks];
-    if (stateRef.current.events.length) {
-      layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
-    }
-    if (!layered.length) { flashToast('올릴 연주가 없어요'); return; }
+  // 커뮤니티에 올리기 = 이름 입력 모달. 가져온 곡 위면 출처(origin_code) 강제 기록.
+  function openPublish() {
+    if (!buildLayered().length) { flashToast('올릴 연주가 없어요'); return; }
+    const cur = currentSongRef.current;
+    const origin = forked && !forked.code.startsWith('LOCAL') ? forked.code : undefined;
+    setSongName(cur ? cur.name : (origin && forked ? `${forked.name} (이어 만든 곡)` : '내 합주'));
+    setNameModal('publish');
+  }
+  async function doPublish() {
+    const layered = buildLayered();
+    if (!layered.length) return;
+    const name = songName.trim() || '내 합주';
     // 가져온 곡(서버 code) 위에 쌓는 경우 그 code가 출처. 로컬 재료(LOCAL-…)면 출처 없음.
     const origin = forked && !forked.code.startsWith('LOCAL') ? forked.code : undefined;
+    setNameModal(null);
     try {
       const key = await getUserKey();
       const nick = getNickname() || '익명';
       const first = layered[0];
-      const name = origin && forked ? `${forked.name} (이어 만든 곡)` : '내 합주';
       const { code, deduped } = await publishSession({
         name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
@@ -1453,18 +1473,18 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                 <span className="t-cap c-sub">{hasTake ? '합주 코드로 친구에게 공유' : '녹음 후 사용 가능'}</span>
               </span>
             </button>
-            <button className="sheet-row" disabled={(!hasTake && sessionTracks.length === 0) || busy} style={{ opacity: (hasTake || sessionTracks.length > 0) && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); void publishDerivative(); }}>
+            <button className="sheet-row" disabled={(!hasTake && sessionTracks.length === 0) || busy} style={{ opacity: (hasTake || sessionTracks.length > 0) && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); openPublish(); }}>
               <span style={{ fontSize: 22 }}>🌱</span>
               <span style={{ flex: 1, textAlign: 'left' }}>
                 <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>커뮤니티에 올리기</span>
                 <span className="t-cap c-sub">{forked && !forked.code.startsWith('LOCAL') ? `「${forked.name}」 음원으로 이어 만들기 (출처 표시됨)` : '내 합주를 보드에 공개'}</span>
               </span>
             </button>
-            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); saveCurrent(); }}>
+            <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); openSave(); }}>
               <span style={{ fontSize: 22 }}>💾</span>
               <span style={{ flex: 1, textAlign: 'left' }}>
                 <span className="t-body" style={{ fontWeight: 700, display: 'block' }}>저장</span>
-                <span className="t-cap c-sub">{hasTake ? '내 기기에 곡 저장' : '녹음 후 사용 가능'}</span>
+                <span className="t-cap c-sub">{hasTake ? '이름 지어 내 기기에 저장' : '녹음 후 사용 가능'}</span>
               </span>
             </button>
             <button className="sheet-row" disabled={!hasTake || busy} style={{ opacity: hasTake && !busy ? 1 : 0.45 }} onClick={() => { setShowMore(false); setEditing(true); }}>
@@ -1497,6 +1517,28 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               </span>
             </button>
             <button className="btn" style={{ marginTop: 10, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setShowMore(false)}>닫기</button>
+          </div>
+        </>
+      )}
+
+      {/* 곡 이름 입력 모달(저장 / 커뮤니티 올리기 공통) */}
+      {nameModal && (
+        <>
+          <div className="backdrop" onClick={() => setNameModal(null)} />
+          <div className="sheet">
+            <div className="sheet-grip" />
+            <div className="t-title" style={{ padding: '4px 6px 8px' }}>{nameModal === 'save' ? '💾 곡 저장' : '🌱 커뮤니티에 올리기'}</div>
+            <input
+              autoFocus
+              value={songName}
+              maxLength={40}
+              placeholder="곡 이름을 지어주세요"
+              onChange={(e) => setSongName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { if (nameModal === 'save') doSave(); else void doPublish(); } }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--line-2)', fontSize: 15 }}
+            />
+            <button className="btn" style={{ marginTop: 12, background: 'var(--blue)', color: '#fff' }} onClick={() => { if (nameModal === 'save') doSave(); else void doPublish(); }}>{nameModal === 'save' ? '저장' : '올리기'}</button>
+            <button className="btn" style={{ marginTop: 8, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setNameModal(null)}>취소</button>
           </div>
         </>
       )}
