@@ -122,7 +122,25 @@ function preflight(id) {
   if (!/^ready$/i.test(task.status)) { out(`STOP: ${id} status=${task.status} (Ready 아님).`); process.exit(10); }
   const safety = pathSafety(task);
   if (!safety.safe) { out(`STOP: 경로안전 위반:\n - ${safety.violations.join('\n - ')}`); process.exit(10); }
-  out(`GO: 브랜치 ${branch} · ${id} Ready · 경로안전 통과. allowed=${JSON.stringify(task.allowed_paths)}`);
+  // 활성 작업 기록 → pre-commit 백스톱이 이 작업 범위로 커밋을 강제(루프가 --guard-task를 빠뜨려도 차단).
+  const s = readState(); s.activeTask = id; writeState(s);
+  out(`GO: 브랜치 ${branch} · ${id} Ready · 경로안전 통과. allowed=${JSON.stringify(task.allowed_paths)} · activeTask 기록(커밋 백스톱 활성).`);
+  process.exit(0);
+}
+
+// pre-commit 훅 백스톱: 루프 활성(activeTask)일 때만 staged 집합을 그 작업 범위로 강제한다.
+// 루프 비활성(사람 커밋)이면 무간섭(exit 0). 코드가 강제하므로 LLM이 --guard-task를 빠뜨려도 막힌다.
+function preCommit() {
+  const s = readState();
+  if (!s.activeTask) process.exit(0); // 루프 비활성 → 사람 커밋 간섭 안 함
+  const task = findTask(s.activeTask);
+  if (!task) { out(`pre-commit 백스톱: 활성 작업 ${s.activeTask} 미발견. 루프가 아니면 'node tooling/scripts/루프_가드.mjs --reset' 후 커밋.`); process.exit(1); }
+  const r = diffGuard(task, { staged: true });
+  if (!r.ok) {
+    out(`pre-commit 백스톱 차단(활성 작업 ${s.activeTask}):\n - ${r.violations.join('\n - ')}\n루프가 아니면: node tooling/scripts/루프_가드.mjs --reset`);
+    process.exit(1);
+  }
+  out(`pre-commit 백스톱 통과(활성 작업 ${s.activeTask}, staged ${r.changed.length}건).`);
   process.exit(0);
 }
 
@@ -156,8 +174,9 @@ function main() {
   const argv = process.argv.slice(2);
   const id = argv[argv.indexOf('--task') + 1];
   const maxArg = argv.includes('--max') ? Number(argv[argv.indexOf('--max') + 1]) : 0;
-  if (argv.includes('--reset')) { writeState({ runStartedAt: new Date().toISOString(), iteration: 0, max: Math.min(maxArg || DEFAULT_MAX_ITER, ABS_MAX_ITER) }); out('루프 상태 초기화.'); process.exit(0); }
+  if (argv.includes('--reset')) { writeState({ runStartedAt: new Date().toISOString(), iteration: 0, max: Math.min(maxArg || DEFAULT_MAX_ITER, ABS_MAX_ITER), activeTask: null }); out('루프 상태 초기화(activeTask 해제).'); process.exit(0); }
   if (argv.includes('--status')) { out(JSON.stringify(readState(), null, 2)); process.exit(0); }
+  if (argv.includes('--pre-commit')) { preCommit(); }
   if (argv.includes('--preflight')) { if (!id) { out('STOP: --task <id> 필요.'); process.exit(10); } preflight(id); }
   if (argv.includes('--check-diff')) { if (!id) { out('STOP: --task <id> 필요.'); process.exit(11); } checkDiff(id, argv.includes('--staged')); }
   if (argv.includes('--iteration')) { iteration(maxArg); }
