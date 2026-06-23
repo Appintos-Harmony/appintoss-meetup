@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import type { Route } from '../App';
 import {
   unlockAudio,
@@ -110,6 +110,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [metroOn, setMetroOn] = useState(false);
   const [beat, setBeat] = useState(-1);
   const [hasTake, setHasTake] = useState(false);
+  const [playing, setPlaying] = useState(false); // take 재생 중(재생바)
+  const [playMs, setPlayMs] = useState(0); // 재생바 현재 위치(ms)
+  const [takeMs, setTakeMs] = useState(0); // take 총 길이(ms)
   const [toast, setToast] = useState('');
   const [input, setInput] = useState<Input>('touch');
   const [camMsg, setCamMsg] = useState('');
@@ -162,6 +165,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const playTimersRef = useRef<number[]>([]);
   const takeVoiceRef = useRef<{ instrument: Instrument; style: string }>({ instrument: initVoice.instrument, style: initVoice.style }); // 이 take를 녹음한 악기(재생·저장 기준)
   const playVoiceRef = useRef<Voice | null>(null); // 단일 take 재생용 보이스(녹음 악기로 생성)
+  const playRafRef = useRef(0); // 재생바 진행 rAF
+  const playStartPerfRef = useRef(0); // 재생 시작 시각(performance.now)
+  const playFromMsRef = useRef(0); // 재생 시작 위치(ms)
+  const barRef = useRef<HTMLDivElement>(null); // 재생바 트랙(스크럽 좌표 기준)
+  const barDragRef = useRef(false);
+  const wasPlayingRef = useRef(false); // 스크럽 시작 시 재생 중이었나(놓으면 재개)
+  const seekMsRef = useRef(0); // 드래그 중 목표 위치
   const monitorRef = useRef<{ voices: Voice[]; timers: number[] }>({ voices: [], timers: [] }); // 녹음 중 기존 레이어 모니터링
   const loopOriginalRef = useRef<ChordEvent[] | null>(null); // 구간 반복 적용 전 원본(해제용)
   const selectedRef = useRef<string[]>(selected);
@@ -255,6 +265,14 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     flashToast(`${base.owner}님 트랙을 얹을 준비 완료`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forked]);
+
+  // take 길이 갱신(재생바 총 길이). 녹음 종료(phase)·편집·반복·레이어 변경 시 재계산.
+  useEffect(() => {
+    const evs = stateRef.current.events;
+    setTakeMs(evs.length ? tickToMs(evs.reduce((m, e) => Math.max(m, e.tick), 0)) : 0);
+    setPlayMs(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hasTake, looped, editing, sessionTracks]);
 
   // 녹음(recording) 진입 시 기존 레이어 모니터링 재생, 종료 시 정리.
   useEffect(() => {
@@ -418,6 +436,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       playVoiceRef.current.dispose();
       playVoiceRef.current = null;
     }
+    if (playRafRef.current) {
+      cancelAnimationFrame(playRafRef.current);
+      playRafRef.current = 0;
+    }
+    setPlaying(false); // 재생바 정지(위치 playMs는 유지 = 일시정지)
   }
 
   // 녹음 중 기존 레이어를 함께 들려줌(같이 연주하도록). 녹음 시작 시점 기준으로 스케줄.
@@ -726,11 +749,12 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     }
   }
 
-  function scheduleEvents(events: SessionTrack['events'], voices: { chord: Voice; melody: Voice; drum: Voice }): number {
+  function scheduleEvents(events: SessionTrack['events'], voices: { chord: Voice; melody: Voice; drum: Voice }, fromMs = 0): number {
     let maxMs = 0;
     for (const ev of normalizeEvents(events)) {
       const ms = tickToMs(ev.tick);
       if (ms > maxMs) maxMs = ms;
+      if (ms < fromMs - 1) continue; // 스크럽: 이미 지난 구간 스킵(현재 위치부터 재생)
       const id = window.setTimeout(() => {
         if (ev.kind === 'drum') voices.drum.hit(ev.piece);
         else if (ev.kind === 'melody') {
@@ -740,29 +764,100 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           if (ev.phase === 'on') voices.chord.on(ev.chord);
           else voices.chord.off(ev.chord);
         }
-      }, ms);
+      }, Math.max(0, ms - fromMs));
       playTimersRef.current.push(id);
     }
     return maxMs;
   }
 
-  async function play() {
+  // 현재 take 길이(ms). 재생바 총 길이.
+  function takeDurationMs(): number {
+    const evs = stateRef.current.events;
+    if (!evs.length) return 0;
+    return tickToMs(evs.reduce((m, e) => Math.max(m, e.tick), 0));
+  }
+
+  // take를 fromMs 위치부터 '녹음한 악기'로 재생 + 빨간 재생바 진행(rAF).
+  async function playFrom(fromMs: number) {
     await ensureAudio();
     stopPlayback();
     stopJam();
     allOff();
     soundingRef.current = null;
     clearMelody();
-    // take를 '녹음한 악기'의 보이스로 재생(현재 선택 악기와 무관 — 전환해도 원래 소리 유지).
+    const total = takeDurationMs();
+    setTakeMs(total);
+    if (total <= 0) return;
+    const start = Math.max(0, Math.min(fromMs, total));
     const voice = createVoice(takeVoiceRef.current.instrument, takeVoiceRef.current.style);
     playVoiceRef.current = voice;
-    const maxMs = scheduleEvents(stateRef.current.events, { chord: voice, melody: voice, drum: voice });
+    scheduleEvents(stateRef.current.events, { chord: voice, melody: voice, drum: voice }, start);
     playTimersRef.current.push(
       window.setTimeout(() => {
         voice.dispose();
         if (playVoiceRef.current === voice) playVoiceRef.current = null;
-      }, maxMs + 400),
+      }, total - start + 400),
     );
+    playFromMsRef.current = start;
+    playStartPerfRef.current = performance.now();
+    setPlaying(true);
+    setPlayMs(start);
+    const tick = () => {
+      const t = playFromMsRef.current + (performance.now() - playStartPerfRef.current);
+      if (t >= total) {
+        setPlayMs(total); // 끝에서 멈춤(다음 재생 시 처음부터)
+        setPlaying(false);
+        if (playRafRef.current) {
+          cancelAnimationFrame(playRafRef.current);
+          playRafRef.current = 0;
+        }
+        return;
+      }
+      setPlayMs(t);
+      playRafRef.current = requestAnimationFrame(tick);
+    };
+    playRafRef.current = requestAnimationFrame(tick);
+  }
+
+  function togglePlay() {
+    if (playing) {
+      stopPlayback(); // 일시정지(위치 유지)
+      return;
+    }
+    void playFrom(playMs >= takeMs ? 0 : playMs); // 끝까지 갔으면 처음부터
+  }
+
+  // 재생바 스크럽(탭/드래그로 위치 이동).
+  function posFromX(clientX: number): number {
+    const el = barRef.current;
+    if (!el || takeMs <= 0) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * takeMs;
+  }
+  function onBarDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (takeMs <= 0) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* 캡처 미지원 무시 */
+    }
+    barDragRef.current = true;
+    wasPlayingRef.current = playing;
+    if (playing) stopPlayback(); // 드래그 중 오디오 멈춤
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!barDragRef.current) return;
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarUp() {
+    if (!barDragRef.current) return;
+    barDragRef.current = false;
+    if (wasPlayingRef.current) void playFrom(seekMsRef.current); // 재생 중이었으면 새 위치부터 재개
   }
 
   function stopJam() {
@@ -924,6 +1019,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   }
 
   const busy = phase !== 'idle';
+  const playPct = takeMs > 0 ? Math.min(100, (playMs / takeMs) * 100) : 0; // 재생바 진행률
+  const fmtMs = (ms: number) => {
+    const s = Math.max(0, Math.round(ms / 1000));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
   const recording = phase === 'recording';
   const countin = phase === 'countin';
   const drumMode = instrument === 'drum';
@@ -1257,19 +1357,41 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
       {/* 하단 고정 트랜스포트 바 — 연주 중 항상 닿는 메트로놈·녹음·재생·더보기 */}
       {!melodyFull && !drumTouchFull && !camFull && !editing && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 480, margin: '0 auto', zIndex: 30, background: 'var(--surface)', boxShadow: '0 -3px 18px rgba(17,24,39,.10)', borderRadius: '18px 18px 0 0', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', display: 'flex', gap: 8 }}>
-          <button className="btn" onClick={toggleMetro} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: metroOn ? 'var(--blue)' : 'var(--surface)', color: metroOn ? '#fff' : 'var(--text)', boxShadow: metroOn ? 'var(--e-inset)' : 'var(--e2)' }}>
-            <span style={{ fontSize: 20 }}>🥁</span>메트로놈
-          </button>
-          <button className="btn" onClick={toggleRec} style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 13, fontWeight: 800, background: busy ? 'var(--coral)' : 'var(--blue)', color: '#fff', boxShadow: 'var(--e3)' }}>
-            <span style={{ fontSize: 22 }}>{busy ? '■' : '●'}</span>{busy ? '정지' : '녹음'}
-          </button>
-          <button className="btn" onClick={play} disabled={!hasTake || busy} title={!hasTake ? '녹음하면 재생할 수 있어요' : undefined} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: hasTake && !busy ? 'var(--text)' : 'var(--sub)', boxShadow: 'var(--e2)' }}>
-            <span style={{ fontSize: 20 }}>▶</span>재생
-          </button>
-          <button className="btn" onClick={() => setShowMore(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }}>
-            <span style={{ fontSize: 20 }}>⋯</span>더보기
-          </button>
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 480, margin: '0 auto', zIndex: 30, background: 'var(--surface)', boxShadow: '0 -3px 18px rgba(17,24,39,.10)', borderRadius: '18px 18px 0 0', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))' }}>
+          {/* 재생바: 녹음한 take 재생 위치(빨간 헤드) + 탭/드래그 스크럽 */}
+          {hasTake && !busy && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMs(playMs)}</span>
+              <div
+                ref={barRef}
+                onPointerDown={onBarDown}
+                onPointerMove={onBarMove}
+                onPointerUp={onBarUp}
+                onPointerCancel={onBarUp}
+                style={{ flex: 1, height: 20, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
+              >
+                <div style={{ position: 'relative', width: '100%', height: 6, borderRadius: 999, background: 'var(--line-2)' }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${playPct}%`, background: 'var(--blue)', borderRadius: 999 }} />
+                  <span style={{ position: 'absolute', left: `${playPct}%`, top: '50%', transform: 'translate(-50%,-50%)', width: 15, height: 15, borderRadius: '50%', background: '#fff', border: '2.5px solid var(--blue)', boxShadow: 'var(--e1)' }} />
+                </div>
+              </div>
+              <span className="t-cap c-sub" style={{ minWidth: 30, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(takeMs)}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn" onClick={toggleMetro} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: metroOn ? 'var(--blue)' : 'var(--surface)', color: metroOn ? '#fff' : 'var(--text)', boxShadow: metroOn ? 'var(--e-inset)' : 'var(--e2)' }}>
+              <span style={{ fontSize: 20 }}>🥁</span>메트로놈
+            </button>
+            <button className="btn" onClick={toggleRec} style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 13, fontWeight: 800, background: busy ? 'var(--coral)' : 'var(--blue)', color: '#fff', boxShadow: 'var(--e3)' }}>
+              <span style={{ fontSize: 22 }}>{busy ? '■' : '●'}</span>{busy ? '정지' : '녹음'}
+            </button>
+            <button className="btn" onClick={togglePlay} disabled={!hasTake || busy} title={!hasTake ? '녹음하면 재생할 수 있어요' : undefined} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: playing ? 'var(--blue)' : 'var(--surface)', color: playing ? '#fff' : hasTake && !busy ? 'var(--text)' : 'var(--sub)', boxShadow: 'var(--e2)' }}>
+              <span style={{ fontSize: 20 }}>{playing ? '⏸' : '▶'}</span>{playing ? '일시정지' : '재생'}
+            </button>
+            <button className="btn" onClick={() => setShowMore(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', fontSize: 11, fontWeight: 700, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }}>
+              <span style={{ fontSize: 20 }}>⋯</span>더보기
+            </button>
+          </div>
         </div>
       )}
 
