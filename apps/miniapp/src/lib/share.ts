@@ -111,3 +111,77 @@ export async function readClipboardCode(): Promise<string | null> {
     return null;
   }
 }
+
+// ---- 커뮤니티 공유 보드 (음원 공유 + 합 쌓기 + 코멘트) — 기능명세서 v2 ----
+export interface CommunityItem {
+  code: string;
+  name: string;
+  author: string;
+  trackCount: number;
+  commentCount: number;
+  playCount: number;
+  forkCount: number;
+  originCode: string | null;
+  originName: string | null;
+  originAuthor: string | null;
+  createdAt: number;
+}
+export interface Comment {
+  id: number;
+  author: string;
+  text: string;
+  createdAt: number;
+}
+
+/** 보드 목록(최근 공유물). 실패 시 예외 — 호출부에서 오류 상태 처리. */
+export async function listCommunity(limit = 30): Promise<CommunityItem[]> {
+  const r = (await req('/community?limit=' + limit)) as { items?: CommunityItem[] };
+  return r.items ?? [];
+}
+
+/** 커뮤니티에 공유(publish). origin_code가 있으면 출처가 강제로 박힌다. 반환=새 code. */
+export async function publishSession(s: {
+  name: string;
+  bpm: number;
+  owner: string;
+  author: string;
+  authorKey: string;
+  events: ChordEvent[];
+  instrument?: Instrument;
+  style?: string;
+  originCode?: string;
+  idempotencyToken?: string;
+}): Promise<string> {
+  const body: Record<string, unknown> = {
+    name: s.name,
+    bpm: s.bpm,
+    owner: s.owner,
+    author: s.author,
+    author_key: s.authorKey,
+    published: true,
+    events: s.events,
+    instrument: s.instrument,
+    style: s.style,
+  };
+  if (s.originCode) body.origin_code = s.originCode;
+  if (s.idempotencyToken) body.idempotencyToken = s.idempotencyToken;
+  const res = (await req('/sessions', { method: 'POST', body: JSON.stringify(body) })) as { code: string };
+  return res.code;
+}
+
+export async function getComments(code: string): Promise<Comment[]> {
+  const r = (await req('/sessions/' + encodeURIComponent(code) + '/comments')) as { comments?: Comment[] };
+  return r.comments ?? [];
+}
+export async function addComment(code: string, text: string, author: string, authorKey: string): Promise<void> {
+  await req('/sessions/' + encodeURIComponent(code) + '/comments', {
+    method: 'POST',
+    body: JSON.stringify({ text, author, author_key: authorKey }),
+  });
+}
+export async function reportComment(code: string, id: number, authorKey: string): Promise<void> {
+  await req('/sessions/' + encodeURIComponent(code) + '/comments/' + id + '/report', {
+    method: 'POST',
+    body: JSON.stringify({ author_key: authorKey }),
+  });
+}
