@@ -28,6 +28,7 @@ const MIGRATIONS = [
   'ALTER TABLE sessions ADD COLUMN play_count INTEGER DEFAULT 0',
   'ALTER TABLE sessions ADD COLUMN hidden INTEGER DEFAULT 0',
   'ALTER TABLE sessions ADD COLUMN content_hash TEXT', // 콘텐츠 중복방지(첫 트랙 해시). origin 없는 원곡 publish에만 사용.
+  'ALTER TABLE sessions ADD COLUMN track_count INTEGER', // 중복방지 키 보강 — 트랙 수가 다르면 다른 곡(멀티트랙 collapse 방지).
 ];
 for (const m of MIGRATIONS) {
   try { db.exec(m); } catch { /* 이미 존재 */ }
@@ -225,7 +226,7 @@ const server = createServer(async (req, res) => {
 
     if (req.method === 'POST' && path === '/sessions') {
       const body = await readBody(req);
-      const { name, bpm, owner, events, instrument, style, published, author, author_key, origin_code, idempotencyToken } = body;
+      const { name, bpm, owner, events, instrument, style, published, author, author_key, origin_code, track_count, idempotencyToken } = body;
       const key = (typeof author_key === 'string' && author_key) ? author_key.slice(0, 80) : ip;
 
       // 멱등: 같은 토큰이면 기존 code 반환(공유 연타·재시도 중복 방지).
@@ -256,19 +257,24 @@ const server = createServer(async (req, res) => {
       // SELECT~INSERT~COMMIT 사이에 await가 없어 node:sqlite 동기 API로 원자적이다(레이스 없음).
       const hasClientKey = typeof author_key === 'string' && !!author_key;
       const contentHash = isPublished ? firstTrackHash(events, instrument, style) : null;
+      const tc = Number.isInteger(track_count) && track_count > 0 ? track_count : 1; // 클라가 알려주는 전체 레이어 수
       if (isPublished && origin === null && hasClientKey) {
+        // 첫 트랙 해시 + 트랙 수까지 같아야 dedup → 레이어를 더 얹어 재게시한 곡(트랙 수 다름)은 collapse되지 않음(#6/#7).
         const dup = db.prepare(
-          'SELECT code FROM sessions WHERE author_key = ? AND content_hash = ? AND published = 1 AND hidden = 0 AND origin_code IS NULL LIMIT 1',
-        ).get(key, contentHash);
-        if (dup) return send(res, 200, { code: dup.code, deduped: true });
+          'SELECT code FROM sessions WHERE author_key = ? AND content_hash = ? AND track_count = ? AND published = 1 AND hidden = 0 AND origin_code IS NULL LIMIT 1',
+        ).get(key, contentHash, tc);
+        if (dup) {
+          if (typeof idempotencyToken === 'string') IDEMP.set(idempotencyToken, { code: dup.code, at: Date.now() }); // dedup 경로도 멱등토큰 등록(#15)
+          return send(res, 200, { code: dup.code, deduped: true });
+        }
       }
       let code = genCode();
       while (sessionExists(code)) code = genCode();
       const now = Date.now();
       db.exec('BEGIN');
       try {
-        db.prepare('INSERT INTO sessions (code, name, bpm, created_at, published, author, author_key, origin_code, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .run(code, nm, Number(bpm) || 100, now, isPublished, clip(author, 60, '익명'), key, origin, contentHash);
+        db.prepare('INSERT INTO sessions (code, name, bpm, created_at, published, author, author_key, origin_code, content_hash, track_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(code, nm, Number(bpm) || 100, now, isPublished, clip(author, 60, '익명'), key, origin, contentHash, isPublished ? tc : null);
         if (Array.isArray(events) && events.length) {
           db.prepare('INSERT INTO tracks (code, owner, events, instrument, style, author_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
             .run(code, clip(owner, 60, '익명'), JSON.stringify(events), instrument || null, clip(style, 40, null), key, now);

@@ -166,6 +166,7 @@ export async function publishSession(s: {
   instrument?: Instrument;
   style?: string;
   originCode?: string;
+  trackCount?: number; // 전체 레이어 수(서버 중복방지 키 — 트랙 구성이 다르면 다른 곡으로 취급)
   idempotencyToken?: string;
 }): Promise<{ code: string; deduped: boolean }> {
   const body: Record<string, unknown> = {
@@ -180,6 +181,7 @@ export async function publishSession(s: {
     style: s.style,
   };
   if (s.originCode) body.origin_code = s.originCode;
+  if (typeof s.trackCount === 'number') body.track_count = s.trackCount;
   if (s.idempotencyToken) body.idempotencyToken = s.idempotencyToken;
   const res = (await req('/sessions', { method: 'POST', body: JSON.stringify(body) })) as { code: string; deduped?: boolean };
   return { code: res.code, deduped: !!res.deduped };
