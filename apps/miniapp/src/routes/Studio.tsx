@@ -44,7 +44,7 @@ import {
   type Session,
   type SessionTrack,
 } from '../lib/share';
-import { getNickname, getUserKey } from '../lib/identity';
+import { getNickname, getUserKey, randomId } from '../lib/identity';
 import { InstrumentCombo } from '../components/studio/InstrumentCombo';
 import { GestureFretboard } from '../components/studio/GestureFretboard';
 import { ChordMatrix } from '../components/studio/ChordMatrix';
@@ -975,7 +975,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const code = await publishSession({
         name, bpm: BPM, owner: first.owner, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
-        originCode: origin, idempotencyToken: crypto.randomUUID(),
+        originCode: origin, idempotencyToken: randomId(),
       });
       for (let i = 1; i < layered.length; i++) {
         const t = layered[i];

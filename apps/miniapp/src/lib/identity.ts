@@ -41,3 +41,9 @@ function randomHex(bytes: number): string {
   crypto.getRandomValues(a);
   return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
 }
+
+/** 멱등 토큰 등 짧은 고유 ID. crypto.randomUUID는 보안 컨텍스트(https/localhost)에서만 노출되므로
+ *  LAN http 개발·구형 WebView에서도 안전하도록 getRandomValues(128bit) 폴백을 둔다. */
+export function randomId(): string {
+  return crypto.randomUUID?.() ?? randomHex(16);
+}

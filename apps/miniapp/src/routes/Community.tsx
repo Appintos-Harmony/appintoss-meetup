@@ -14,7 +14,7 @@ import { listSongs, songTracks } from '../lib/storage';
 import { unlockAudio, createVoice, type Voice } from '../audio/engine';
 import { normalizeEvents } from '../audio/events';
 import { tickToMs } from '../audio/transport';
-import { getUserKey, getNickname, getEmoji, EMOJI_CHOICES } from '../lib/identity';
+import { getUserKey, getNickname, getEmoji, EMOJI_CHOICES, randomId } from '../lib/identity';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
 function hashIdx(s: string, n: number): number {
@@ -221,7 +221,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       const code = await publishSession({
         name: song.name, bpm: song.bpm, owner: nick, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
-        idempotencyToken: crypto.randomUUID(),
+        idempotencyToken: randomId(),
       });
       for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style);
       setPublishOpen(false);
