@@ -29,7 +29,8 @@ import {
 import { saveSong, newSongId, listSongs, songTracks, type Song } from '../lib/storage';
 import { loopEvents } from '../lib/loop';
 import { initHandTracking, initFaceDetection, detectFace, startCamera, stopCamera, detect, type GestureMode, type Pt } from '../audio/gesture';
-import { detectFx, playFx, resetFx, type FxHit } from '../audio/gestureFx';
+import { detectFx, playFx, resetFx, type FxHit, type FxResult } from '../audio/gestureFx';
+import { getFxOn, setFxOn } from '../lib/settings';
 import {
   createSession,
   getSession,
@@ -43,6 +44,7 @@ import {
 } from '../lib/share';
 import { getNickname } from '../lib/identity';
 import { InstrumentCombo } from '../components/studio/InstrumentCombo';
+import { GestureFretboard } from '../components/studio/GestureFretboard';
 import { ChordMatrix } from '../components/studio/ChordMatrix';
 import { NotePadGrid } from '../components/studio/NotePadGrid';
 import { DrumPad } from '../components/studio/DrumPad';
@@ -133,6 +135,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [latency, setLatency] = useState<number | null>(null);
   const [landmarks, setLandmarks] = useState<Pt[] | null>(null);
   const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; kind: FxHit['kind'] }[]>([]); // 효과 스파클(손/머리 주변)
+  const [effectsOn, setEffectsOnState] = useState<boolean>(() => getFxOn()); // 제스처 효과음 on/off
   const [flashPiece, setFlashPiece] = useState<DrumPiece | null>(null); // 드럼 타격 시 모양/패드 깜빡임
   const [hands, setHands] = useState<1 | 2>(1); // 제스처 한 손/양손
   const [gestureChords, setGestureChords] = useState<string[]>([]); // 제스처로 현재 울리는 코드(존 하이라이트)
@@ -184,6 +187,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const faceRef = useRef<Pt | null>(null); // 헤드뱅잉용 캐시된 얼굴 중심
   const fxFrameRef = useRef(0); // 효과 루프 프레임 카운터(얼굴 검출 3프레임마다)
   const sparkleIdRef = useRef(0);
+  const effectsOnRef = useRef(effectsOn);
+  effectsOnRef.current = effectsOn;
+  const chordPointerRef = useRef<Set<number>>(new Set()); // 터치 코드 패드: 눌린 포인터 추적(지연-down 레이스·취소 방지)
 
   useEffect(() => {
     onBeat((beatInBar, bar) => {
@@ -204,6 +210,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       stopJam(); // 합주 재생 보이스도 언마운트 시 정리(잔류음·노드 누수 방지)
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       stopCamera(streamRef.current);
+      allOff(); // 라우트 이탈/언마운트 시 보유 코드·멜로디 잔류음 해제(stuck 방지)
     };
   }, []);
 
@@ -453,6 +460,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   function switchMode(m: PlayMode) {
     if (m === playMode || instrument === 'drum') return;
     allOff();
+    releaseTwoHand();
     soundingRef.current = null;
     setActive(null);
     clearMelody();
@@ -466,6 +474,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       return;
     }
     allOff();
+    releaseTwoHand();
     soundingRef.current = null;
     setActive(null);
     clearMelody();
@@ -510,6 +519,26 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     window.setTimeout(() => setSparkles((s) => s.filter((p) => p.id !== id)), 650);
   }
 
+  function toggleEffects() {
+    setEffectsOnState((on) => {
+      const next = !on;
+      setFxOn(next);
+      if (!next) {
+        resetFx();
+        faceRef.current = null;
+        setSparkles([]);
+      }
+      return next;
+    });
+  }
+
+  // 양손(직접 발음) 코드 잔류음 해제. 모든 정리 길목에서 호출(경로별 비대칭 누락 방지).
+  // 양손 코드는 reducer를 우회해 chordOn으로 직접 울리므로 upChord('gesture')로는 안 꺼짐 → 직접 chordOff 필요.
+  function releaseTwoHand() {
+    twoHandRef.current.forEach((c) => c && chordOff(c));
+    twoHandRef.current = [null, null];
+  }
+
   // 제스처 루프: 코드(지속음) / 드럼(상승엣지 타격) + 효과(흔들기/박수/헤드뱅잉, 모든 모드 공통).
   function loop() {
     const v = videoRef.current;
@@ -523,12 +552,26 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const frames = detect(v, now, { zoneCount, mode: gestureModeRef.current, mirror }).slice(0, maxHands);
       if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
 
-      // ---- 음악: 드럼(타격) / 코드(지속) ----
+      // ---- 효과 감지(토글 ON일 때만). handWaving = '팔랑팔랑 흔드는 중' → 1명 모드 연주 억제 판단. ----
+      const solo = maxHands === 1; // 한손 = 1명, 양손 = 2명+
+      fxFrameRef.current = (fxFrameRef.current + 1) % 3;
+      let fx: FxResult | null = null;
+      if (effectsOnRef.current) {
+        if (fxFrameRef.current === 0) faceRef.current = detectFace(v, now); // 얼굴은 3프레임마다(부하 절감)
+        fx = detectFx(frames, faceRef.current, now);
+      } else {
+        faceRef.current = null;
+      }
+      const waving0 = fx?.handWaving[0] ?? false;
+      const waving1 = fx?.handWaving[1] ?? false;
+
+      // ---- 음악: 드럼(타격) / 코드(지속). 1명 모드는 흔드는 중이면 연주 억제(효과와 안 겹치게). ----
       if (drumOn) {
         for (let i = 0; i < 2; i++) {
           const f = frames[i];
           let piece: DrumPiece | null = null;
-          if (f && f.active && f.pos) {
+          const suppress = solo && (i === 0 ? waving0 : waving1);
+          if (!suppress && f && f.active && f.pos) {
             const hx = mirror ? 1 - f.pos.x : f.pos.x;
             piece = nearestDrumPiece(hx, f.pos.y);
           }
@@ -536,10 +579,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           if (piece !== null && (!prev.active || prev.piece !== piece)) hitDrum(piece, 'gesture');
           drumPrevRef.current[i] = { active: piece !== null, piece };
         }
-      } else if (maxHands === 1) {
+      } else if (solo) {
         const f = frames[0];
-        if (f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
-        else upChord('gesture');
+        if (!waving0 && f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
+        else upChord('gesture'); // 흔드는 중이거나 비활성 → 연주 억제
         const a = stateRef.current.activeChord;
         updateGestureChords(a ? [a] : []);
         twoHandRef.current = [null, null];
@@ -563,13 +606,17 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         updateGestureChords(twoHandRef.current.filter((c): c is string => !!c));
       }
 
-      // ---- 효과(모든 모드 공통): 손 흔들기→탬버린 · 박수→박수 · 헤드뱅잉→귀여운 효과음 + 스파클 ----
-      // 얼굴 검출은 3프레임마다(부하 절감), 사이 프레임은 캐시 사용. 미초기화 시 null → 헤드뱅잉만 비활성.
-      fxFrameRef.current = (fxFrameRef.current + 1) % 3;
-      if (fxFrameRef.current === 0) faceRef.current = detectFace(v, now);
-      for (const h of detectFx(frames, faceRef.current, now)) {
-        playFx(h.kind);
-        spawnSparkle(h);
+      // ---- 효과 발음/스파클 ----
+      // 2명+(양손): 연주와 겹쳐도 OK. 1명(한손): 안 겹치게 — 탬버린은 흔들 때(연주 이미 억제됨)만,
+      // 헤드뱅잉은 코드 안 울릴 때만, 박수는 양손 전용이라 1명선 발생 안 함.
+      if (fx) {
+        const chordActive = stateRef.current.activeChord !== null;
+        for (const h of fx.hits) {
+          if (!solo || h.kind === 'tambourine' || (h.kind === 'cute' && !chordActive)) {
+            playFx(h.kind);
+            spawnSparkle(h);
+          }
+        }
       }
     }
     rafRef.current = requestAnimationFrame(loop);
@@ -588,13 +635,14 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       { active: false, piece: null },
       { active: false, piece: null },
     ];
-    twoHandRef.current = [null, null];
+    releaseTwoHand(); // 양손 보유 코드 잔류음 정리(selectTouch·제스처/카메라 실패 폴백 전부 이 길목 통과)
     setGestureChords([]);
   }
 
   async function selectGesture() {
     if (input === 'gesture') return;
     setCamMsg('카메라 준비 중…');
+    upChord('touch'); // 진입 전 touch 코드 잔류 해제(gesture up은 source 불일치로 못 끔 → stuck 방지)
     try {
       await ensureAudio();
       await initHandTracking();
@@ -905,10 +953,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   const ctlChip: CSSProperties = { background: 'rgba(255,255,255,.92)', color: 'var(--text)', fontSize: 13, padding: '8px 12px' };
   const switchHands = () => {
-    setHands((h) => (h === 1 ? 2 : 1));
-    twoHandRef.current.forEach((c) => c && chordOff(c)); // 잔류음 정리
-    twoHandRef.current = [null, null];
-    upChord('gesture');
+    const next: 1 | 2 = hands === 1 ? 2 : 1;
+    handsRef.current = next; // 다음 루프 틱부터 새 모드로 동작(이전 분기 stale 재공격 방지)
+    setHands(next);
+    releaseTwoHand();
+    upChord('gesture'); // 1손 reducer 경로 해제
     setGestureChords([]);
   };
   const gestureControls = (
@@ -920,6 +969,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         {camFull && <button className="chip" style={ctlChip} onClick={() => setLandscape((l) => !l)}>⟳ {landscape ? '세로' : '가로'}</button>}
         <button className="chip" style={ctlChip} onClick={switchHands}>{hands === 2 ? '🙌 양손' : '🤚 한손'}</button>
         <button className="chip" style={ctlChip} onClick={() => setGestureMode((g) => (g === 'finger' ? 'palm' : 'finger'))}>{gestureMode === 'finger' ? '☝ 손가락' : '✋ 손바닥'}</button>
+        <button className="chip" style={effectsOn ? { ...ctlChip, background: 'var(--blue)', color: '#fff' } : ctlChip} onClick={toggleEffects}>{effectsOn ? '✨ 효과 ON' : '✨ 효과 OFF'}</button>
         <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.max(1, Math.round((z - 0.25) * 100) / 100))}>➖</button>
         <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100))}>➕</button>
         <button className="chip" style={ctlChip} onClick={() => void switchCamera()}>🔄</button>
@@ -976,8 +1026,11 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             );
           })}
         </div>
+      ) : instrument === 'guitar' || instrument === 'bass' ? (
+        /* 기타/베이스: 투명 실루엣 + 프렛 칸(C | F | Am | G) + 현 진동 */
+        <GestureFretboard zoneCount={zoneN} selected={selected} active={gestureChords} instrument={instrument} camFull={camFull} />
       ) : (
-        /* 코드 수평 존 */
+        /* 코드 수평 존(피아노) */
         <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, zoneN)}, 1fr)` }}>
           {Array.from({ length: zoneN }).map((_, i) => {
             const label = selected[i] ?? null;
@@ -1115,10 +1168,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                     key={c}
                     className="pad"
                     data-on={active === c}
-                    style={{ ['--accent' as string]: base, ['--accent-d' as string]: dark } as CSSProperties}
-                    onPointerDown={() => void ensureAudio().then(() => downChord(c, 'touch'))}
-                    onPointerUp={() => upChord('touch')}
-                    onPointerLeave={() => active === c && upChord('touch')}
+                    style={{ ['--accent' as string]: base, ['--accent-d' as string]: dark, touchAction: 'none' } as CSSProperties}
+                    onPointerDown={(e) => {
+                      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 캡처 미지원 무시 */ }
+                      chordPointerRef.current.add(e.pointerId);
+                      // 지연-down 레이스: 떼는 게 먼저면(set에서 제거됨) chordOn을 아예 안 울림
+                      void ensureAudio().then(() => { if (chordPointerRef.current.has(e.pointerId)) downChord(c, 'touch'); });
+                    }}
+                    onPointerUp={(e) => { if (chordPointerRef.current.delete(e.pointerId)) upChord('touch'); }}
+                    onPointerCancel={(e) => { if (chordPointerRef.current.delete(e.pointerId)) upChord('touch'); }}
+                    onPointerLeave={(e) => { if (chordPointerRef.current.delete(e.pointerId)) upChord('touch'); }}
                   >
                     {ROMAN[c] && <span className="pad-sub">{ROMAN[c]}</span>}
                     {c}
