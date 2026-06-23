@@ -70,6 +70,36 @@ test('보호경로 우회 차단: NFD·후행점 (Codex BYPASS #1·#2)', () => {
   assert.ok(!pathSafety({ allowed_paths: ['tooling./scripts/커밋.mjs'] }).safe);
 });
 
+// --- Codex(REVIEW-036) 발견 회귀 ---
+test('pathSafety: 절대경로·traversal·drive 거부 (Codex A5·B8)', () => {
+  assert.ok(!pathSafety({ allowed_paths: ['../etc'] }).safe);
+  assert.ok(!pathSafety({ allowed_paths: ['/etc/passwd'] }).safe);
+  assert.ok(!pathSafety({ allowed_paths: ['C:/repo/x'] }).safe);
+  assert.ok(!pathSafety({ allowed_paths: ['산출물/../../.claude/x'] }).safe);
+});
+
+test('canonicalize: ADS 콜론 별칭 제거 (Codex X9)', () => {
+  assert.equal(canonicalize('CLAUDE.md:codexprobe'), 'claude.md');
+  assert.ok(isUnderProtected('CLAUDE.md:ads'));
+});
+
+test('보호 파일 정확매치: 자신만 차단, 같은폴더/상위 글롭 허용 (Codex X7 완화)', () => {
+  // CLAUDE.md(파일보호)는 자신은 차단하되 루트의 다른 파일은 허용 — dir/file 분리 이득.
+  assert.ok(isUnderProtected('CLAUDE.md'));
+  assert.ok(!pathSafety({ allowed_paths: ['CLAUDE.md'] }).safe);
+  assert.ok(pathSafety({ allowed_paths: ['README.md'] }).safe);
+  // _상태.json은 pathSafety로 막지 않음(넓은 글롭 보존) — gitignore+캡클램프로 보호.
+  assert.ok(pathSafety({ allowed_paths: ['평가증빙/**'] }).safe);
+  assert.ok(pathSafety({ allowed_paths: ['평가증빙/루프실행_로그/*.md'] }).safe);
+});
+
+test('withinAllowed: 보호경로는 allowed여도 false (Codex D1)', () => {
+  assert.ok(!withinAllowed('tooling/scripts/루프_가드.mjs', ['tooling/**']));
+  assert.ok(!withinAllowed('.claude/settings.json', ['.claude/**']));
+  assert.ok(!withinAllowed('.gitignore', ['.gitignore']));
+  assert.ok(withinAllowed('apps/miniapp/src/x.ts', ['apps/miniapp/src/**'])); // 정상은 true 유지
+});
+
 // --- glob ---
 test('globMatches: ** 포함, * 미포함, 대소문자 무관', () => {
   assert.ok(globMatches('apps/**', 'apps/miniapp/src/x.ts'));

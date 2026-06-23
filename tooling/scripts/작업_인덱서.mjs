@@ -18,20 +18,28 @@ import { dirname, resolve, join } from 'node:path';
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const TASK_DIR = join(ROOT, '산출물/09_AI개발파이프라인/작업지시서');
 
-// 루프가 절대 건드리면 안 되는 보호 경로. 디렉터리는 하위 전체를 보호한다(자기보호 포함).
-export const PROTECTED_PATHS = [
-  '프로젝트_운영/00_팀공유/00_진행사항.md',
-  '프로젝트_운영/00_팀공유/01_인수인계.md',
+// 디렉터리 보호: 하위 전체 차단(어떤 접근도 불가) — 게이트 자기수정·헌장 보호.
+export const PROTECTED_DIRS = [
   '.claude',          // settings·rules·commands·agents·skills 전체
   '.git',
   '.github',
   'tooling',          // git-hooks·scripts(게이트 자기수정 금지) 전체
+];
+// 파일 보호: 그 파일을 실제로 건드리는 경우만 차단(같은 디렉터리의 다른 파일은 허용 — 레저 .md 등).
+export const PROTECTED_FILES = [
+  '프로젝트_운영/00_팀공유/00_진행사항.md',
+  '프로젝트_운영/00_팀공유/01_인수인계.md',
   '.gitignore',
   '.gitattributes',
   'CLAUDE.md',
   'AGENTS.md',
   'CHATGPT_PRO_운영지침.md',
 ];
+// 주의(Codex X7): 루프 상태 `_상태.json`은 PROTECTED_FILES에 넣지 않는다 —
+// 넣으면 정당한 넓은 글롭(`평가증빙/**`)이 over-reject된다. 대신 ① .gitignore로 커밋 불가(영속 변조 차단)
+// ② iteration()이 매 호출 max를 ABS_MAX_ITER로 재클램프(예산 변조 무력화)로 보호한다.
+// 하위호환·표시용 평탄 목록.
+export const PROTECTED_PATHS = [...PROTECTED_DIRS, ...PROTECTED_FILES];
 
 // 게이팅 키: 중복되면 의미가 모호하므로 해당 작업을 무효(fail-closed)로 본다.
 const GATING_KEYS = new Set(['id', 'status', 'allowed_paths', 'forbidden_paths']);
@@ -46,7 +54,8 @@ export function canonicalize(p) {
   for (let seg of s.split('/')) {
     if (seg === '..') { parts.pop(); continue; }
     if (seg === '.' || seg === '') continue;
-    seg = seg.replace(/[.\s]+$/, ''); // 후행 점·공백 제거(traversal 판정 뒤)
+    seg = seg.split(':')[0];            // ADS/콜론 별칭 제거: 'CLAUDE.md:ads'→'CLAUDE.md' (Codex X9)
+    seg = seg.replace(/[.\s]+$/, '');   // 후행 점·공백 제거(traversal 판정 뒤)
     if (seg === '') continue;
     parts.push(seg);
   }
@@ -78,13 +87,11 @@ export function globMatches(glob, path) {
   return globToRegExp(glob).test(canonicalize(path));
 }
 
-// path가 보호 경로(파일 또는 디렉터리 하위)에 속하는가. canonicalize 일원화.
+// path가 보호 경로에 속하는가. 디렉터리는 하위 전체, 파일은 정확 일치. canonicalize 일원화.
 export function isUnderProtected(path) {
   const p = canonicalize(path);
-  return PROTECTED_PATHS.some((prot) => {
-    const c = canonicalize(prot);
-    return p === c || p.startsWith(c + '/');
-  });
+  if (PROTECTED_DIRS.some((d) => { const c = canonicalize(d); return p === c || p.startsWith(c + '/'); })) return true;
+  return PROTECTED_FILES.some((f) => p === canonicalize(f));
 }
 
 // 작업의 allowed_paths가 보호 경로를 덮거나 위험하게 넓으면 위반 사유를 반환.
@@ -94,14 +101,24 @@ export function pathSafety(task) {
   const violations = [];
   if (allowed.length === 0) violations.push('allowed_paths가 비어 있음 — 자율 실행 범위 불명확');
   for (const g of allowed) {
+    // 절대경로·드라이브·앞슬래시·'..' traversal은 canonicalize가 접기 전에 거부(repo 탈출 차단, Codex A5·B8).
+    const raw = String(g).normalize('NFC').replace(/\\/g, '/').trim();
+    if (/^[a-zA-Z]:\//.test(raw) || raw.startsWith('/') || raw.split('/').includes('..')) {
+      violations.push(`allowed_paths '${g}'에 절대경로 또는 traversal 사용`); continue;
+    }
     const cg = canonicalize(g);
     if (cg === '' || cg === '*' || cg === '**') { violations.push(`allowed_paths '${g}'가 과도하게 넓음`); continue; }
     if (/[?{}\[\]]/.test(g)) { violations.push(`allowed_paths '${g}'에 미지원 글롭 메타문자`); continue; }
     const gp = globPrefix(cg);
-    for (const prot of PROTECTED_PATHS) {
-      const cp = canonicalize(prot);
-      if (gp === cp || gp.startsWith(cp + '/') || cp.startsWith(gp + '/') || globMatches(g, prot)) {
-        violations.push(`allowed_paths '${g}'가 보호 경로 '${prot}'와 충돌`);
+    for (const d of PROTECTED_DIRS) { // 디렉터리: 접두 겹침이면 충돌
+      const cd = canonicalize(d);
+      if (gp === cd || gp.startsWith(cd + '/') || cd.startsWith(gp + '/') || globMatches(g, d)) {
+        violations.push(`allowed_paths '${g}'가 보호 디렉터리 '${d}'와 충돌`);
+      }
+    }
+    for (const f of PROTECTED_FILES) { // 파일: glob이 실제로 그 파일을 매치할 때만 충돌(같은 폴더 다른 파일은 허용)
+      if (canonicalize(g) === canonicalize(f) || globMatches(g, f)) {
+        violations.push(`allowed_paths '${g}'가 보호 파일 '${f}'와 충돌`);
       }
     }
   }

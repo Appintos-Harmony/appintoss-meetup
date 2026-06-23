@@ -29,7 +29,8 @@ const tryGit = (args) => { try { return git(args); } catch { return null; } };
 
 // --- 변경 파일 수집(staged/working-tree/untracked 포함, 리네임 처리) ---
 export function changedPaths({ staged = false } = {}) {
-  const raw = staged ? tryGit(['diff', '--cached', '--name-only']) : tryGit(['status', '--porcelain']);
+  // -uall: untracked 디렉터리를 파일 단위로 펼쳐 packages/·infra/ 무게이트 누락 차단(Codex X6).
+  const raw = staged ? tryGit(['diff', '--cached', '--name-only']) : tryGit(['status', '--porcelain', '-uall']);
   if (raw == null) return [];
   const paths = [];
   for (const line of raw.split('\n')) {
@@ -47,7 +48,9 @@ export function isForbidden(path) {
 }
 
 // 변경이 작업의 allowed_paths 안인가. 세그먼트 경계를 지킨다(형제 디렉터리·깊이 누수 차단).
+// 보호경로는 allowed와 무관하게 항상 false(재사용 안전, Codex D1).
 export function withinAllowed(path, allowed) {
+  if (isForbidden(path)) return false;
   const p = canonicalize(path);
   return allowed.some((g) => {
     if (globMatches(g, path)) return true;
@@ -123,7 +126,10 @@ function preflight(id) {
   const safety = pathSafety(task);
   if (!safety.safe) { out(`STOP: 경로안전 위반:\n - ${safety.violations.join('\n - ')}`); process.exit(10); }
   // 활성 작업 기록 → pre-commit 백스톱이 이 작업 범위로 커밋을 강제(루프가 --guard-task를 빠뜨려도 차단).
-  const s = readState(); s.activeTask = id; writeState(s);
+  // 다른 작업이 이미 활성이면 덮어쓰지 않는다(동시 루프 레이스 차단, Codex X8 — 사람 --reset 필요).
+  const s = readState();
+  if (s.activeTask && s.activeTask !== id) { out(`STOP: 다른 활성 작업 ${s.activeTask} 진행 중. 사람이 --reset 후 재개.`); process.exit(10); }
+  s.activeTask = id; writeState(s);
   out(`GO: 브랜치 ${branch} · ${id} Ready · 경로안전 통과. allowed=${JSON.stringify(task.allowed_paths)} · activeTask 기록(커밋 백스톱 활성).`);
   process.exit(0);
 }
