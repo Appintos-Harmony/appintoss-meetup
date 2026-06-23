@@ -4,7 +4,7 @@
 // 비파괴 추가(내 서버 기능): 댓글(작성/신고) · 출처 크레딧 · 3상태(로딩/빈/실패) · 내 곡 올리기(publishSession) · toast/busy 피드백.
 // ※ 좋아요는 조장 결정(OQ-D: 진짜 구현+노출)에 따라 서버 reactions(share.toggleLike)로 전환. 곽소정 로컬 likes.ts는 보드 미사용·파일 보존(dead).
 // ※ 이 파일은 ../lib/identity 의 getEmoji/EMOJI_CHOICES 에 의존한다.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Route } from '../App';
 import {
   type Session, type CommunityItem, type Comment,
@@ -23,6 +23,11 @@ function hashIdx(s: string, n: number): number {
   return Math.abs(h) % n;
 }
 
+function fmtTime(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 // 곽소정 이모지 아바타(보존) — 서버 항목엔 mine/id가 없으므로 키를 item.code로, 내 곡 여부는 author===닉네임으로 근사.
 function ownerEmoji(item: CommunityItem): string {
   const nick = getNickname();
@@ -33,19 +38,31 @@ function ownerEmoji(item: CommunityItem): string {
 export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: Session) => void }) {
   const [items, setItems] = useState<CommunityItem[] | null>(null); // null=로딩
   const [error, setError] = useState(false);
-  const [playing, setPlaying] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(null); // 트랜스포트가 열린(재생 선택된) 카드 code
+  const [playing, setPlaying] = useState(false);
+  const [playMs, setPlayMs] = useState(0);
+  const [durMs, setDurMs] = useState(0);
   const [busyPreview, setBusyPreview] = useState<string | null>(null);
   const [picks, setPicks] = useState<Set<string>>(() => new Set());
   const [importing, setImporting] = useState(false);
   const [likes, setLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
   const [openCode, setOpenCode] = useState<string | null>(null); // 댓글 펼친 카드
   const [comments, setComments] = useState<Comment[] | null>(null);
+  const [reportedIds, setReportedIds] = useState<Set<number>>(() => new Set()); // 이번 세션에 내가 신고한 댓글(조용히 접수, 즉시 제거 안 함)
   const [commentText, setCommentText] = useState('');
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const voicesRef = useRef<Voice[]>([]);
   const timersRef = useRef<number[]>([]);
+  const sessionCacheRef = useRef<Map<string, Session>>(new Map()); // code→Session lazy 캐시(마운트 수명, 재생 시 재요청 금지)
+  const rafRef = useRef(0);
+  const playStartPerfRef = useRef(0);
+  const playFromMsRef = useRef(0);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const barDragRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+  const seekMsRef = useRef(0);
 
   useEffect(() => {
     void load();
@@ -75,54 +92,129 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     }
   }
 
-  function stopPreview() {
+  // ---- 재생 트랜스포트 (단일 활성 카드: play/pause + 스크럽). setTimeout 스케줄 + RAF 헤드가 같은 벽시계라 헤드-소리 드리프트 없음. ----
+  function clearSchedule() {
     timersRef.current.forEach((t) => window.clearTimeout(t));
     timersRef.current = [];
     voicesRef.current.forEach((v) => v.dispose());
     voicesRef.current = [];
-    setPlaying(null);
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
   }
 
-  // 들어보기(곽소정 ▶/■ 토글 UI 그대로) — 데이터만 getSession(code)로 확보 후 트랙별 음색 복원 재생.
-  async function preview(code: string) {
-    if (playing === code) { stopPreview(); return; }
-    stopPreview();
-    setBusyPreview(code);
-    let session: Session;
-    try {
-      session = await getSession(code);
-    } catch {
-      setBusyPreview(null);
-      flash('음원을 불러오지 못했어요');
-      return;
-    }
-    setBusyPreview(null);
-    if (!session.tracks.length) { flash('재생할 내용이 없어요'); return; }
-    await unlockAudio();
+  function stopPreview() {
+    clearSchedule();
+    setActive(null);
+    setPlaying(false);
+    setPlayMs(0);
+    setDurMs(0);
+  }
+
+  function durationOf(session: Session): number {
+    let maxTick = 0;
+    for (const tr of session.tracks) for (const ev of tr.events) if (ev.tick > maxTick) maxTick = ev.tick;
+    return tickToMs(maxTick);
+  }
+
+  // fromMs 위치부터 모든 트랙 동시 재생. start 시점에 켜져 있던(on했고 아직 off 안 한) 노트는 즉시 attack해 '곡 중간부터 듣기'에서 sustain 코드가 무음이 되지 않게 보정.
+  function playFrom(session: Session, fromMs: number) {
+    clearSchedule();
+    const total = durationOf(session);
+    setDurMs(total);
+    const start = fromMs >= total ? 0 : Math.max(0, fromMs);
     const voices: Voice[] = [];
-    let maxMs = 0;
     for (const track of session.tracks) {
       const voice = createVoice(track.instrument ?? 'piano', track.style ?? 'grand');
       voices.push(voice);
+      const sustaining = new Map<string, () => void>(); // start 시점 활성 노트 → 즉시 attack
       for (const ev of normalizeEvents(track.events)) {
         const ms = tickToMs(ev.tick);
-        if (ms > maxMs) maxMs = ms;
-        const id = window.setTimeout(() => {
+        const fire = () => {
           if (ev.kind === 'drum') voice.hit(ev.piece);
-          else if (ev.kind === 'melody') {
-            if (ev.phase === 'on') voice.on(ev.note);
-            else voice.off(ev.note);
-          } else {
-            if (ev.phase === 'on') voice.on(ev.chord);
-            else voice.off(ev.chord);
-          }
-        }, ms);
-        timersRef.current.push(id);
+          else if (ev.kind === 'melody') { if (ev.phase === 'on') voice.on(ev.note); else voice.off(ev.note); }
+          else { if (ev.phase === 'on') voice.on(ev.chord); else voice.off(ev.chord); }
+        };
+        if (ms >= start) {
+          timersRef.current.push(window.setTimeout(fire, ms - start));
+        } else if (ev.kind === 'melody') {
+          if (ev.phase === 'on') sustaining.set('m' + ev.note, () => voice.on(ev.note));
+          else sustaining.delete('m' + ev.note);
+        } else if (ev.kind !== 'drum') {
+          if (ev.phase === 'on') sustaining.set('c' + ev.chord, () => voice.on(ev.chord));
+          else sustaining.delete('c' + ev.chord);
+        }
       }
+      for (const attack of sustaining.values()) attack();
     }
     voicesRef.current = voices;
-    timersRef.current.push(window.setTimeout(() => stopPreview(), maxMs + 800));
-    setPlaying(code);
+    playFromMsRef.current = start;
+    playStartPerfRef.current = performance.now();
+    setPlayMs(start);
+    setPlaying(true);
+    const tickFn = () => {
+      const t = playFromMsRef.current + (performance.now() - playStartPerfRef.current);
+      if (t >= total) { setPlayMs(total); setPlaying(false); clearSchedule(); return; }
+      setPlayMs(t);
+      rafRef.current = requestAnimationFrame(tickFn);
+    };
+    rafRef.current = requestAnimationFrame(tickFn);
+  }
+
+  // "들어보기" — 활성 아니면 로드(lazy 캐시) 후 처음부터, 이미 활성이면 play/pause 토글.
+  async function selectCard(code: string) {
+    if (active === code) { await togglePlay(); return; }
+    stopPreview();
+    let session = sessionCacheRef.current.get(code);
+    if (!session) {
+      setBusyPreview(code);
+      try { session = await getSession(code); sessionCacheRef.current.set(code, session); }
+      catch { setBusyPreview(null); flash('음원을 불러오지 못했어요'); return; }
+      setBusyPreview(null);
+    }
+    if (!session.tracks.length) { flash('재생할 내용이 없어요'); return; }
+    setActive(code);
+    await unlockAudio();
+    playFrom(session, 0);
+  }
+
+  async function togglePlay() {
+    if (!active) return;
+    const session = sessionCacheRef.current.get(active);
+    if (!session) return;
+    if (playing) { clearSchedule(); setPlaying(false); return; } // 일시정지(위치 유지)
+    await unlockAudio();
+    playFrom(session, playMs >= durMs ? 0 : playMs);
+  }
+
+  // 스크럽 바(탭/드래그로 위치 이동). 드래그 중엔 소리 멈추고 놓을 때 재생 중이었으면 새 위치부터 재개.
+  function posFromX(clientX: number): number {
+    const el = barRef.current;
+    if (!el || durMs <= 0) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * durMs;
+  }
+  function onBarDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (durMs <= 0 || !active) return;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 캡처 미지원 무시 */ }
+    barDragRef.current = true;
+    wasPlayingRef.current = playing;
+    if (playing) { clearSchedule(); setPlaying(false); }
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!barDragRef.current) return;
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarUp() {
+    if (!barDragRef.current) return;
+    barDragRef.current = false;
+    if (wasPlayingRef.current && active) {
+      const s = sessionCacheRef.current.get(active);
+      if (s) void unlockAudio().then(() => playFrom(s, seekMsRef.current));
+    }
   }
 
   function togglePick(code: string) {
@@ -199,12 +291,15 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     }
   }
 
+  // 신고 = 조용히 접수. 즉시 화면에서 지우지 않는다(서버는 서로 다른 신고자 누적 시에만 숨김).
+  // 낙관적 제거를 하면 1건만으로 사라졌다가 패널 재오픈 시 부활하는 불일치가 생긴다(리허설 FB5).
   async function report(code: string, id: number) {
+    if (reportedIds.has(id)) return;
     try {
       const key = await getUserKey();
       await reportComment(code, id, key);
-      setComments((c) => (c ? c.filter((x) => x.id !== id) : c));
-      flash('신고 접수됐어요');
+      setReportedIds((s) => new Set(s).add(id));
+      flash('신고가 접수됐어요. 여러 분이 신고하면 자동으로 숨겨져요');
     } catch {
       flash('신고 실패');
     }
@@ -218,14 +313,15 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       const key = await getUserKey();
       const nick = getNickname() ?? '익명';
       const first = tracks[0]!;
-      const code = await publishSession({
+      const { code, deduped } = await publishSession({
         name: song.name, bpm: song.bpm, owner: nick, author: nick, authorKey: key,
         events: first.events, instrument: first.instrument, style: first.style,
         idempotencyToken: randomId(),
       });
-      for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style);
+      // 같은 곡이 이미 있으면(deduped) 추가 트랙 적재를 건너뛴다(기존 세션 오염 방지).
+      if (!deduped) for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style);
       setPublishOpen(false);
-      flash('보드에 올라갔어요');
+      flash(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : '보드에 올라갔어요');
       await load();
     } catch {
       flash('공유 실패 — 네트워크 확인');
@@ -308,8 +404,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
               </div>
               {/* 하단: 들어보기 / 담기(선택) / 좋아요 / 댓글 — 곽소정 3버튼 + 댓글 칩(비파괴 추가) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-                <button className="chip chip-ghost" style={{ flex: 1 }} disabled={busyPreview === item.code} onClick={() => void preview(item.code)}>
-                  {busyPreview === item.code ? '여는 중…' : playing === item.code ? '■ 정지' : '▶ 들어보기'}
+                <button className="chip chip-ghost" style={{ flex: 1 }} disabled={busyPreview === item.code} onClick={() => void selectCard(item.code)}>
+                  {busyPreview === item.code ? '여는 중…' : active === item.code ? (playing ? '❚❚ 일시정지' : '▶ 재생') : '▶ 들어보기'}
                 </button>
                 <button
                   className="chip"
@@ -329,6 +425,26 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                 <button className="chip chip-ghost" onClick={() => void toggleComments(item.code)}>💬 {item.commentCount}</button>
               </div>
 
+              {active === item.code && durMs > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <div
+                    ref={barRef}
+                    onPointerDown={onBarDown}
+                    onPointerMove={onBarMove}
+                    onPointerUp={onBarUp}
+                    onPointerCancel={onBarUp}
+                    style={{ position: 'relative', height: 22, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
+                  >
+                    <div style={{ position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.1)' }} />
+                    <div style={{ position: 'absolute', left: 0, width: `${Math.min(100, (playMs / durMs) * 100)}%`, height: 4, borderRadius: 2, background: 'var(--blue)' }} />
+                    <div style={{ position: 'absolute', left: `${Math.min(100, (playMs / durMs) * 100)}%`, width: 14, height: 14, marginLeft: -7, borderRadius: '50%', background: '#fff', border: '2px solid var(--blue)', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
+                  </div>
+                  <div className="t-cap c-sub" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                    <span>{fmtTime(playMs)}</span><span>{fmtTime(durMs)}</span>
+                  </div>
+                </div>
+              )}
+
               {openCode === item.code && (
                 <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 10 }}>
                   {comments === null && <div className="t-cap c-sub">댓글 불러오는 중…</div>}
@@ -339,7 +455,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                         <span className="t-cap" style={{ fontWeight: 700 }}>{c.author}</span>{' '}
                         <span className="t-cap c-sub">{c.text}</span>
                       </div>
-                      <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px' }} onClick={() => void report(item.code, c.id)}>신고</button>
+                      <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px', opacity: reportedIds.has(c.id) ? 0.5 : 1 }} disabled={reportedIds.has(c.id)} onClick={() => void report(item.code, c.id)}>{reportedIds.has(c.id) ? '신고됨' : '신고'}</button>
                     </div>
                   ))}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
