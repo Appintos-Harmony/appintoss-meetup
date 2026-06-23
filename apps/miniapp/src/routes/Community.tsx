@@ -1,6 +1,9 @@
-// 커뮤니티 = 음원 공유 보드 + 합 쌓기 + 코멘트(기능명세서 v2). 서버(apps/api) 목록 기반 — 진짜 타인의 공유물.
-// 올리기(내 곡 publish) · 들어보기(트랙별 음색 복원) · 가져오기(스튜디오 레이어 로드) · 코멘트(작성/신고) · 출처 크레딧.
-// ※ "합 더하기"(가져온 곡에 얹어 origin_code 박고 재공유)는 Studio 경로 변경 필요 → 곽소정 푸시 정합 후. 여기선 '가져오기'까지.
+// 커뮤니티 = 음원 공유 보드(서버 listCommunity 기반 — 진짜 타인의 공유물) + 곽소정 UI(이모지 아바타·카드·들어보기·담기 다중·좋아요) 보존.
+// 베이스 = 곽소정 her_Community.tsx(이모지/좋아요/담기/들어보기 UI 그대로). 데이터 소스만 로컬(PRELOAD+listSongs) → 서버 listCommunity()로 전환,
+//   트랙(events)이 필요한 지점(들어보기·담기)은 getSession(code)로 lazy 확보해 동일 동작 재배선.
+// 비파괴 추가(내 서버 기능): 댓글(작성/신고) · 출처 크레딧 · 3상태(로딩/빈/실패) · 내 곡 올리기(publishSession) · toast/busy 피드백.
+// ※ 좋아요는 스펙 v2상 '비범위'지만 곽소정 작업물 보존 원칙으로 로컬(likes.ts) 방식 그대로 유지(삭제 금지). changeNotes 참고.
+// ※ 이 파일은 곽소정 브랜치가 함께 가져오는 ../lib/likes 와 ../lib/identity 의 getEmoji/EMOJI_CHOICES 에 의존한다(현 develop 트리엔 부재 → 머지 시 동반 필수).
 import { useEffect, useRef, useState } from 'react';
 import type { Route } from '../App';
 import {
@@ -11,7 +14,8 @@ import { listSongs, songTracks } from '../lib/storage';
 import { unlockAudio, createVoice, type Voice } from '../audio/engine';
 import { normalizeEvents } from '../audio/events';
 import { tickToMs } from '../audio/transport';
-import { getUserKey, getNickname } from '../lib/identity';
+import { getUserKey, getNickname, getEmoji, EMOJI_CHOICES } from '../lib/identity';
+import { isLiked, toggleLike, baseLikes } from '../lib/likes';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
 function hashIdx(s: string, n: number): number {
@@ -20,11 +24,21 @@ function hashIdx(s: string, n: number): number {
   return Math.abs(h) % n;
 }
 
+// 곽소정 이모지 아바타(보존) — 서버 항목엔 mine/id가 없으므로 키를 item.code로, 내 곡 여부는 author===닉네임으로 근사.
+function ownerEmoji(item: CommunityItem): string {
+  const nick = getNickname();
+  if (nick && item.author === nick) return getEmoji();
+  return EMOJI_CHOICES[hashIdx(item.code, EMOJI_CHOICES.length)];
+}
+
 export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: Session) => void }) {
   const [items, setItems] = useState<CommunityItem[] | null>(null); // null=로딩
   const [error, setError] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
   const [busyPreview, setBusyPreview] = useState<string | null>(null);
+  const [picks, setPicks] = useState<Set<string>>(() => new Set());
+  const [importing, setImporting] = useState(false);
+  const [likes, setLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
   const [openCode, setOpenCode] = useState<string | null>(null); // 댓글 펼친 카드
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [commentText, setCommentText] = useState('');
@@ -49,7 +63,15 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     setItems(null);
     setError(false);
     try {
-      setItems(await listCommunity(30));
+      const list = await listCommunity(30);
+      setItems(list);
+      // 좋아요 맵을 서버 목록(code 키)으로 구성 — 로컬 likes.ts 방식 유지.
+      const m: Record<string, { liked: boolean; count: number }> = {};
+      for (const it of list) {
+        const liked = isLiked(it.code);
+        m[it.code] = { liked, count: baseLikes(it.code) + (liked ? 1 : 0) };
+      }
+      setLikes(m);
     } catch {
       setError(true);
       setItems([]);
@@ -64,6 +86,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     setPlaying(null);
   }
 
+  // 들어보기(곽소정 ▶/■ 토글 UI 그대로) — 데이터만 getSession(code)로 확보 후 트랙별 음색 복원 재생.
   async function preview(code: string) {
     if (playing === code) { stopPreview(); return; }
     stopPreview();
@@ -105,13 +128,40 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     setPlaying(code);
   }
 
-  async function importToStudio(code: string) {
+  function togglePick(code: string) {
+    setPicks((p) => {
+      const n = new Set(p);
+      if (n.has(code)) n.delete(code);
+      else n.add(code);
+      return n;
+    });
+  }
+
+  // 담기(다중) — 곽소정 합본 의도(여러 곡의 트랙을 하나의 로컬 합본 세션으로 스튜디오에 적재) 그대로.
+  //   서버 항목엔 tracks가 없으므로 선택한 각 code를 getSession으로 확보(Promise.all) 후 트랙을 합쳐 onFork.
+  async function importPicks() {
+    if (picks.size === 0 || importing) return;
     stopPreview();
+    setImporting(true);
+    const codes = [...picks];
     try {
-      onFork(await getSession(code));
+      const sessions = await Promise.all(codes.map((c) => getSession(c)));
+      const tracks = sessions.flatMap((s) => s.tracks);
+      if (!tracks.length) { flash('가져올 트랙이 없어요'); return; }
+      const bpm = sessions[0]?.bpm ?? 100;
+      const name = sessions.length === 1 ? (sessions[0]?.name ?? '가져온 음원') : `가져온 음원 ${sessions.length}개`;
+      onFork({ code: 'LOCAL-import', name, bpm, tracks });
     } catch {
       flash('가져오기 실패 — 잠시 후 다시');
+    } finally {
+      setImporting(false);
     }
+  }
+
+  // 좋아요(곽소정 로컬 하트) — 키를 item.code로. likes.ts 방식 그대로 유지.
+  function like(code: string) {
+    const liked = toggleLike(code);
+    setLikes((m) => ({ ...m, [code]: { liked, count: (m[code]?.count ?? baseLikes(code)) + (liked ? 1 : -1) } }));
   }
 
   async function toggleComments(code: string) {
@@ -179,14 +229,14 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
   return (
     <>
       <div className="appbar">
-        <span onClick={() => { stopPreview(); go('home'); }} style={{ cursor: 'pointer' }}>‹ 홈</span>
+        <span onClick={() => { stopPreview(); go('studio'); }} style={{ cursor: 'pointer' }}>‹ 스튜디오</span>
         <span style={{ marginLeft: 'auto', fontWeight: 800 }}>커뮤니티</span>
         <button className="chip" style={{ marginLeft: 'auto' }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
       </div>
 
-      <div className="content">
+      <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
         <div className="t-cap c-sub" style={{ marginBottom: 12 }}>
-          올리고, 마음에 들면 가져와 내 연주에 얹어보세요. 한마디 코멘트도 남길 수 있어요.
+          마음에 드는 음원을 담아(여러 개 OK) 가져오면 내 스튜디오에 레이어로 올라가요. 들어보고 좋아요·한마디 코멘트도!
         </div>
 
         {publishOpen && (
@@ -217,60 +267,95 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
           </div>
         )}
 
-        {(items ?? []).map((item) => (
-          <div key={item.code} className="card" style={{ marginBottom: 10, padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span className="track-av" style={{ background: SIG[hashIdx(item.code, SIG.length)] }}>{(item.author || '?').slice(0, 1)}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="t-body" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.name} <span className="c-sub" style={{ fontWeight: 500 }}>– {item.author}</span>
-                </div>
-                <div className="t-cap c-sub" style={{ marginTop: 2 }}>
-                  트랙 {item.trackCount} · ▶ {item.playCount} · 이어 {item.forkCount}
-                </div>
-                {item.originCode && (
-                  <div className="t-cap c-sub" style={{ marginTop: 2, color: '#8b5cf6' }}>
-                    🎵 {item.originAuthor}님의 {item.originName} 위에 쌓음
+        {(items ?? []).map((item) => {
+          const lk = likes[item.code] ?? { liked: false, count: baseLikes(item.code) };
+          const picked = picks.has(item.code);
+          return (
+            <div
+              key={item.code}
+              className="card"
+              style={{ marginBottom: 10, padding: 14, border: picked ? '2px solid var(--blue)' : '2px solid transparent', background: picked ? 'var(--blue-weak)' : undefined }}
+            >
+              {/* 상단: 이모지 아바타(곽소정) + 음원명·닉네임·메타 + 출처 크레딧 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ width: 44, height: 44, borderRadius: '50%', background: SIG[hashIdx(item.code, SIG.length)] + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flex: 'none' }}>
+                  {ownerEmoji(item)}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="t-body" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name} <span className="c-sub" style={{ fontWeight: 500 }}>– {item.author}</span>
                   </div>
-                )}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-              <button className="chip chip-ghost" style={{ flex: 1 }} disabled={busyPreview === item.code} onClick={() => void preview(item.code)}>
-                {busyPreview === item.code ? '여는 중…' : playing === item.code ? '■ 정지' : '▶ 들어보기'}
-              </button>
-              <button className="chip" style={{ flex: 1 }} onClick={() => void importToStudio(item.code)}>가져오기</button>
-              <button className="chip chip-ghost" onClick={() => void toggleComments(item.code)}>💬 {item.commentCount}</button>
-            </div>
-
-            {openCode === item.code && (
-              <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 10 }}>
-                {comments === null && <div className="t-cap c-sub">댓글 불러오는 중…</div>}
-                {comments !== null && comments.length === 0 && <div className="t-cap c-sub">첫 코멘트를 남겨보세요.</div>}
-                {(comments ?? []).map((c) => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span className="t-cap" style={{ fontWeight: 700 }}>{c.author}</span>{' '}
-                      <span className="t-cap c-sub">{c.text}</span>
+                  <div className="t-cap c-sub" style={{ marginTop: 2 }}>
+                    트랙 {item.trackCount}개 · ▶ {item.playCount} · 이어 {item.forkCount}
+                  </div>
+                  {item.originCode && (
+                    <div className="t-cap c-sub" style={{ marginTop: 2, color: '#8b5cf6' }}>
+                      🎵 {item.originAuthor}님의 {item.originName} 위에 쌓음
                     </div>
-                    <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px' }} onClick={() => void report(item.code, c.id)}>신고</button>
-                  </div>
-                ))}
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <input
-                    value={commentText}
-                    maxLength={200}
-                    placeholder="한마디 남기기"
-                    onChange={(e) => setCommentText(e.target.value)}
-                    style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.12)', fontSize: 14 }}
-                  />
-                  <button className="chip" onClick={() => void submitComment(item.code)}>보내기</button>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+              {/* 하단: 들어보기 / 담기(선택) / 좋아요 / 댓글 — 곽소정 3버튼 + 댓글 칩(비파괴 추가) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+                <button className="chip chip-ghost" style={{ flex: 1 }} disabled={busyPreview === item.code} onClick={() => void preview(item.code)}>
+                  {busyPreview === item.code ? '여는 중…' : playing === item.code ? '■ 정지' : '▶ 들어보기'}
+                </button>
+                <button
+                  className="chip"
+                  style={{ flex: 1, background: picked ? 'var(--blue)' : undefined, color: picked ? '#fff' : undefined }}
+                  onClick={() => togglePick(item.code)}
+                >
+                  {picked ? '✓ 담음' : '＋ 담기'}
+                </button>
+                <button
+                  className="chip chip-ghost"
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, color: lk.liked ? 'var(--coral)' : 'var(--text-2)', background: lk.liked ? '#ffecec' : 'var(--bg)' }}
+                  onClick={() => like(item.code)}
+                >
+                  <span style={{ fontSize: 15 }}>{lk.liked ? '❤️' : '🤍'}</span>
+                  <span style={{ fontWeight: 800 }}>{lk.count}</span>
+                </button>
+                <button className="chip chip-ghost" onClick={() => void toggleComments(item.code)}>💬 {item.commentCount}</button>
+              </div>
+
+              {openCode === item.code && (
+                <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 10 }}>
+                  {comments === null && <div className="t-cap c-sub">댓글 불러오는 중…</div>}
+                  {comments !== null && comments.length === 0 && <div className="t-cap c-sub">첫 코멘트를 남겨보세요.</div>}
+                  {(comments ?? []).map((c) => (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span className="t-cap" style={{ fontWeight: 700 }}>{c.author}</span>{' '}
+                        <span className="t-cap c-sub">{c.text}</span>
+                      </div>
+                      <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px' }} onClick={() => void report(item.code, c.id)}>신고</button>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <input
+                      value={commentText}
+                      maxLength={200}
+                      placeholder="한마디 남기기"
+                      onChange={(e) => setCommentText(e.target.value)}
+                      style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.12)', fontSize: 14 }}
+                    />
+                    <button className="chip" onClick={() => void submitComment(item.code)}>보내기</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {/* 다중 가져오기 바(곽소정) — getSession 합본 직렬화 중엔 비활성/표시 */}
+      {picks.size > 0 && (
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, maxWidth: 480, margin: '0 auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: '0 -6px 20px rgba(17,24,39,.10)' }}>
+          <button className="btn" style={{ background: 'var(--blue)', color: '#fff' }} disabled={importing} onClick={() => void importPicks()}>
+            {importing ? '여는 중…' : `🎚 가져오기 (${picks.size}개) → 스튜디오에 얹기`}
+          </button>
+        </div>
+      )}
 
       {toast && (
         <div style={{ position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)', background: 'rgba(17,24,39,0.92)', color: '#fff', padding: '8px 16px', borderRadius: 20, fontSize: 13, zIndex: 60 }}>

@@ -3,6 +3,17 @@
 
 const KEY_STORE = 'harmony.anonKey';
 const NICK_STORE = 'harmony.nickname';
+const EMOJI_STORE = 'harmony.emoji';
+
+// 이모지 프로필 선택지(설정에서 사용자가 고름).
+export const EMOJI_CHOICES = ['🎵', '🎸', '🎹', '🥁', '🎤', '🎧', '😎', '🤩', '🥳', '😺', '🐶', '🐰', '🦊', '🐼', '🐸', '🦁', '🌈', '⭐', '🔥', '🍀', '🍓', '🌸', '👾', '🚀'];
+
+export function getEmoji(): string {
+  return localStorage.getItem(EMOJI_STORE) || '🎵';
+}
+export function setEmoji(e: string): void {
+  localStorage.setItem(EMOJI_STORE, e);
+}
 
 export async function getUserKey(): Promise<string> {
   // TODO(prod): import { getAnonymousKey } from '@apps-in-toss/web-framework' 로 교체.
