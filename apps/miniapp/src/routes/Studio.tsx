@@ -134,6 +134,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [pending, setPending] = useState<Session | null>(null);
   const [octave, setOctave] = useState(4);
   const [gMelody, setGMelody] = useState<{ note: string; row: number; col: number }[]>([]); // 멜로디 제스처: 현재 눌린 음/셀(오버레이 표시)
+  const [controlsOpen, setControlsOpen] = useState(false); // 제스처 컨트롤바 더보기(접기/펼치기)
   const [heldNotes, setHeldNotes] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string[]>([...PRESET_POP]);
   const [editing, setEditing] = useState(false);
@@ -1268,21 +1269,26 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       </button>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {camFull && <button className="chip" style={ctlChip} onClick={() => setLandscape((l) => !l)}>⟳ {landscape ? '세로' : '가로'}</button>}
-        <button className="chip" style={ctlChip} onClick={switchHands}>{hands === 2 ? '🙌 양손' : '🤚 한손'}</button>
-        {playMode === 'melody' ? (
-          instrument === 'piano' ? (
-            <>
-              <button className="chip" style={ctlChip} onClick={() => shiftOctave(-1)}>옥타브 ▼</button>
-              <button className="chip" style={ctlChip} onClick={() => shiftOctave(1)}>옥타브 ▲</button>
-            </>
-          ) : null
-        ) : (
-          <button className="chip" style={ctlChip} onClick={() => setGestureMode((g) => (g === 'finger' ? 'palm' : 'finger'))}>{gestureMode === 'finger' ? '☝ 손가락' : '✋ 손바닥'}</button>
+        {controlsOpen && (
+          <>
+            <button className="chip" style={ctlChip} onClick={switchHands}>{hands === 2 ? '🙌 양손' : '🤚 한손'}</button>
+            {playMode === 'melody' ? (
+              instrument === 'piano' ? (
+                <>
+                  <button className="chip" style={ctlChip} onClick={() => shiftOctave(-1)}>옥타브 ▼</button>
+                  <button className="chip" style={ctlChip} onClick={() => shiftOctave(1)}>옥타브 ▲</button>
+                </>
+              ) : null
+            ) : (
+              <button className="chip" style={ctlChip} onClick={() => setGestureMode((g) => (g === 'finger' ? 'palm' : 'finger'))}>{gestureMode === 'finger' ? '☝ 손가락' : '✋ 손바닥'}</button>
+            )}
+            <button className="chip" style={effectsOn ? { ...ctlChip, background: 'var(--blue)', color: '#fff' } : ctlChip} onClick={toggleEffects}>{effectsOn ? '✨ 효과 ON' : '✨ 효과 OFF'}</button>
+            <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.max(1, Math.round((z - 0.25) * 100) / 100))}>➖</button>
+            <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100))}>➕</button>
+            <button className="chip" style={ctlChip} onClick={() => void switchCamera()}>🔄</button>
+          </>
         )}
-        <button className="chip" style={effectsOn ? { ...ctlChip, background: 'var(--blue)', color: '#fff' } : ctlChip} onClick={toggleEffects}>{effectsOn ? '✨ 효과 ON' : '✨ 효과 OFF'}</button>
-        <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.max(1, Math.round((z - 0.25) * 100) / 100))}>➖</button>
-        <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100))}>➕</button>
-        <button className="chip" style={ctlChip} onClick={() => void switchCamera()}>🔄</button>
+        <button className="chip" style={{ ...ctlChip, fontWeight: 800 }} onClick={() => setControlsOpen((o) => !o)}>{controlsOpen ? '✕ 접기' : '⚙ 더보기'}</button>
       </div>
     </div>
   );
