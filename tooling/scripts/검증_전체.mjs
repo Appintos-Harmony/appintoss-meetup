@@ -11,7 +11,7 @@ import { dirname, resolve, join } from 'node:path';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCRIPTS = join(ROOT, 'tooling', 'scripts');
 const strict = process.argv.includes('--strict');
-const code = process.argv.includes('--code');
+const codeGate = process.argv.includes('--code');
 const out = (s = '') => process.stdout.write(s + '\n');
 
 // [라벨, 파일, 인자, hardFail]
@@ -32,25 +32,25 @@ const checks = strict
     ];
 
 // --code: 코드 게이트(tsc·vitest)를 마지막 단계로 추가한다(hardFail).
-if (code) checks.push(['코드 게이트(tsc·vitest)', '코드검증.mjs', [], true]);
+if (codeGate) checks.push(['코드 게이트(tsc·vitest)', '코드검증.mjs', [], true]);
 
 const mode = strict ? '엄격(strict) 검증' : '하네스 기본 검증';
-out(`# 검증 전체 — ${mode}${code ? ' + 코드 게이트' : ''}`);
+out(`# 검증 전체 — ${mode}${codeGate ? ' + 코드 게이트' : ''}`);
 
 let failed = 0;
 const summary = [];
 for (const [label, file, args, hard] of checks) {
-  let code = 0;
+  let exitCode = 0;
   let output = '';
   try {
     output = execFileSync(process.execPath, [join(SCRIPTS, file), ...args], { cwd: ROOT }).toString();
   } catch (e) {
-    code = e.status ?? 1;
+    exitCode = e.status ?? 1;
     output = (e.stdout?.toString() ?? '') + (e.stderr?.toString() ?? '');
   }
   out(`\n===== ${label} (${file}) =====`);
   out(output.trim());
-  const pass = code === 0;
+  const pass = exitCode === 0;
   if (!pass && hard) failed++;
   summary.push(`${pass ? 'PASS' : hard ? 'FAIL' : 'WARN'}  ${label}`);
 }
