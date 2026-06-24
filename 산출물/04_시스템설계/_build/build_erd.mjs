@@ -1,8 +1,8 @@
 // 데이터모델 ERD — DA# 표기(식별자 PK영역 + 일반속성영역, 식별/비식별 관계, 까마귀발)
+// 속성·순서·키 표기를 테이블_정의서.md(=apps/api/server.mjs 스키마)와 1:1 일치시킨다.
 import fs from 'node:fs';
 import path from 'node:path';
-const OUTDIR = 'C:/Users/김민혁/Desktop/dev/appintoss-meetup/산출물/04_시스템설계';
-const TMP = 'C:/Users/Public/arch_tmp'; fs.mkdirSync(TMP, { recursive: true });
+const OUTDIR = path.resolve(import.meta.dirname, '..'); // 산출물/04_시스템설계 (이식성: 사용자 경로 하드코딩 제거)
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 function fitAttr(s, fs, maxw) { let w = 0; for (const ch of String(s)) { w += (ch.codePointAt(0) > 0x2000 ? fs : fs * 0.56); } return w > maxw ? ` textLength="${Math.max(20, Math.floor(maxw))}" lengthAdjust="spacingAndGlyphs"` : ''; }
 const FONT = "'Malgun Gothic','Segoe UI',sans-serif";
@@ -61,18 +61,19 @@ function build() {
   const W = 1720, H = 1130;
   let s = frame(W, H, '하모니 데이터 모델 (ERD · DA# 표기)',
     ['개체 = 식별자(PK) 영역[상단·밑줄] + 일반속성 영역[하단] · 실선 = 식별 관계(FK가 자식 PK 구성) · 점선 = 비식별 관계',
-     '까마귀발 = N(다) · 바 = 1(하나) · 복합키(좋아요·신고)는 대리키 없이 식별 관계 · users/auth 개체 부재 = 인증 없음(데모 범위)']);
+     '까마귀발 = N(다) · 바 = 1(하나) · 복합키(좋아요·신고)는 대리키 없이 식별 관계 · 속성 = 테이블_정의서.md 순서·이름 1:1']);
 
+  // 속성 = 테이블_정의서.md 순서 그대로(컬럼명만, 키/FK 표기). 합쳐 쓰지 않고 1컬럼 1행.
   const ses = entityDA(660, 170, 340, '곡', 'sessions', [{ f: 'code' }], [
-    { f: 'name' }, { f: 'bpm' }, { f: 'published' }, { f: 'hidden' }, { f: 'author' }, { f: 'author_key' },
-    { f: 'origin_code', tag: 'FK' }, { f: 'play_count' }, { f: 'created_at' }, { f: 'content_hash · track_count', note: 1 },
+    { f: 'name' }, { f: 'bpm' }, { f: 'created_at' }, { f: 'published' }, { f: 'author' }, { f: 'author_key' },
+    { f: 'origin_code', tag: 'FK' }, { f: 'play_count' }, { f: 'hidden' }, { f: 'content_hash' }, { f: 'track_count' },
   ], '#4F46E5');
   const trk = entityDA(110, 200, 330, '트랙', 'tracks', [{ f: 'id' }], [
-    { f: 'code', tag: 'FK' }, { f: 'owner' }, { f: 'author_key' }, { f: 'events (JSON)' }, { f: 'instrument · style' }, { f: 'created_at' },
+    { f: 'code', tag: 'FK' }, { f: 'owner' }, { f: 'events' }, { f: 'instrument' }, { f: 'style' }, { f: 'author_key' }, { f: 'created_at' },
   ], '#2563EB');
   const rea = entityDA(1250, 175, 330, '좋아요', 'reactions', [{ f: 'code', tag: 'FK' }, { f: 'anon_key' }], [{ f: 'created_at' }], '#DB2777');
   const cmt = entityDA(660, 660, 340, '댓글', 'comments', [{ f: 'id' }], [
-    { f: 'code', tag: 'FK' }, { f: 'author_key' }, { f: 'author' }, { f: 'text (≤200)' }, { f: 'reports' }, { f: 'hidden' }, { f: 'created_at' },
+    { f: 'code', tag: 'FK' }, { f: 'author_key' }, { f: 'author' }, { f: 'text' }, { f: 'created_at' }, { f: 'reports' }, { f: 'hidden' },
   ], '#0D9488');
   const rep = entityDA(1250, 660, 330, '신고', 'comment_reports', [{ f: 'comment_id', tag: 'FK' }, { f: 'reporter_key' }], [{ f: 'created_at' }], '#D97706');
 
@@ -80,7 +81,7 @@ function build() {
   let e = '';
   e += relDA(660, 320, 440, 300, false, '비식별 1:N', 540, 296); // 곡 ─< 트랙
   e += relDA(1000, 230, 1250, 228, true, '식별 1:N', 1125, 206);  // 곡 ─< 좋아요
-  e += relDA(830, ses.bottom, 830, 660, false, '비식별 1:N', 830, 590); // 곡 ─< 댓글
+  e += relDA(830, ses.bottom, 830, 660, false, '비식별 1:N', 830, 600); // 곡 ─< 댓글
   e += relDA(1000, 760, 1250, 712, true, '식별 1:N', 1125, 700);  // 댓글 ─< 신고
   // 자기참조(origin_code) — 곡 위 루프, 비식별
   const lcx = ses.cx, top = ses.y;
@@ -115,10 +116,10 @@ function build() {
   const bx2 = gx + 980;
   s += `<text x="${bx2}" y="${gy + 60}" font-size="12" fill="#334155"><tspan text-decoration="underline" font-weight="800">밑줄</tspan> = 식별자(PK) · 상단 영역</text>`;
   s += badge(bx2 + 250, gy + 50, 'FK') + `<text x="${bx2 + 258}" y="${gy + 60}" font-size="12" fill="#334155">외래키</text>`;
-  s += `<text x="${bx2}" y="${gy + 88}" font-size="12" fill="#334155">개체명: 한글(영문) · 속성은 실제 SQLite 컬럼명</text>`;
+  s += `<text x="${bx2}" y="${gy + 88}" font-size="12" fill="#334155">개체명: 한글(영문) · 속성 = 테이블_정의서.md 컬럼(순서·이름 1:1)</text>`;
 
   return s + `</svg>`;
 }
 const out = build();
-fs.writeFileSync(path.join(TMP, 'erd.html'), `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#fff}svg{display:block}</style>${out}`, 'utf8');
-console.log('OK erd(DA#) html written');
+fs.writeFileSync(path.join(OUTDIR, '하모니_데이터모델_ERD.svg'), `<?xml version="1.0" encoding="UTF-8"?>\n${out}\n`, 'utf8');
+console.log('OK erd(DA#) SVG written ·', path.join(OUTDIR, '하모니_데이터모델_ERD.svg'));
