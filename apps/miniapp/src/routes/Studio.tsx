@@ -1268,7 +1268,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         {camFull ? '‹ 나가기' : '⛶ 전체화면'}
       </button>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {camFull && <button className="chip" style={ctlChip} onClick={() => setLandscape((l) => !l)}>⟳ {landscape ? '세로' : '가로'}</button>}
+        {camFull && <span className="t-cap" style={{ color: '#fff', opacity: 0.8, alignSelf: 'center', whiteSpace: 'nowrap', padding: '0 4px', textShadow: '0 1px 3px rgba(0,0,0,.7)' }}>📱 가로로 돌려요</span>}
         {controlsOpen && (
           <>
             <button className="chip" style={ctlChip} onClick={switchHands}>{hands === 2 ? '🙌 양손' : '🤚 한손'}</button>
@@ -1297,9 +1297,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     <div
       style={
         camFull
-          ? landscape
-            ? { ...landscapeBox, background: '#0b0d10' }
-            : { position: 'fixed', inset: 0, zIndex: 70, background: '#0b0d10', overflow: 'hidden' }
+          ? // 카메라는 CSS 회전 안 함(영상이 옆으로 눕는 문제) — 화면을 그대로 채우고 사용자가 폰을 가로로 돌려 사용.
+            { position: 'fixed', inset: 0, zIndex: 70, background: '#0b0d10', overflow: 'hidden' }
           : showCamera
           ? { position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)' }
           : { display: 'none' }
