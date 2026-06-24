@@ -1,0 +1,124 @@
+<svg width="100%" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 커뮤니티 보드 3상태 — 스케치·와이어프레임·목업</title><desc>음원 공유 보드의 로딩(스켈레톤 카드 2개)·빈(첫 곡의 주인공이 되어보세요+스튜디오로)·실패(불러오지 못했어요+다시 시도) 화면을 스케치, 와이어프레임, 목업 3단계 충실도로 폰 프레임에 나란히 그린 발표용 명세.</desc>
+
+<rect x="0" y="0" width="680" height="480" fill="#ffffff"/>
+
+<!-- ===== 헤더 라벨 ===== -->
+<text x="120" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">1 · 스케치</text>
+<text x="120" y="38" text-anchor="middle" font-size="11" fill="#8b95a1">로딩</text>
+<text x="340" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">2 · 와이어프레임</text>
+<text x="340" y="38" text-anchor="middle" font-size="11" fill="#8b95a1">빈</text>
+<text x="560" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">3 · 목업</text>
+<text x="560" y="38" text-anchor="middle" font-size="11" fill="#8b95a1">실패</text>
+
+<!-- ============================================================= -->
+<!-- 패널 1 — 스케치 (펜슬 그레이) · 로딩 / 스켈레톤 카드 2개 -->
+<!-- ============================================================= -->
+<g transform="translate(20,40)">
+  <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+  <rect x="76" y="12" width="48" height="6" rx="3" fill="#e6e9ed"/>
+
+  <!-- appbar 스케치: ‹ 스튜디오 / 커뮤니티 / + 올리기 -->
+  <text x="16" y="44" font-size="11" fill="#9aa1ab">‹</text>
+  <line x1="24" y1="41" x2="60" y2="41" stroke="#9aa1ab" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <line x1="78" y1="41" x2="122" y2="41" stroke="#9aa1ab" stroke-width="2"/>
+  <rect x="146" y="33" width="40" height="16" rx="8" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <line x1="152" y1="41" x2="180" y2="41" stroke="#9aa1ab" stroke-width="1.5" stroke-dasharray="2 2"/>
+  <line x1="14" y1="56" x2="186" y2="56" stroke="#e6e9ed" stroke-width="1"/>
+
+  <!-- 안내 캡션 placeholder 바 -->
+  <line x1="16" y1="70" x2="184" y2="70" stroke="#9aa1ab" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="16" y1="80" x2="150" y2="80" stroke="#9aa1ab" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <!-- "불러오는 중…" 헤더 표시 -->
+  <text x="100" y="104" text-anchor="middle" font-size="11" fill="#9aa1ab">불러오는 중…</text>
+
+  <!-- 스켈레톤 카드 1 -->
+  <rect x="14" y="116" width="172" height="86" rx="12" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <circle cx="38" cy="142" r="14" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <rect x="62" y="130" width="92" height="9" rx="4" fill="#e6e9ed"/>
+  <rect x="62" y="146" width="62" height="8" rx="4" fill="#eef1f4"/>
+  <rect x="24" y="172" width="46" height="18" rx="9" fill="#eef1f4"/>
+  <rect x="78" y="172" width="46" height="18" rx="9" fill="#eef1f4"/>
+  <rect x="132" y="172" width="40" height="18" rx="9" fill="#eef1f4"/>
+
+  <!-- 스켈레톤 카드 2 -->
+  <rect x="14" y="212" width="172" height="86" rx="12" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <circle cx="38" cy="238" r="14" fill="none" stroke="#9aa1ab" stroke-width="1.5"/>
+  <rect x="62" y="226" width="92" height="9" rx="4" fill="#e6e9ed"/>
+  <rect x="62" y="242" width="62" height="8" rx="4" fill="#eef1f4"/>
+  <rect x="24" y="268" width="46" height="18" rx="9" fill="#eef1f4"/>
+  <rect x="78" y="268" width="46" height="18" rx="9" fill="#eef1f4"/>
+  <rect x="132" y="268" width="40" height="18" rx="9" fill="#eef1f4"/>
+
+  <text x="100" y="328" text-anchor="middle" font-size="10" fill="#9aa1ab" font-style="italic">skeleton ×2</text>
+</g>
+
+<!-- ============================================================= -->
+<!-- 패널 2 — 와이어프레임 (회색 박스+보더+라벨) · 빈 상태 -->
+<!-- ============================================================= -->
+<g transform="translate(240,40)">
+  <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+  <rect x="76" y="12" width="48" height="6" rx="3" fill="#e6e9ed"/>
+
+  <!-- appbar 와이어 -->
+  <rect x="14" y="32" width="172" height="20" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="22" y="46" font-size="11" fill="#8b95a1">‹ 스튜디오</text>
+  <text x="100" y="46" text-anchor="middle" font-size="11" font-weight="700" fill="#8b95a1">커뮤니티</text>
+  <text x="178" y="46" text-anchor="end" font-size="11" fill="#8b95a1">＋올리기</text>
+
+  <!-- 안내 캡션 박스 -->
+  <rect x="14" y="62" width="172" height="30" rx="8" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
+  <text x="100" y="74" text-anchor="middle" font-size="10" fill="#8b95a1">담아 가져오면 스튜디오에</text>
+  <text x="100" y="87" text-anchor="middle" font-size="10" fill="#8b95a1">레이어로 · 들어보기/코멘트</text>
+
+  <!-- 빈 상태 박스 -->
+  <rect x="14" y="150" width="172" height="150" rx="12" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1" stroke-dasharray="5 4"/>
+  <circle cx="100" cy="192" r="20" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.5"/>
+  <text x="100" y="197" text-anchor="middle" font-size="14" fill="#8b95a1">♪</text>
+
+  <text x="100" y="232" text-anchor="middle" font-size="11" font-weight="700" fill="#8b95a1">[ empty-state ]</text>
+  <text x="100" y="250" text-anchor="middle" font-size="10" fill="#8b95a1">아직 음원이 없어요</text>
+  <text x="100" y="263" text-anchor="middle" font-size="10" fill="#8b95a1">첫 곡의 주인공이 되어보세요</text>
+
+  <!-- CTA 버튼 와이어 -->
+  <rect x="64" y="276" width="72" height="22" rx="11" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.5"/>
+  <text x="100" y="291" text-anchor="middle" font-size="11" fill="#8b95a1">스튜디오로</text>
+
+  <text x="100" y="328" text-anchor="middle" font-size="10" fill="#8b95a1" font-style="italic">items.length === 0</text>
+</g>
+
+<!-- ============================================================= -->
+<!-- 패널 3 — 목업 (실제 색·이모지·실제 카피) · 실패 상태 -->
+<!-- ============================================================= -->
+<g transform="translate(460,40)">
+  <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+  <rect x="76" y="12" width="48" height="6" rx="3" fill="#e6e9ed"/>
+
+  <!-- appbar 실제 -->
+  <text x="14" y="46" font-size="11" fill="#8b95a1">‹ 스튜디오</text>
+  <text x="100" y="46" text-anchor="middle" font-size="12" font-weight="800" fill="#191f28">커뮤니티</text>
+  <rect x="150" y="34" width="38" height="18" rx="9" fill="#f2f4f6"/>
+  <text x="169" y="47" text-anchor="middle" font-size="10" fill="#3182f6" font-weight="700">＋올리기</text>
+  <line x1="14" y1="58" x2="186" y2="58" stroke="#f2f4f6" stroke-width="1.5"/>
+
+  <!-- 안내 캡션 -->
+  <text x="14" y="74" font-size="10" fill="#8b95a1">마음에 드는 음원을 담아</text>
+  <text x="14" y="87" font-size="10" fill="#8b95a1">가져오면 스튜디오에 레이어로.</text>
+
+  <!-- 실패 상태 -->
+  <circle cx="100" cy="178" r="26" fill="#fff0f0"/>
+  <text x="100" y="187" text-anchor="middle" font-size="26">⚠️</text>
+
+  <text x="100" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="#191f28">불러오지 못했어요</text>
+  <text x="100" y="250" text-anchor="middle" font-size="11" fill="#8b95a1">네트워크를 확인해 주세요</text>
+
+  <!-- 다시 시도 버튼 (chip-ghost) -->
+  <rect x="64" y="266" width="72" height="30" rx="15" fill="#f2f4f6" stroke="#c9ced5" stroke-width="1"/>
+  <text x="100" y="285" text-anchor="middle" font-size="12" font-weight="700" fill="#3182f6">다시 시도</text>
+
+  <!-- 토스트 (실제 카피 — flash) -->
+  <rect x="38" y="372" width="124" height="26" rx="13" fill="#191f28" opacity="0.92"/>
+  <text x="100" y="389" text-anchor="middle" font-size="11" fill="#ffffff">가져오기 실패 — 잠시 후 다시</text>
+</g>
+
+</svg>

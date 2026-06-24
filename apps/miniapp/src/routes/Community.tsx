@@ -1,207 +1,492 @@
-// 커뮤니티(음원 게시판). 이모지 프로필 + 음원명·닉네임·길이 + 들어보기/담기(다중선택)/좋아요(개수).
-// 가져오기 = 선택한 여러 곡의 트랙을 '로컬 합본 세션'(code 'LOCAL-…')으로 스튜디오에 레이어로 올림.
-//   → 로컬이라 스튜디오에서 레이어 삭제(✕) 가능 + 여러 개 동시 가져오기. 좋아요는 로컬(데모).
-import { useRef, useState } from 'react';
+// 커뮤니티 = 음원 공유 보드(서버 listCommunity 기반 — 진짜 타인의 공유물) + 곽소정 UI(이모지 아바타·카드·들어보기·담기 다중·좋아요) 보존.
+// 베이스 = 곽소정 her_Community.tsx(이모지/좋아요/담기/들어보기 UI 그대로). 데이터 소스만 로컬(PRELOAD+listSongs) → 서버 listCommunity()로 전환,
+//   트랙(events)이 필요한 지점(들어보기·담기)은 getSession(code)로 lazy 확보해 동일 동작 재배선.
+// 비파괴 추가(내 서버 기능): 댓글(작성/신고) · 출처 크레딧 · 3상태(로딩/빈/실패) · 내 곡 올리기(publishSession) · toast/busy 피드백.
+// ※ 좋아요는 조장 결정(OQ-D: 진짜 구현+노출)에 따라 서버 reactions(share.toggleLike)로 전환. 곽소정 로컬 likes.ts는 보드 미사용·파일 보존(dead).
+// ※ 이 파일은 ../lib/identity 의 getEmoji/EMOJI_CHOICES 에 의존한다.
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Route } from '../App';
-import { PRELOAD, type Session } from '../lib/share';
+import {
+  type Session, type CommunityItem, type Comment,
+  listCommunity, publishSession, getSession, addTrack, getComments, addComment, reportComment, toggleLike,
+} from '../lib/share';
 import { listSongs, songTracks } from '../lib/storage';
 import { unlockAudio, createVoice, type Voice } from '../audio/engine';
-import { normalizeEvents, type ChordEvent } from '../audio/events';
+import { normalizeEvents } from '../audio/events';
 import { tickToMs } from '../audio/transport';
-import { getEmoji, getNickname, EMOJI_CHOICES } from '../lib/identity';
-import { isLiked, toggleLike, baseLikes } from '../lib/likes';
-
-interface CommunityItem {
-  id: string;
-  title: string;
-  owner: string;
-  mine: boolean;
-  events: ChordEvent[];
-  session: Session;
-}
-
-function buildItems(): CommunityItem[] {
-  const items: CommunityItem[] = [];
-  const p = PRELOAD.tracks[0];
-  if (p) items.push({ id: 'preload', title: PRELOAD.name, owner: p.owner, mine: false, events: p.events, session: PRELOAD });
-  for (const s of listSongs()) {
-    const tks = songTracks(s);
-    items.push({
-      id: s.id,
-      title: s.name,
-      owner: '나',
-      mine: true,
-      events: tks.flatMap((t) => t.events),
-      session: { code: 'LOCAL-' + s.id, name: s.name, bpm: s.bpm, tracks: tks },
-    });
-  }
-  return items;
-}
-
-function lengthSec(events: ChordEvent[]): number {
-  const maxTick = events.reduce((m, e) => Math.max(m, e.tick), 0);
-  return Math.max(1, Math.round(tickToMs(maxTick) / 1000));
-}
+import { getUserKey, getNickname, getEmoji, EMOJI_CHOICES, randomId } from '../lib/identity';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
-function hashIdx(id: string, n: number): number {
+function hashIdx(s: string, n: number): number {
   let h = 0;
-  for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   return Math.abs(h) % n;
 }
-function ownerEmoji(item: CommunityItem): string {
-  if (item.mine) return getEmoji();
-  if (item.id === 'preload') return '🎸';
-  return EMOJI_CHOICES[hashIdx(item.id, EMOJI_CHOICES.length)];
+
+function fmtTime(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
-function nicknameOf(item: CommunityItem): string {
-  return item.mine ? getNickname() || '나' : item.owner;
+
+// 곽소정 이모지 아바타(보존) — 서버 항목엔 mine/id가 없으므로 키를 item.code로, 내 곡 여부는 author===닉네임으로 근사.
+function ownerEmoji(item: CommunityItem): string {
+  const nick = getNickname();
+  if (nick && item.author === nick) return getEmoji();
+  return EMOJI_CHOICES[hashIdx(item.code, EMOJI_CHOICES.length)];
 }
 
 export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: Session) => void }) {
-  const [items] = useState<CommunityItem[]>(() => buildItems());
-  const [playing, setPlaying] = useState<string | null>(null);
+  const [items, setItems] = useState<CommunityItem[] | null>(null); // null=로딩
+  const [error, setError] = useState(false);
+  const [active, setActive] = useState<string | null>(null); // 트랜스포트가 열린(재생 선택된) 카드 code
+  const [playing, setPlaying] = useState(false);
+  const [playMs, setPlayMs] = useState(0);
+  const [durMs, setDurMs] = useState(0);
+  const [busyPreview, setBusyPreview] = useState<string | null>(null);
   const [picks, setPicks] = useState<Set<string>>(() => new Set());
-  const [likes, setLikes] = useState<Record<string, { liked: boolean; count: number }>>(() => {
-    const m: Record<string, { liked: boolean; count: number }> = {};
-    for (const it of buildItems()) {
-      const liked = isLiked(it.id);
-      m[it.id] = { liked, count: baseLikes(it.id) + (liked ? 1 : 0) };
-    }
-    return m;
-  });
-  const voiceRef = useRef<Voice | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [likes, setLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
+  const [openCode, setOpenCode] = useState<string | null>(null); // 댓글 펼친 카드
+  const [comments, setComments] = useState<Comment[] | null>(null);
+  const [reportedIds, setReportedIds] = useState<Set<number>>(() => new Set()); // 이번 세션에 내가 신고한 댓글(조용히 접수, 즉시 제거 안 함)
+  const [commentText, setCommentText] = useState('');
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishing, setPublishing] = useState<string | null>(null);
+  const [toast, setToast] = useState('');
+  const voicesRef = useRef<Voice[]>([]);
   const timersRef = useRef<number[]>([]);
+  const sessionCacheRef = useRef<Map<string, Session>>(new Map()); // code→Session lazy 캐시(마운트 수명, 재생 시 재요청 금지)
+  const rafRef = useRef(0);
+  const playStartPerfRef = useRef(0);
+  const playFromMsRef = useRef(0);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const barDragRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+  const seekMsRef = useRef(0);
 
-  function stopPreview() {
+  useEffect(() => {
+    void load();
+    return () => stopPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function flash(m: string) {
+    setToast(m);
+    window.setTimeout(() => setToast(''), 1800);
+  }
+
+  async function load() {
+    setItems(null);
+    setError(false);
+    try {
+      const key = await getUserKey();
+      const list = await listCommunity(30, key);
+      setItems(list);
+      // 좋아요 맵을 서버 응답(likeCount·liked)으로 구성.
+      const m: Record<string, { liked: boolean; count: number }> = {};
+      for (const it of list) m[it.code] = { liked: it.liked, count: it.likeCount };
+      setLikes(m);
+    } catch {
+      setError(true);
+      setItems([]);
+    }
+  }
+
+  // ---- 재생 트랜스포트 (단일 활성 카드: play/pause + 스크럽). setTimeout 스케줄 + RAF 헤드가 같은 벽시계라 헤드-소리 드리프트 없음. ----
+  function clearSchedule() {
     timersRef.current.forEach((t) => window.clearTimeout(t));
     timersRef.current = [];
-    voiceRef.current?.dispose();
-    voiceRef.current = null;
-    setPlaying(null);
+    voicesRef.current.forEach((v) => v.dispose());
+    voicesRef.current = [];
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
   }
 
-  async function preview(item: CommunityItem) {
-    if (playing === item.id) {
-      stopPreview();
-      return;
-    }
-    stopPreview();
-    await unlockAudio();
-    const voice = createVoice('piano', 'grand');
-    voiceRef.current = voice;
-    let maxMs = 0;
-    for (const ev of normalizeEvents(item.events)) {
-      const ms = tickToMs(ev.tick);
-      if (ms > maxMs) maxMs = ms;
-      const id = window.setTimeout(() => {
-        if (ev.kind === 'drum') voice.hit(ev.piece);
-        else if (ev.kind === 'melody') {
-          if (ev.phase === 'on') voice.on(ev.note);
-          else voice.off(ev.note);
-        } else {
-          if (ev.phase === 'on') voice.on(ev.chord);
-          else voice.off(ev.chord);
+  function stopPreview() {
+    clearSchedule();
+    setActive(null);
+    setPlaying(false);
+    setPlayMs(0);
+    setDurMs(0);
+  }
+
+  function durationOf(session: Session): number {
+    let maxTick = 0;
+    for (const tr of session.tracks) for (const ev of tr.events) if (ev.tick > maxTick) maxTick = ev.tick;
+    return tickToMs(maxTick);
+  }
+
+  // fromMs 위치부터 모든 트랙 동시 재생. start 시점에 켜져 있던(on했고 아직 off 안 한) 노트는 즉시 attack해 '곡 중간부터 듣기'에서 sustain 코드가 무음이 되지 않게 보정.
+  function playFrom(session: Session, fromMs: number) {
+    clearSchedule();
+    const total = durationOf(session);
+    setDurMs(total);
+    const start = fromMs >= total ? 0 : Math.max(0, fromMs);
+    const voices: Voice[] = [];
+    for (const track of session.tracks) {
+      const voice = createVoice(track.instrument ?? 'piano', track.style ?? 'grand');
+      voices.push(voice);
+      const sustaining = new Map<string, () => void>(); // start 시점 활성 노트 → 즉시 attack
+      for (const ev of normalizeEvents(track.events)) {
+        const ms = tickToMs(ev.tick);
+        const fire = () => {
+          if (ev.kind === 'drum') voice.hit(ev.piece);
+          else if (ev.kind === 'melody') { if (ev.phase === 'on') voice.on(ev.note); else voice.off(ev.note); }
+          else { if (ev.phase === 'on') voice.on(ev.chord); else voice.off(ev.chord); }
+        };
+        if (ms >= start) {
+          timersRef.current.push(window.setTimeout(fire, ms - start));
+        } else if (ev.kind === 'melody') {
+          if (ev.phase === 'on') sustaining.set('m' + ev.note, () => voice.on(ev.note));
+          else sustaining.delete('m' + ev.note);
+        } else if (ev.kind !== 'drum') {
+          if (ev.phase === 'on') sustaining.set('c' + ev.chord, () => voice.on(ev.chord));
+          else sustaining.delete('c' + ev.chord);
         }
-      }, ms);
-      timersRef.current.push(id);
+      }
+      for (const attack of sustaining.values()) attack();
     }
-    timersRef.current.push(window.setTimeout(() => stopPreview(), maxMs + 800));
-    setPlaying(item.id);
+    voicesRef.current = voices;
+    playFromMsRef.current = start;
+    playStartPerfRef.current = performance.now();
+    setPlayMs(start);
+    setPlaying(true);
+    const tickFn = () => {
+      const t = playFromMsRef.current + (performance.now() - playStartPerfRef.current);
+      if (t >= total) { setPlayMs(total); setPlaying(false); clearSchedule(); return; }
+      setPlayMs(t);
+      rafRef.current = requestAnimationFrame(tickFn);
+    };
+    rafRef.current = requestAnimationFrame(tickFn);
   }
 
-  function togglePick(id: string) {
+  // "들어보기" — 활성 아니면 로드(lazy 캐시) 후 처음부터, 이미 활성이면 play/pause 토글.
+  async function selectCard(code: string) {
+    if (active === code) { await togglePlay(); return; }
+    stopPreview();
+    let session = sessionCacheRef.current.get(code);
+    if (!session) {
+      setBusyPreview(code);
+      try { session = await getSession(code); sessionCacheRef.current.set(code, session); }
+      catch { setBusyPreview(null); flash('음원을 불러오지 못했어요'); return; }
+      setBusyPreview(null);
+    }
+    if (!session.tracks.length) { flash('재생할 내용이 없어요'); return; }
+    setActive(code);
+    await unlockAudio();
+    playFrom(session, 0);
+  }
+
+  async function togglePlay() {
+    if (!active) return;
+    const session = sessionCacheRef.current.get(active);
+    if (!session) return;
+    if (playing) { clearSchedule(); setPlaying(false); return; } // 일시정지(위치 유지)
+    await unlockAudio();
+    playFrom(session, playMs >= durMs ? 0 : playMs);
+  }
+
+  // 스크럽 바(탭/드래그로 위치 이동). 드래그 중엔 소리 멈추고 놓을 때 재생 중이었으면 새 위치부터 재개.
+  function posFromX(clientX: number): number {
+    const el = barRef.current;
+    if (!el || durMs <= 0) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * durMs;
+  }
+  function onBarDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (durMs <= 0 || !active) return;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 캡처 미지원 무시 */ }
+    barDragRef.current = true;
+    wasPlayingRef.current = playing;
+    if (playing) { clearSchedule(); setPlaying(false); }
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!barDragRef.current) return;
+    const ms = posFromX(e.clientX);
+    seekMsRef.current = ms;
+    setPlayMs(ms);
+  }
+  function onBarUp() {
+    if (!barDragRef.current) return;
+    barDragRef.current = false;
+    if (wasPlayingRef.current && active) {
+      const s = sessionCacheRef.current.get(active);
+      if (s) void unlockAudio().then(() => playFrom(s, seekMsRef.current));
+    }
+  }
+
+  function togglePick(code: string) {
     setPicks((p) => {
       const n = new Set(p);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
+      if (n.has(code)) n.delete(code);
+      else n.add(code);
       return n;
     });
   }
 
-  // 선택한 곡들의 트랙을 하나의 로컬 합본 세션으로 → 스튜디오에 레이어로 적재(여러 개 동시).
-  function importPicks() {
-    const chosen = items.filter((it) => picks.has(it.id));
-    if (chosen.length === 0) return;
+  // 담기(다중) — 곽소정 합본 의도(여러 곡의 트랙을 하나의 로컬 합본 세션으로 스튜디오에 적재) 그대로.
+  //   서버 항목엔 tracks가 없으므로 선택한 각 code를 getSession으로 확보(Promise.all) 후 트랙을 합쳐 onFork.
+  async function importPicks() {
+    if (picks.size === 0 || importing) return;
     stopPreview();
-    const tracks = chosen.flatMap((it) => it.session.tracks);
-    const bpm = chosen[0]?.session.bpm ?? 100;
-    const name = chosen.length === 1 ? chosen[0]!.title : `가져온 음원 ${chosen.length}개`;
-    onFork({ code: 'LOCAL-import', name, bpm, tracks });
+    setImporting(true);
+    const codes = [...picks];
+    try {
+      const sessions = await Promise.all(codes.map((c) => getSession(c)));
+      const tracks = sessions.flatMap((s) => s.tracks);
+      if (!tracks.length) { flash('가져올 트랙이 없어요'); return; }
+      // 단일 가져오기 = 그 곡 위에 쌓기 → 서버 code 보존(스튜디오 '커뮤니티에 올리기'가 origin_code로 사용, 출처 강제).
+      // 다중 담기 = 재료 합본(LOCAL, 출처 없음).
+      if (sessions.length === 1 && sessions[0]) {
+        onFork(sessions[0]);
+      } else {
+        const bpm = sessions[0]?.bpm ?? 100;
+        onFork({ code: 'LOCAL-import', name: `가져온 음원 ${sessions.length}개`, bpm, tracks });
+      }
+    } catch {
+      flash('가져오기 실패 — 잠시 후 다시');
+    } finally {
+      setImporting(false);
+    }
   }
 
-  function like(id: string) {
-    const liked = toggleLike(id);
-    setLikes((m) => ({ ...m, [id]: { liked, count: (m[id]?.count ?? baseLikes(id)) + (liked ? 1 : -1) } }));
+  // 좋아요(서버 reactions 토글) — 낙관적 갱신 후 서버 응답으로 보정, 실패 시 되돌림.
+  async function like(code: string) {
+    const prev = likes[code] ?? { liked: false, count: 0 };
+    setLikes((m) => ({ ...m, [code]: { liked: !prev.liked, count: prev.count + (prev.liked ? -1 : 1) } }));
+    try {
+      const key = await getUserKey();
+      const r = await toggleLike(code, key);
+      setLikes((m) => ({ ...m, [code]: { liked: r.liked, count: r.count } }));
+    } catch {
+      setLikes((m) => ({ ...m, [code]: prev }));
+      flash('좋아요 실패 — 잠시 후 다시');
+    }
   }
+
+  async function toggleComments(code: string) {
+    if (openCode === code) { setOpenCode(null); return; }
+    setOpenCode(code);
+    setComments(null);
+    try {
+      setComments(await getComments(code));
+    } catch {
+      setComments([]);
+    }
+  }
+
+  async function submitComment(code: string) {
+    const text = commentText.trim();
+    if (!text) return;
+    try {
+      const key = await getUserKey();
+      await addComment(code, text, getNickname() ?? '익명', key);
+      setCommentText('');
+      setComments(await getComments(code));
+      setItems((arr) => (arr ? arr.map((it) => (it.code === code ? { ...it, commentCount: it.commentCount + 1 } : it)) : arr));
+    } catch {
+      flash('댓글 전송 실패');
+    }
+  }
+
+  // 신고 = 조용히 접수. 즉시 화면에서 지우지 않는다(서버는 서로 다른 신고자 누적 시에만 숨김).
+  // 낙관적 제거를 하면 1건만으로 사라졌다가 패널 재오픈 시 부활하는 불일치가 생긴다(리허설 FB5).
+  async function report(code: string, id: number) {
+    if (reportedIds.has(id)) return;
+    try {
+      const key = await getUserKey();
+      await reportComment(code, id, key);
+      setReportedIds((s) => new Set(s).add(id));
+      flash('신고가 접수됐어요. 여러 분이 신고하면 자동으로 숨겨져요');
+    } catch {
+      flash('신고 실패');
+    }
+  }
+
+  async function publish(song: { id: string; name: string; bpm: number }) {
+    setPublishing(song.id);
+    try {
+      const tracks = songTracks(song as never);
+      if (!tracks.length) { flash('빈 곡은 올릴 수 없어요'); return; }
+      const key = await getUserKey();
+      const nick = getNickname() ?? '익명';
+      const first = tracks[0]!;
+      const { code, deduped } = await publishSession({
+        name: song.name, bpm: song.bpm, owner: nick, author: nick, authorKey: key,
+        events: first.events, instrument: first.instrument, style: first.style,
+        trackCount: tracks.length, idempotencyToken: randomId(),
+      });
+      // 같은 곡이 이미 있으면(deduped) 추가 트랙 적재를 건너뛴다(기존 세션 오염 방지).
+      if (!deduped) for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style, key); // 공개 세션 소유자 검증용 키
+      setPublishOpen(false);
+      flash(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : '보드에 올라갔어요');
+      await load();
+    } catch {
+      flash('공유 실패 — 네트워크 확인');
+    } finally {
+      setPublishing(null);
+    }
+  }
+
+  const myShongs = listSongs();
 
   return (
     <>
       <div className="appbar">
         <span onClick={() => { stopPreview(); go('studio'); }} style={{ cursor: 'pointer' }}>‹ 스튜디오</span>
         <span style={{ marginLeft: 'auto', fontWeight: 800 }}>커뮤니티</span>
+        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={items === null} aria-label="새로고침" onClick={() => void load()}>↻</button>
+        <button className="chip" style={{ marginLeft: 8 }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
       </div>
 
       <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
         <div className="t-cap c-sub" style={{ marginBottom: 12 }}>
-          마음에 드는 음원을 담아(여러 개 OK) 가져오면 내 스튜디오에 레이어로 올라가요. 들어보고 좋아요도!
+          마음에 드는 음원을 담아(여러 개 OK) 가져오면 내 스튜디오에 레이어로 올라가요. 들어보고 좋아요·한마디 코멘트도!
         </div>
 
-        {items.map((item, i) => {
-          const lk = likes[item.id] ?? { liked: false, count: baseLikes(item.id) };
-          const picked = picks.has(item.id);
+        {publishOpen && (
+          <div className="card" style={{ marginBottom: 12, padding: 14 }}>
+            <div className="t-body" style={{ fontWeight: 700, marginBottom: 8 }}>내 곡 올리기</div>
+            {myShongs.length === 0 && <div className="t-cap c-sub">아직 녹음한 곡이 없어요 — 스튜디오에서 먼저 녹음하세요.</div>}
+            {myShongs.map((s) => (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                <div className="t-body" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                <button className="chip" disabled={publishing === s.id} onClick={() => void publish(s)}>
+                  {publishing === s.id ? '올리는 중…' : '올리기'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {items === null && <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 24 }}>불러오는 중…</div>}
+        {items !== null && error && (
+          <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 24 }}>
+            불러오지 못했어요. <button className="chip chip-ghost" onClick={() => void load()}>다시 시도</button>
+          </div>
+        )}
+        {items !== null && !error && items.length === 0 && (
+          <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 24 }}>
+            아직 음원이 없어요 — 첫 곡의 주인공이 되어보세요.
+            <div style={{ marginTop: 10 }}><button className="chip" onClick={() => go('studio')}>스튜디오로</button></div>
+          </div>
+        )}
+
+        {(items ?? []).map((item) => {
+          const lk = likes[item.code] ?? { liked: item.liked, count: item.likeCount };
+          const picked = picks.has(item.code);
           return (
             <div
-              key={item.id}
+              key={item.code}
               className="card"
               style={{ marginBottom: 10, padding: 14, border: picked ? '2px solid var(--blue)' : '2px solid transparent', background: picked ? 'var(--blue-weak)' : undefined }}
             >
-              {/* 상단: 아바타 + 음원명·닉네임·길이 */}
+              {/* 상단: 이모지 아바타(곽소정) + 음원명·닉네임·메타 + 출처 크레딧 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ width: 44, height: 44, borderRadius: '50%', background: SIG[i % SIG.length] + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flex: 'none' }}>
+                <span style={{ width: 44, height: 44, borderRadius: '50%', background: SIG[hashIdx(item.code, SIG.length)] + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flex: 'none' }}>
                   {ownerEmoji(item)}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="t-body" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.title} <span className="c-sub" style={{ fontWeight: 500 }}>– {nicknameOf(item)}</span>
+                    {item.name} <span className="c-sub" style={{ fontWeight: 500 }}>– {item.author}</span>
                   </div>
-                  <div className="t-cap c-sub" style={{ marginTop: 2 }}>약 {lengthSec(item.events)}초 · 트랙 {item.session.tracks.length}개</div>
+                  <div className="t-cap c-sub" style={{ marginTop: 2 }}>
+                    트랙 {item.trackCount}개 · ▶ {item.playCount} · 이어 {item.forkCount}
+                  </div>
+                  {item.originCode && (
+                    <div className="t-cap c-sub" style={{ marginTop: 2, color: '#8b5cf6' }}>
+                      🎵 소스: {item.originAuthor}님의 「{item.originName}」 음원 사용
+                    </div>
+                  )}
                 </div>
               </div>
-              {/* 하단: 들어보기 / 담기(선택) / 좋아요 */}
+              {/* 하단: 들어보기 / 담기(선택) / 좋아요 / 댓글 — 곽소정 3버튼 + 댓글 칩(비파괴 추가) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-                <button className="chip chip-ghost" style={{ flex: 1 }} onClick={() => void preview(item)}>
-                  {playing === item.id ? '■ 정지' : '▶ 들어보기'}
+                <button className="chip chip-ghost" style={{ flex: 1 }} disabled={busyPreview === item.code} onClick={() => void selectCard(item.code)}>
+                  {busyPreview === item.code ? '여는 중…' : active === item.code ? (playing ? '❚❚ 일시정지' : '▶ 재생') : '▶ 들어보기'}
                 </button>
                 <button
                   className="chip"
                   style={{ flex: 1, background: picked ? 'var(--blue)' : undefined, color: picked ? '#fff' : undefined }}
-                  onClick={() => togglePick(item.id)}
+                  onClick={() => togglePick(item.code)}
                 >
                   {picked ? '✓ 담음' : '＋ 담기'}
                 </button>
                 <button
                   className="chip chip-ghost"
                   style={{ display: 'flex', alignItems: 'center', gap: 5, color: lk.liked ? 'var(--coral)' : 'var(--text-2)', background: lk.liked ? '#ffecec' : 'var(--bg)' }}
-                  onClick={() => like(item.id)}
+                  onClick={() => void like(item.code)}
                 >
                   <span style={{ fontSize: 15 }}>{lk.liked ? '❤️' : '🤍'}</span>
                   <span style={{ fontWeight: 800 }}>{lk.count}</span>
                 </button>
+                <button className="chip chip-ghost" onClick={() => void toggleComments(item.code)}>💬 {item.commentCount}</button>
               </div>
+
+              {active === item.code && durMs > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <div
+                    ref={barRef}
+                    onPointerDown={onBarDown}
+                    onPointerMove={onBarMove}
+                    onPointerUp={onBarUp}
+                    onPointerCancel={onBarUp}
+                    style={{ position: 'relative', height: 22, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
+                  >
+                    <div style={{ position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.1)' }} />
+                    <div style={{ position: 'absolute', left: 0, width: `${Math.min(100, (playMs / durMs) * 100)}%`, height: 4, borderRadius: 2, background: 'var(--blue)' }} />
+                    <div style={{ position: 'absolute', left: `${Math.min(100, (playMs / durMs) * 100)}%`, width: 14, height: 14, marginLeft: -7, borderRadius: '50%', background: '#fff', border: '2px solid var(--blue)', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
+                  </div>
+                  <div className="t-cap c-sub" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                    <span>{fmtTime(playMs)}</span><span>{fmtTime(durMs)}</span>
+                  </div>
+                </div>
+              )}
+
+              {openCode === item.code && (
+                <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 10 }}>
+                  {comments === null && <div className="t-cap c-sub">댓글 불러오는 중…</div>}
+                  {comments !== null && comments.length === 0 && <div className="t-cap c-sub">첫 코멘트를 남겨보세요.</div>}
+                  {(comments ?? []).map((c) => (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span className="t-cap" style={{ fontWeight: 700 }}>{c.author}</span>{' '}
+                        <span className="t-cap c-sub">{c.text}</span>
+                      </div>
+                      <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px', opacity: reportedIds.has(c.id) ? 0.5 : 1 }} disabled={reportedIds.has(c.id)} onClick={() => void report(item.code, c.id)}>{reportedIds.has(c.id) ? '신고됨' : '신고'}</button>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <input
+                      value={commentText}
+                      maxLength={200}
+                      placeholder="한마디 남기기"
+                      onChange={(e) => setCommentText(e.target.value)}
+                      style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.12)', fontSize: 14 }}
+                    />
+                    <button className="chip" onClick={() => void submitComment(item.code)}>보내기</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
-
-        {items.length === 0 && <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 24 }}>아직 음원이 없어요</div>}
       </div>
 
-      {/* 다중 가져오기 바 */}
+      {/* 다중 가져오기 바(곽소정) — getSession 합본 직렬화 중엔 비활성/표시 */}
       {picks.size > 0 && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, maxWidth: 480, margin: '0 auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: '0 -6px 20px rgba(17,24,39,.10)' }}>
-          <button className="btn" style={{ background: 'var(--blue)', color: '#fff' }} onClick={importPicks}>
-            🎚 가져오기 ({picks.size}개) → 스튜디오에 얹기
+          <button className="btn" style={{ background: 'var(--blue)', color: '#fff' }} disabled={importing} onClick={() => void importPicks()}>
+            {importing ? '여는 중…' : `🎚 가져오기 (${picks.size}개) → 스튜디오에 얹기`}
           </button>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)', background: 'rgba(17,24,39,0.92)', color: '#fff', padding: '8px 16px', borderRadius: 20, fontSize: 13, zIndex: 60 }}>
+          {toast}
         </div>
       )}
     </>

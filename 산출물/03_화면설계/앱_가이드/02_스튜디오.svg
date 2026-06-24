@@ -1,0 +1,151 @@
+<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>스튜디오 사용법 — 녹음하고 합주 쌓기</title><desc>스튜디오 화면(좌)에 번호 콜아웃을 달고, 우측에 6단계 사용법(녹음·메트로놈, 코드·멜로디·드럼 연주, 재생바 스크럽, 레이어 쌓기·빼기, 합주 듣기·반복 토글, 더보기 저장·공유·올리기)을 설명하는 발표/도움말용 한 장.</desc>
+
+  <!-- 배경 -->
+  <rect x="0" y="0" width="760" height="560" rx="18" fill="#f7f9fb"/>
+
+  <!-- 제목 -->
+  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">스튜디오 — 녹음하고 합주 쌓기</text>
+  <text x="34" y="61" font-size="12.5" fill="#6b7684">연주하고 · 레이어로 합주 쌓고 · 이름 지어 저장하기</text>
+
+  <!-- ===================== 좌: 폰 목업(콜아웃) ===================== -->
+  <g transform="translate(28,82)">
+    <rect x="0" y="0" width="300" height="452" rx="22" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
+    <rect x="114" y="13" width="72" height="7" rx="3.5" fill="#e6e9ed"/>
+
+    <!-- 앱바 -->
+    <text x="18" y="48" font-size="12" fill="#8b95a1">‹ 뒤로</text>
+    <text x="150" y="48" text-anchor="middle" font-size="14" font-weight="800" fill="#191f28">스튜디오</text>
+    <text x="270" y="49" text-anchor="middle" font-size="13" fill="#8b95a1">커뮤니티 →</text>
+    <line x1="0" y1="64" x2="300" y2="64" stroke="#eef1f4" stroke-width="1"/>
+
+    <!-- 코드 매트릭스 칩 영역 -->
+    <text x="18" y="84" font-size="10" font-weight="700" fill="#8b95a1">코드 입력</text>
+    <g font-size="11" font-weight="800" text-anchor="middle">
+      <rect x="18" y="90" width="40" height="26" rx="8" fill="#eef5ff" stroke="#3182f6" stroke-width="1.2"/><text x="38" y="107" fill="#3182f6">C</text>
+      <rect x="64" y="90" width="40" height="26" rx="8" fill="#f2f4f6"/><text x="84" y="107" fill="#191f28">Am</text>
+      <rect x="110" y="90" width="40" height="26" rx="8" fill="#f2f4f6"/><text x="130" y="107" fill="#191f28">F</text>
+      <rect x="156" y="90" width="40" height="26" rx="8" fill="#f2f4f6"/><text x="176" y="107" fill="#191f28">G</text>
+      <rect x="202" y="90" width="40" height="26" rx="8" fill="#f2f4f6"/><text x="222" y="107" fill="#191f28">Dm</text>
+      <rect x="248" y="90" width="38" height="26" rx="8" fill="#f5effe"/><text x="267" y="107" fill="#8b5cf6">⌨</text>
+    </g>
+    <!-- 건반/드럼 패드 힌트 -->
+    <text x="282" y="134" text-anchor="end" font-size="9" fill="#8b95a1">🎹 건반 · 🥁 드럼 패드 · 📷 제스처</text>
+
+    <!-- 합주 카드 -->
+    <rect x="14" y="142" width="272" height="208" rx="12" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
+    <text x="26" y="162" font-size="12" font-weight="800" fill="#191f28">🎵 합주</text>
+    <text x="276" y="162" text-anchor="end" font-size="9" fill="#8b95a1">트랙 3</text>
+
+    <!-- 트랙 줄 1 -->
+    <rect x="24" y="170" width="252" height="24" rx="7" fill="#f7f9fb"/>
+    <text x="32" y="186" font-size="10" fill="#191f28">🎹 코드 <tspan fill="#8b95a1">· 민혁</tspan></text>
+    <text x="266" y="186" text-anchor="middle" font-size="11" font-weight="800" fill="#ff6b6b">✕</text>
+    <!-- 트랙 줄 2 -->
+    <rect x="24" y="197" width="252" height="24" rx="7" fill="#f7f9fb"/>
+    <text x="32" y="213" font-size="10" fill="#191f28">🥁 드럼 <tspan fill="#8b95a1">· 민혁</tspan></text>
+    <text x="266" y="213" text-anchor="middle" font-size="11" font-weight="800" fill="#ff6b6b">✕</text>
+    <!-- 트랙 줄 3 -->
+    <rect x="24" y="224" width="252" height="24" rx="7" fill="#f7f9fb"/>
+    <text x="32" y="240" font-size="10" fill="#191f28">🎶 멜로디 <tspan fill="#8b95a1">· 록빈</tspan></text>
+    <text x="266" y="240" text-anchor="middle" font-size="11" font-weight="800" fill="#ff6b6b">✕</text>
+
+    <!-- 합주 반복 토글 -->
+    <text x="32" y="270" font-size="10" fill="#191f28">🔁 녹음할 때 합주 반복</text>
+    <rect x="224" y="261" width="40" height="18" rx="9" fill="#e6e9ed"/>
+    <circle cx="233" cy="270" r="7" fill="#ffffff" stroke="#c9ced5" stroke-width="1"/>
+    <text x="276" y="273" text-anchor="end" font-size="9" fill="#8b95a1">꺼짐</text>
+
+    <!-- 버튼 행 -->
+    <rect x="24" y="286" width="78" height="28" rx="8" fill="#f2f4f6"/>
+    <text x="63" y="304" text-anchor="middle" font-size="10.5" font-weight="700" fill="#191f28">＋레이어</text>
+    <rect x="108" y="286" width="92" height="28" rx="8" fill="#eef5ff" stroke="#3182f6" stroke-width="1.2"/>
+    <text x="154" y="304" text-anchor="middle" font-size="10.5" font-weight="700" fill="#3182f6">🎶 합주 듣기</text>
+    <rect x="206" y="286" width="70" height="28" rx="8" fill="#f2f4f6"/>
+    <text x="241" y="304" text-anchor="middle" font-size="10.5" font-weight="700" fill="#191f28">💾 저장</text>
+
+    <!-- 녹음 중 합주 진행바(코랄) -->
+    <text x="26" y="333" font-size="9" fill="#ff6b6b">녹음 중… 합주 진행</text>
+    <line x1="24" y1="342" x2="276" y2="342" stroke="#ffe0e0" stroke-width="4" stroke-linecap="round"/>
+    <line x1="24" y1="342" x2="170" y2="342" stroke="#ff6b6b" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- 재생/스크럽 바 -->
+    <text x="18" y="372" font-size="10" font-weight="700" fill="#8b95a1">take 재생 · 스크럽</text>
+    <line x1="20" y1="388" x2="268" y2="388" stroke="#e6eaef" stroke-width="4" stroke-linecap="round"/>
+    <line x1="20" y1="388" x2="138" y2="388" stroke="#3182f6" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="138" cy="388" r="7" fill="#ffffff" stroke="#3182f6" stroke-width="2.5"/>
+    <text x="20" y="404" font-size="9" fill="#8b95a1">0:06</text>
+    <text x="268" y="404" text-anchor="end" font-size="9" fill="#8b95a1">0:15</text>
+
+    <!-- 하단 고정 트랜스포트 바 -->
+    <rect x="0" y="416" width="300" height="36" rx="0" fill="#f7f9fb"/>
+    <line x1="0" y1="416" x2="300" y2="416" stroke="#eef1f4" stroke-width="1"/>
+    <text x="44" y="438" text-anchor="middle" font-size="16">🥁</text>
+    <circle cx="118" cy="434" r="13" fill="#ffecec" stroke="#ff6b6b" stroke-width="1.5"/>
+    <circle cx="118" cy="434" r="6" fill="#ff6b6b"/>
+    <text x="186" y="440" text-anchor="middle" font-size="16" fill="#3182f6">▶</text>
+    <text x="256" y="440" text-anchor="middle" font-size="16" fill="#8b95a1">⋯</text>
+
+    <!-- 콜아웃 배지 -->
+    <g font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">
+      <circle cx="118" cy="434" r="11" fill="#ff6b6b"/><text x="118" y="438">1</text>
+      <circle cx="38" cy="103" r="11" fill="#3182f6"/><text x="38" y="107">2</text>
+      <circle cx="138" cy="388" r="11" fill="#ff6b6b"/><text x="138" y="392">3</text>
+      <circle cx="266" cy="182" r="11" fill="#ff6b6b"/><text x="266" y="186">4</text>
+      <circle cx="154" cy="300" r="11" fill="#ff6b6b"/><text x="154" y="304">5</text>
+      <circle cx="256" cy="434" r="11" fill="#3182f6"/><text x="256" y="438">6</text>
+    </g>
+  </g>
+
+  <!-- ===================== 우: 6단계 설명 ===================== -->
+  <g transform="translate(360,86)">
+    <!-- step 1 -->
+    <g transform="translate(0,0)">
+      <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">1</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">녹음 시작 · 메트로놈</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">● 녹음을 누르면 take가 시작돼요. 🥁 메트로놈으로</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">박자를 맞추면 합주가 어긋나지 않아요.</text>
+    </g>
+    <!-- step 2 -->
+    <g transform="translate(0,64)">
+      <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">2</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">연주하기</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">코드 칩(C·Am·F·G)·멜로디·드럼을 터치로 연주.</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">카메라 제스처로도 소리를 낼 수 있어요.</text>
+    </g>
+    <!-- step 3 -->
+    <g transform="translate(0,128)">
+      <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">3</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">재생 바로 다시 듣기</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">▶ 재생으로 녹음한 take를 들어요. 동그라미를</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">드래그(스크럽)하면 원하는 구간부터 들려요.</text>
+    </g>
+    <!-- step 4 -->
+    <g transform="translate(0,192)">
+      <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">4</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">레이어로 쌓기 · 빼기</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">＋레이어로 코드·드럼·멜로디 트랙을 쌓아요.</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">마음에 안 드는 트랙은 줄 우측 ✕로 빼면 돼요.</text>
+    </g>
+    <!-- step 5 -->
+    <g transform="translate(0,256)">
+      <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">5</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">합주 듣기 · 반복 토글</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">🎶 합주 듣기로 전체를 한 번에. ‘합주 반복’을 켜면</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">녹음 중 합주가 반복되고 진행바(코랄)가 보여요.</text>
+    </g>
+    <!-- step 6 -->
+    <g transform="translate(0,320)">
+      <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">6</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">더보기 → 저장 · 올리기</text>
+      <text x="38" y="31" font-size="11" fill="#6b7684">⋯ 더보기에서 💾 저장(이름 지어 내 기기에)·공유,</text>
+      <text x="38" y="46" font-size="11" fill="#6b7684">그리고 커뮤니티에 올리기까지 한곳에서.</text>
+    </g>
+
+    <!-- 핵심 루프 요약 띠 -->
+    <g transform="translate(0,388)">
+      <rect x="0" y="0" width="372" height="44" rx="12" fill="#eef5ff" stroke="#cfe0ff" stroke-width="1"/>
+      <text x="16" y="19" font-size="11" font-weight="800" fill="#3182f6">핵심 루프</text>
+      <text x="16" y="36" font-size="11" fill="#3457d5">녹음 → 레이어로 합주 → 이름 지어 저장 / 커뮤니티에 올리기</text>
+    </g>
+  </g>
+</svg>

@@ -11,10 +11,12 @@ const CHORD_COLOR: Record<string, string> = { C: '#3182f6', Am: '#8b5cf6', F: '#
 export function Home({
   nickname,
   go,
+  onNew,
   onOpen,
 }: {
   nickname: string;
   go: (r: Route) => void;
+  onNew: () => void; // 스튜디오 '새 곡 만들기' — loaded/forked 비우고 빈 세션으로 진입
   onOpen: (s: Song) => void;
 }) {
   const [songs] = useState<Song[]>(() => listSongs());
@@ -48,7 +50,7 @@ export function Home({
         <h1 className="t-title" style={{ marginTop: 4 }}>안녕하세요, {nickname}님 👋</h1>
         <p className="t-body c-sub2" style={{ marginTop: 4 }}>{empty ? '첫 트랙을 녹음해볼까요?' : '이어서 만들어볼까요?'}</p>
 
-        <button style={{ ...entryCard(empty), marginTop: 18 }} onClick={() => go('studio')}>
+        <button style={{ ...entryCard(empty), marginTop: 18 }} onClick={onNew}>
           <span style={{ fontSize: 26 }}>🎹</span>
           <span style={{ flex: 1 }}>
             <span style={{ display: 'block', fontWeight: 700 }}>스튜디오</span>

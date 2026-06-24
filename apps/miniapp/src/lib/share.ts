@@ -17,6 +17,10 @@ export interface Session {
   name: string;
   bpm: number;
   tracks: SessionTrack[];
+  likeCount?: number;
+  originCode?: string | null; // 파생 출처(원본 code). 서버 GET /sessions/:code 가 반환.
+  originName?: string | null;
+  originAuthor?: string | null;
 }
 
 // 백엔드 불가 시 데모용 프리로드(친구 트랙 — C·G·Am·F 4마디).
@@ -73,10 +77,12 @@ export async function addTrack(
   events: ChordEvent[],
   instrument?: Instrument,
   style?: string,
+  authorKey?: string,
 ): Promise<void> {
+  // authorKey: 공개(published) 세션에 추가 트랙을 올릴 때 서버가 소유자 검증에 사용(공개 code 오염 차단).
   await req('/sessions/' + encodeURIComponent(code) + '/tracks', {
     method: 'POST',
-    body: JSON.stringify({ owner, events, instrument, style }),
+    body: JSON.stringify({ owner, events, instrument, style, author_key: authorKey }),
   });
 }
 
@@ -110,4 +116,94 @@ export async function readClipboardCode(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// ---- 커뮤니티 공유 보드 (음원 공유 + 합 쌓기 + 코멘트) — 기능명세서 v2 ----
+export interface CommunityItem {
+  code: string;
+  name: string;
+  author: string;
+  trackCount: number;
+  commentCount: number;
+  playCount: number;
+  forkCount: number;
+  likeCount: number;
+  liked: boolean; // 호출 시 me(anonKey)를 넘기면 내 좋아요 여부, 아니면 false.
+  originCode: string | null;
+  originName: string | null;
+  originAuthor: string | null;
+  createdAt: number;
+}
+export interface Comment {
+  id: number;
+  author: string;
+  text: string;
+  createdAt: number;
+}
+
+/** 보드 목록(최근 공유물). me(anonKey)를 넘기면 항목별 내 좋아요 여부(liked)도 채워진다. 실패 시 예외. */
+export async function listCommunity(limit = 30, me?: string): Promise<CommunityItem[]> {
+  // me(anonKey)는 x-anon-key 헤더로 전송 — URL 쿼리·프록시 로그에 안정 식별자가 노출되지 않도록(Codex MED).
+  const r = (await req('/community?limit=' + limit, {
+    headers: me ? { 'x-anon-key': me } : undefined,
+  })) as { items?: CommunityItem[] };
+  return r.items ?? [];
+}
+
+/** 좋아요 토글(서버 reactions, anon_key당 1회). 반환 = 토글 후 상태와 총 개수. */
+export async function toggleLike(code: string, authorKey: string): Promise<{ liked: boolean; count: number }> {
+  return (await req('/sessions/' + encodeURIComponent(code) + '/like', {
+    method: 'POST',
+    body: JSON.stringify({ author_key: authorKey }),
+  })) as { liked: boolean; count: number };
+}
+
+/** 커뮤니티에 공유(publish). origin_code가 있으면 출처가 강제로 박힌다.
+ *  반환: { code, deduped }. deduped=true면 같은 곡이 이미 있어 새로 만들지 않고 기존 code를 돌려준 것(호출부는 추가 트랙 적재를 건너뛴다). */
+export async function publishSession(s: {
+  name: string;
+  bpm: number;
+  owner: string;
+  author: string;
+  authorKey: string;
+  events: ChordEvent[];
+  instrument?: Instrument;
+  style?: string;
+  originCode?: string;
+  trackCount?: number; // 전체 레이어 수(서버 중복방지 키 — 트랙 구성이 다르면 다른 곡으로 취급)
+  idempotencyToken?: string;
+}): Promise<{ code: string; deduped: boolean }> {
+  const body: Record<string, unknown> = {
+    name: s.name,
+    bpm: s.bpm,
+    owner: s.owner,
+    author: s.author,
+    author_key: s.authorKey,
+    published: true,
+    events: s.events,
+    instrument: s.instrument,
+    style: s.style,
+  };
+  if (s.originCode) body.origin_code = s.originCode;
+  if (typeof s.trackCount === 'number') body.track_count = s.trackCount;
+  if (s.idempotencyToken) body.idempotencyToken = s.idempotencyToken;
+  const res = (await req('/sessions', { method: 'POST', body: JSON.stringify(body) })) as { code: string; deduped?: boolean };
+  return { code: res.code, deduped: !!res.deduped };
+}
+
+export async function getComments(code: string): Promise<Comment[]> {
+  const r = (await req('/sessions/' + encodeURIComponent(code) + '/comments')) as { comments?: Comment[] };
+  return r.comments ?? [];
+}
+export async function addComment(code: string, text: string, author: string, authorKey: string): Promise<void> {
+  await req('/sessions/' + encodeURIComponent(code) + '/comments', {
+    method: 'POST',
+    body: JSON.stringify({ text, author, author_key: authorKey }),
+  });
+}
+export async function reportComment(code: string, id: number, authorKey: string): Promise<void> {
+  await req('/sessions/' + encodeURIComponent(code) + '/comments/' + id + '/report', {
+    method: 'POST',
+    body: JSON.stringify({ author_key: authorKey }),
+  });
 }

@@ -33,10 +33,15 @@ export function App() {
   return (
     <div className="screen">
       {route === 'home' && (
-        <Home nickname={nickname} go={setRoute} onOpen={(s) => { setLoaded(s); setRoute('studio'); }} />
+        <Home
+          nickname={nickname}
+          go={setRoute}
+          onNew={() => { setLoaded(null); setForked(null); setRoute('studio'); }}
+          onOpen={(s) => { setForked(null); setLoaded(s); setRoute('studio'); }}
+        />
       )}
       {route === 'studio' && <Studio go={setRoute} loaded={loaded} forked={forked} devMode={devMode} />}
-      {route === 'community' && <Community go={setRoute} onFork={(s) => { setForked(s); setRoute('studio'); }} />}
+      {route === 'community' && <Community go={setRoute} onFork={(s) => { setLoaded(null); setForked(s); setRoute('studio'); }} />}
       {route === 'settings' && <Settings go={setRoute} devMode={devMode} onToggleDev={toggleDev} />}
     </div>
   );

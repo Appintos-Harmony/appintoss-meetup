@@ -5,4 +5,11 @@ if [ $? -ne 0 ]; then
   echo "pre-commit 차단: 비밀값 패턴 발견. 제거 후 다시 커밋하세요."
   exit 1
 fi
+
+# 루프 백스톱(B2): 자율 루프가 활성(activeTask)일 때만 staged를 작업 범위로 강제.
+# 루프 비활성이면 무간섭. 루프가 --guard-task를 빠뜨려도 보호경로·범위밖 커밋을 코드로 차단.
+node tooling/scripts/루프_가드.mjs --pre-commit
+if [ $? -ne 0 ]; then
+  exit 1
+fi
 exit 0
