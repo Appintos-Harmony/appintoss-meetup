@@ -413,8 +413,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         {/* C2: 정렬 토글 — 최신순 / 인기순(하트 수). 목록 즉시 반영. */}
         {items !== null && !error && items.length > 0 && (
           <div className="segment" style={{ marginBottom: 12 }}>
-            <button className="seg" data-on={sort === 'recent'} onClick={() => { setSort('recent'); setPage(0); }}>최신순</button>
-            <button className="seg" data-on={sort === 'popular'} onClick={() => { setSort('popular'); setPage(0); }}>인기순</button>
+            <button className="seg" data-on={sort === 'recent'} onClick={() => { stopPreview(); setSort('recent'); setPage(0); }}>최신순</button>
+            <button className="seg" data-on={sort === 'popular'} onClick={() => { stopPreview(); setSort('popular'); setPage(0); }}>인기순</button>
           </div>
         )}
 
@@ -541,9 +541,9 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         {/* C3: 음원 목록 페이저 — 페이지당 개수는 화면 크기로 동적, 리사이즈 시 현재 페이지 자동 보정 */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '8px 0 2px' }}>
-            <button className="chip chip-ghost" disabled={safePage <= 0} aria-label="이전 페이지" onClick={() => setPage(safePage - 1)}>‹ 이전</button>
+            <button className="chip chip-ghost" disabled={safePage <= 0} aria-label="이전 페이지" onClick={() => { stopPreview(); setPage(safePage - 1); }}>‹ 이전</button>
             <span className="t-cap c-sub" style={{ fontWeight: 700 }}>{safePage + 1} / {totalPages}</span>
-            <button className="chip chip-ghost" disabled={safePage >= totalPages - 1} aria-label="다음 페이지" onClick={() => setPage(safePage + 1)}>다음 ›</button>
+            <button className="chip chip-ghost" disabled={safePage >= totalPages - 1} aria-label="다음 페이지" onClick={() => { stopPreview(); setPage(safePage + 1); }}>다음 ›</button>
           </div>
         )}
       </div>
