@@ -41,6 +41,7 @@ export function Home({
   return (
     <>
       <div className="appbar">
+        <img src="/logo.svg" width={24} height={24} alt="" aria-hidden style={{ borderRadius: 7, marginRight: 8 }} />
         하모니
         <span style={{ marginLeft: 'auto', fontSize: 20, cursor: 'pointer' }} onClick={() => go('settings')} aria-label="설정" role="button">
           ⚙️

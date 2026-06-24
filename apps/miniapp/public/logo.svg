@@ -1,0 +1,20 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="하모니">
+  <!-- 하모니 앱 아이콘 — 파란 음표(합주를 상징하는 빔드 2음표). 마스커블 세이프존(중앙 80%) 내 배치. -->
+  <defs>
+    <linearGradient id="harmonyGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3182f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#harmonyGrad)"/>
+  <g fill="#ffffff">
+    <!-- 빔(두 음표를 잇는 굵은 사선) -->
+    <path d="M196 150 L372 116 L372 158 L196 192 Z"/>
+    <!-- 스템(기둥) -->
+    <rect x="196" y="168" width="24" height="182" rx="12"/>
+    <rect x="348" y="134" width="24" height="182" rx="12"/>
+    <!-- 노트헤드(머리) -->
+    <ellipse cx="168" cy="350" rx="54" ry="42" transform="rotate(-20 168 350)"/>
+    <ellipse cx="320" cy="316" rx="54" ry="42" transform="rotate(-20 320 316)"/>
+  </g>
+</svg>

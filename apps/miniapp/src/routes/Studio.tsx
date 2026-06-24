@@ -1297,7 +1297,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           ? // 카메라는 CSS 회전 안 함(영상이 옆으로 눕는 문제) — 화면을 그대로 채우고 사용자가 폰을 가로로 돌려 사용.
             { position: 'fixed', inset: 0, zIndex: 70, background: '#0b0d10', overflow: 'hidden' }
           : showCamera
-          ? { position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)' }
+          ? // isolation: 인라인 카메라의 제스처 컨트롤(전체화면·더보기, z-index 75)을 이 블록 스택에 가둔다.
+            // 그러면 바텀시트/메뉴(루트 z 40·50)가 열릴 때 컨트롤이 시트 위로 새어 나오지 않고 시트 아래로 가려진다(B5).
+            { position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)', isolation: 'isolate' }
           : { display: 'none' }
       }
     >
