@@ -55,6 +55,7 @@ import { GestureMelodyFretboard } from '../components/studio/GestureMelodyFretbo
 import { ChordMatrix } from '../components/studio/ChordMatrix';
 import { NotePadGrid } from '../components/studio/NotePadGrid';
 import { DrumPad } from '../components/studio/DrumPad';
+import { InstrumentIcon } from '../components/studio/InstrumentIcon';
 import { DevOverlay } from '../components/studio/DevOverlay';
 import { NoteEditor } from '../components/studio/NoteEditor';
 import { ROMAN, chordColor, PRESET_POP, MAX_CHORDS, GESTURE_ZONES, GESTURE_ZONES_FULL, FRETS_NORMAL, FRETS_FULL, STRINGS_GUITAR, STRINGS_BASS, DRUM_KIT_LAYOUT, nearestDrumPiece, STYLE_OPTIONS, INSTRUMENTS } from '../components/studio/chords';
@@ -1410,15 +1411,16 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
       <div className="content" style={{ paddingBottom: 'calc(108px + env(safe-area-inset-bottom))' }}>
         {/* 설정 요약 칩바 — 연주법·악기·음색·입력을 한 줄로(탭하면 바텀시트, 현재값 라벨 표시) */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'stretch', marginTop: 4 }}>
+        {/* 칩은 내용폭(flex auto)으로 두고 모자라면 줄바꿈 — 강제 균등폭+… 잘림 방지. */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'stretch', marginTop: 4, flexWrap: 'wrap' }}>
           {!drumMode && (
-            <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
+            <button className="chip chip-ghost" style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 8px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
               {playMode === 'chord' ? '🎸 코드' : '🎹 멜로디'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
             </button>
           )}
           <InstrumentCombo inline instrument={instrument} style={style} disabled={busy} onPick={chooseVoice} />
           {(drumMode || playMode === 'chord' || playMode === 'melody') && (
-            <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
+            <button className="chip chip-ghost" style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 8px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
               {input === 'touch' ? '👆 터치' : '👋 제스처'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
             </button>
           )}
@@ -1584,7 +1586,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                         {(t.owner || '?').slice(0, 1)}
                       </span>
                       <div style={{ flex: 1, lineHeight: 1.3 }}>
-                        <div className="t-cap c-sub2" style={{ fontWeight: 700 }}>{meta?.emoji ?? '🎵'} {meta?.label ?? '악기'}</div>
+                        <div className="t-cap c-sub2" style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>{t.instrument ? <InstrumentIcon instrument={t.instrument} size={13} /> : '🎵'} {meta?.label ?? '악기'}</div>
                         <div className="t-cap c-sub">{t.owner}</div>
                       </div>
                       {!sessionCode && !busy && (
