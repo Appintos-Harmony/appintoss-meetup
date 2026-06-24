@@ -20,6 +20,7 @@ export function Home({
   onOpen: (s: Song) => void;
 }) {
   const [songs] = useState<Song[]>(() => listSongs());
+  const [showAll, setShowAll] = useState(false); // 이어하기: 기본 최근 3곡, '전체 보기'로 모두(저장곡이 묻히지 않게)
   const empty = songs.length === 0;
 
   const entryCard = (accent: boolean): CSSProperties => ({
@@ -81,7 +82,7 @@ export function Home({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {songs.slice(0, 3).map((s) => {
+            {(showAll ? songs : songs.slice(0, 3)).map((s) => {
               const onVals = songTracks(s).flatMap((t) => t.events).filter((e) => e.phase === 'on').map((e) => e.chord);
               const chords = [...new Set(onVals.filter(isChordName))]; // 코드만 색칩
               const hasMelody = onVals.some((v) => !isChordName(v)); // 멜로디(개별음)는 배지로
@@ -121,6 +122,11 @@ export function Home({
                 </button>
               );
             })}
+            {songs.length > 3 && (
+              <button className="chip chip-ghost" style={{ alignSelf: 'center', marginTop: 2 }} onClick={() => setShowAll((v) => !v)}>
+                {showAll ? '접기' : `전체 ${songs.length}곡 보기`}
+              </button>
+            )}
           </div>
         )}
       </div>
