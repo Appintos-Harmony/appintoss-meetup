@@ -56,8 +56,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
   const [sort, setSort] = useState<'recent' | 'popular'>('recent'); // C2: 최신순(서버 created_at desc) / 인기순(하트 수 desc)
   const [page, setPage] = useState(0); // C3: 음원 목록 페이지
   const [perPage, setPerPage] = useState(6); // 화면 크기로 동적 산출(아래 effect). 초기값은 첫 페인트용.
-  const [commentsPerPage, setCommentsPerPage] = useState(5); // 댓글 1회 노출/증분 개수(동적)
-  const [commentLimit, setCommentLimit] = useState(5); // 현재 펼친 카드의 댓글 노출 상한(더 보기로 증가)
+  const [commentsPerPage, setCommentsPerPage] = useState(4); // 댓글 페이지당 개수(동적, ~3·4)
+  const [commentPage, setCommentPage] = useState(0); // C3: 펼친 카드의 댓글 페이지(접기 대신 페이징)
   const voicesRef = useRef<Voice[]>([]);
   const timersRef = useRef<number[]>([]);
   const sessionCacheRef = useRef<Map<string, Session>>(new Map()); // code→Session lazy 캐시(마운트 수명, 재생 시 재요청 금지)
@@ -76,12 +76,12 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
   }, []);
 
   // C3: 페이지당 개수를 화면 크기에서 동적으로 산출(개수 하드코딩 금지). 리사이즈·회전 시 재계산.
-  // 240·116·96은 '개수'가 아니라 레이아웃 메트릭(상단 크롬/카드 높이/댓글행 높이) — 뷰포트가 클수록 더 많이 노출된다.
+  // 240·116·200은 '개수'가 아니라 레이아웃 메트릭(상단 크롬/카드 높이/댓글 1페이지 높이) — 뷰포트가 클수록 더 많이 노출된다.
   useEffect(() => {
     function recalc() {
       const h = window.innerHeight;
       setPerPage(Math.max(3, Math.min(12, Math.floor((h - 240) / 116))));
-      setCommentsPerPage(Math.max(3, Math.min(10, Math.floor(h / 96))));
+      setCommentsPerPage(Math.max(3, Math.min(5, Math.floor(h / 200))));
     }
     recalc();
     window.addEventListener('resize', recalc);
@@ -293,7 +293,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     if (openCode === code) { setOpenCode(null); return; }
     setOpenCode(code);
     setComments(null);
-    setCommentLimit(commentsPerPage); // 카드 펼칠 때 댓글 노출 상한 초기화(C3)
+    setCommentPage(0); // 카드 펼칠 때 댓글 첫 페이지로(C3)
     try {
       setComments(await getComments(code));
     } catch {
@@ -309,6 +309,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       await addComment(code, text, getNickname() ?? '익명', key);
       setCommentText('');
       setComments(await getComments(code));
+      setCommentPage(0); // 새 댓글(최신순 맨 위)이 보이도록 첫 페이지로
       setItems((arr) => (arr ? arr.map((it) => (it.code === code ? { ...it, commentCount: it.commentCount + 1 } : it)) : arr));
     } catch {
       flash('댓글 전송 실패');
@@ -366,6 +367,11 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
   const safePage = Math.min(page, totalPages - 1); // 리사이즈로 페이지 수가 줄면 자동 보정
   const pageItems = sorted.slice(safePage * perPage, safePage * perPage + perPage);
 
+  // C3: 댓글도 접기 대신 페이지. 펼친 카드 하나의 comments 기준(이전/다음).
+  const commentTotalPages = comments ? Math.max(1, Math.ceil(comments.length / commentsPerPage)) : 1;
+  const commentSafePage = Math.min(commentPage, commentTotalPages - 1);
+  const commentView = comments ? comments.slice(commentSafePage * commentsPerPage, commentSafePage * commentsPerPage + commentsPerPage) : [];
+
   return (
     <>
       <div className="appbar">
@@ -376,10 +382,6 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       </div>
 
       <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
-        <div className="t-cap c-sub" style={{ marginBottom: 12 }}>
-          마음에 드는 음원을 담아(여러 개 OK) 가져오면 내 스튜디오에 레이어로 올라가요. 들어보고 좋아요·한마디 코멘트도!
-        </div>
-
         {publishOpen && (
           <div className="card" style={{ marginBottom: 12, padding: 14 }}>
             <div className="t-body" style={{ fontWeight: 700, marginBottom: 8 }}>내 곡 올리기</div>
@@ -504,7 +506,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                 <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 10 }}>
                   {comments === null && <div className="t-cap c-sub">댓글 불러오는 중…</div>}
                   {comments !== null && comments.length === 0 && <div className="t-cap c-sub">첫 코멘트를 남겨보세요.</div>}
-                  {(comments ?? []).slice(0, commentLimit).map((c) => (
+                  {commentView.map((c) => (
                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <span className="t-cap" style={{ fontWeight: 700 }}>{c.author}</span>{' '}
@@ -513,10 +515,12 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                       <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px', opacity: reportedIds.has(c.id) ? 0.5 : 1 }} disabled={reportedIds.has(c.id)} onClick={() => void report(item.code, c.id)}>{reportedIds.has(c.id) ? '신고됨' : '신고'}</button>
                     </div>
                   ))}
-                  {comments && comments.length > commentLimit && (
-                    <button className="chip chip-ghost" style={{ marginTop: 4, fontSize: 12 }} onClick={() => setCommentLimit((l) => l + commentsPerPage)}>
-                      댓글 {comments.length - commentLimit}개 더 보기
-                    </button>
+                  {comments && comments.length > commentsPerPage && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 6 }}>
+                      <button className="chip chip-ghost" style={{ fontSize: 12, padding: '3px 10px' }} disabled={commentSafePage <= 0} aria-label="이전 댓글" onClick={() => setCommentPage(commentSafePage - 1)}>‹ 이전</button>
+                      <span className="t-cap c-sub">{commentSafePage + 1} / {commentTotalPages}</span>
+                      <button className="chip chip-ghost" style={{ fontSize: 12, padding: '3px 10px' }} disabled={commentSafePage >= commentTotalPages - 1} aria-label="다음 댓글" onClick={() => setCommentPage(commentSafePage + 1)}>다음 ›</button>
+                    </div>
                   )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     <input
