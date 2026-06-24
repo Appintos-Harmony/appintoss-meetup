@@ -6,14 +6,14 @@ import type { DrumPiece } from '../../audio/events';
 
 export function DrumPad({ onHit, disabled, flash }: { onHit: (piece: DrumPiece) => void; disabled?: boolean; flash?: DrumPiece | null }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+    <div className="drum-grid">
       {DRUM_PIECES.map((d) => (
         <button
           key={d.key}
           className="pad"
           data-on={flash === d.key}
           disabled={disabled}
-          style={{ ['--accent' as string]: d.color, ['--accent-d' as string]: d.color, aspectRatio: '1.6', fontSize: 19 } as CSSProperties}
+          style={{ ['--accent' as string]: d.color, ['--accent-d' as string]: d.color } as CSSProperties}
           onPointerDown={() => onHit(d.key)}
         >
           {d.label}

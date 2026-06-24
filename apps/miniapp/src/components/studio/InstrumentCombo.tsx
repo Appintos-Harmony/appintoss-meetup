@@ -34,18 +34,18 @@ export function InstrumentCombo({
   }
 
   const comboBtn: CSSProperties = inline
-    ? { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
+    ? { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '8px 6px', fontSize: 12, whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
     : { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
 
   const chips = (
     <>
       <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('instrument')}>
         <span>{instMeta?.emoji} {instMeta?.label}</span>
-        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+        <span aria-hidden style={{ opacity: 0.4, fontSize: 10 }}>▾</span>
       </button>
       <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('style')}>
         <span>{styleLabel}</span>
-        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+        <span aria-hidden style={{ opacity: 0.4, fontSize: 10 }}>▾</span>
       </button>
     </>
   );
@@ -61,10 +61,10 @@ export function InstrumentCombo({
             <div className="sheet-grip" />
             <div className="t-title" style={{ padding: '4px 6px 8px' }}>악기 고르기</div>
             {INSTRUMENTS.map((i) => (
-              <button key={i.key} className="sheet-row" data-on={instrument === i.key} onClick={() => pickInstrument(i.key)}>
-                <span style={{ fontSize: 26 }}>{i.emoji}</span>
-                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>{i.label}</span>
-                {instrument === i.key && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              <button key={i.key} className="sheet-row pick" data-on={instrument === i.key} onClick={() => pickInstrument(i.key)}>
+                <span style={{ fontSize: 26, justifySelf: 'center' }}>{i.emoji}</span>
+                <span className="t-body pick-label" style={{ fontWeight: 600 }}>{i.label}</span>
+                <span className="pick-check" style={{ visibility: instrument === i.key ? 'visible' : 'hidden' }}>✓</span>
               </button>
             ))}
           </div>
@@ -78,9 +78,10 @@ export function InstrumentCombo({
             <div className="sheet-grip" />
             <div className="t-title" style={{ padding: '4px 6px 8px' }}>{instMeta?.label} 스타일</div>
             {styleOpts.map((s) => (
-              <button key={s.key} className="sheet-row" data-on={style === s.key} onClick={() => pickStyle(s.key)}>
-                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>{s.label}</span>
-                {style === s.key && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              <button key={s.key} className="sheet-row pick" data-on={style === s.key} onClick={() => pickStyle(s.key)}>
+                <span />
+                <span className="t-body pick-label" style={{ fontWeight: 600 }}>{s.label}</span>
+                <span className="pick-check" style={{ visibility: style === s.key ? 'visible' : 'hidden' }}>✓</span>
               </button>
             ))}
           </div>

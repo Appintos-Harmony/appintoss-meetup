@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Route } from '../App';
 import { listSongs, songTracks, type Song } from '../lib/storage';
@@ -20,7 +20,27 @@ export function Home({
   onOpen: (s: Song) => void;
 }) {
   const [songs] = useState<Song[]>(() => listSongs());
+  const [page, setPage] = useState(0); // 이어하기 페이징(커뮤니티식 이전/다음)
+  const [perPage, setPerPage] = useState(4); // 화면 높이로 동적 산출(아래 effect)
   const empty = songs.length === 0;
+
+  // 페이지당 개수 = 화면 높이에서 동적 산출(하드코딩 금지, 리사이즈/회전 재계산). 400·76은 레이아웃 메트릭(상단 크롬/곡 카드 높이).
+  useEffect(() => {
+    function recalc() {
+      setPerPage(Math.max(2, Math.min(6, Math.floor((window.innerHeight - 400) / 76))));
+    }
+    recalc();
+    window.addEventListener('resize', recalc);
+    window.addEventListener('orientationchange', recalc);
+    return () => {
+      window.removeEventListener('resize', recalc);
+      window.removeEventListener('orientationchange', recalc);
+    };
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(songs.length / perPage));
+  const safePage = Math.min(page, totalPages - 1); // 리사이즈로 페이지 수 줄면 자동 보정
+  const pageSongs = songs.slice(safePage * perPage, safePage * perPage + perPage);
 
   const entryCard = (accent: boolean): CSSProperties => ({
     display: 'flex',
@@ -41,6 +61,7 @@ export function Home({
   return (
     <>
       <div className="appbar">
+        <img src="/logo.png" width={24} height={24} alt="" aria-hidden style={{ borderRadius: 6, marginRight: 8 }} />
         하모니
         <span style={{ marginLeft: 'auto', fontSize: 20, cursor: 'pointer' }} onClick={() => go('settings')} aria-label="설정" role="button">
           ⚙️
@@ -80,7 +101,7 @@ export function Home({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {songs.slice(0, 3).map((s) => {
+            {pageSongs.map((s) => {
               const onVals = songTracks(s).flatMap((t) => t.events).filter((e) => e.phase === 'on').map((e) => e.chord);
               const chords = [...new Set(onVals.filter(isChordName))]; // 코드만 색칩
               const hasMelody = onVals.some((v) => !isChordName(v)); // 멜로디(개별음)는 배지로
@@ -120,6 +141,13 @@ export function Home({
                 </button>
               );
             })}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 4 }}>
+                <button className="chip chip-ghost" disabled={safePage <= 0} aria-label="이전 페이지" onClick={() => setPage(safePage - 1)}>‹ 이전</button>
+                <span className="t-cap c-sub" style={{ fontWeight: 700 }}>{safePage + 1} / {totalPages}</span>
+                <button className="chip chip-ghost" disabled={safePage >= totalPages - 1} aria-label="다음 페이지" onClick={() => setPage(safePage + 1)}>다음 ›</button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -19,21 +19,13 @@ export function Onboarding({ onDone }: { onDone: (nickname: string) => void }) {
   return (
     <div className="screen">
       <div className="content fade" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, paddingBottom: 64 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 22,
-            background: 'linear-gradient(135deg, #3182f6, #8b5cf6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 38,
-            boxShadow: 'var(--e3)',
-          }}
-        >
-          🎹
-        </div>
+        <img
+          src="/logo.png"
+          width={72}
+          height={72}
+          alt="하모니"
+          style={{ borderRadius: 16, boxShadow: 'var(--e3)' }}
+        />
         <h1 className="t-display" style={{ marginTop: 24 }}>하모니</h1>
         <p className="t-body c-sub2" style={{ marginTop: 8 }}>
           토스에서 악기를 연주하고,

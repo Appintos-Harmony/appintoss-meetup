@@ -4,7 +4,7 @@
 // 비파괴 추가(내 서버 기능): 댓글(작성/신고) · 출처 크레딧 · 3상태(로딩/빈/실패) · 내 곡 올리기(publishSession) · toast/busy 피드백.
 // ※ 좋아요는 조장 결정(OQ-D: 진짜 구현+노출)에 따라 서버 reactions(share.toggleLike)로 전환. 곽소정 로컬 likes.ts는 보드 미사용·파일 보존(dead).
 // ※ 이 파일은 ../lib/identity 의 getEmoji/EMOJI_CHOICES 에 의존한다.
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Route } from '../App';
 import {
   type Session, type CommunityItem, type Comment,
@@ -53,6 +53,11 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [sort, setSort] = useState<'recent' | 'popular'>('recent'); // C2: 최신순(서버 created_at desc) / 인기순(하트 수 desc)
+  const [page, setPage] = useState(0); // C3: 음원 목록 페이지
+  const [perPage, setPerPage] = useState(6); // 화면 크기로 동적 산출(아래 effect). 초기값은 첫 페인트용.
+  const [commentsPerPage, setCommentsPerPage] = useState(4); // 댓글 페이지당 개수(동적, ~3·4)
+  const [commentPage, setCommentPage] = useState(0); // C3: 펼친 카드의 댓글 페이지(접기 대신 페이징)
   const voicesRef = useRef<Voice[]>([]);
   const timersRef = useRef<number[]>([]);
   const sessionCacheRef = useRef<Map<string, Session>>(new Map()); // code→Session lazy 캐시(마운트 수명, 재생 시 재요청 금지)
@@ -70,6 +75,23 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // C3: 페이지당 개수를 화면 크기에서 동적으로 산출(개수 하드코딩 금지). 리사이즈·회전 시 재계산.
+  // 240·116·200은 '개수'가 아니라 레이아웃 메트릭(상단 크롬/카드 높이/댓글 1페이지 높이) — 뷰포트가 클수록 더 많이 노출된다.
+  useEffect(() => {
+    function recalc() {
+      const h = window.innerHeight;
+      setPerPage(Math.max(3, Math.min(12, Math.floor((h - 240) / 116))));
+      setCommentsPerPage(Math.max(3, Math.min(5, Math.floor(h / 200))));
+    }
+    recalc();
+    window.addEventListener('resize', recalc);
+    window.addEventListener('orientationchange', recalc);
+    return () => {
+      window.removeEventListener('resize', recalc);
+      window.removeEventListener('orientationchange', recalc);
+    };
+  }, []);
+
   function flash(m: string) {
     setToast(m);
     window.setTimeout(() => setToast(''), 1800);
@@ -82,6 +104,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       const key = await getUserKey();
       const list = await listCommunity(30, key);
       setItems(list);
+      setPage(0);
       // 좋아요 맵을 서버 응답(likeCount·liked)으로 구성.
       const m: Record<string, { liked: boolean; count: number }> = {};
       for (const it of list) m[it.code] = { liked: it.liked, count: it.likeCount };
@@ -270,6 +293,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     if (openCode === code) { setOpenCode(null); return; }
     setOpenCode(code);
     setComments(null);
+    setCommentPage(0); // 카드 펼칠 때 댓글 첫 페이지로(C3)
     try {
       setComments(await getComments(code));
     } catch {
@@ -285,6 +309,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       await addComment(code, text, getNickname() ?? '익명', key);
       setCommentText('');
       setComments(await getComments(code));
+      setCommentPage(0); // 새 댓글(최신순 맨 위)이 보이도록 첫 페이지로
       setItems((arr) => (arr ? arr.map((it) => (it.code === code ? { ...it, commentCount: it.commentCount + 1 } : it)) : arr));
     } catch {
       flash('댓글 전송 실패');
@@ -332,20 +357,31 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
 
   const myShongs = listSongs();
 
+  // C2 정렬 + C3 페이징. 인기순은 라이브 하트 수(낙관적 갱신 반영) 우선, 동률은 안정 정렬이라 서버(최신) 순서 유지.
+  const sorted = useMemo(() => {
+    const arr = items ?? [];
+    if (sort === 'recent') return arr; // 서버가 이미 created_at desc
+    return [...arr].sort((a, b) => (likes[b.code]?.count ?? b.likeCount) - (likes[a.code]?.count ?? a.likeCount));
+  }, [items, sort, likes]);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
+  const safePage = Math.min(page, totalPages - 1); // 리사이즈로 페이지 수가 줄면 자동 보정
+  const pageItems = sorted.slice(safePage * perPage, safePage * perPage + perPage);
+
+  // C3: 댓글도 접기 대신 페이지. 펼친 카드 하나의 comments 기준(이전/다음).
+  const commentTotalPages = comments ? Math.max(1, Math.ceil(comments.length / commentsPerPage)) : 1;
+  const commentSafePage = Math.min(commentPage, commentTotalPages - 1);
+  const commentView = comments ? comments.slice(commentSafePage * commentsPerPage, commentSafePage * commentsPerPage + commentsPerPage) : [];
+
   return (
     <>
       <div className="appbar">
         <span onClick={() => { stopPreview(); go('studio'); }} style={{ cursor: 'pointer' }}>‹ 스튜디오</span>
         <span style={{ marginLeft: 'auto', fontWeight: 800 }}>커뮤니티</span>
-        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={items === null} aria-label="새로고침" onClick={() => void load()}>↻</button>
-        <button className="chip" style={{ marginLeft: 8 }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
+        <button className="chip chip-ghost" style={{ marginLeft: 'auto', padding: '8px 11px' }} disabled={items === null} aria-label="새로고침" onClick={() => void load()}>↻</button>
+        <button className="chip" style={{ marginLeft: 8, padding: '8px 12px' }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
       </div>
 
       <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
-        <div className="t-cap c-sub" style={{ marginBottom: 12 }}>
-          마음에 드는 음원을 담아(여러 개 OK) 가져오면 내 스튜디오에 레이어로 올라가요. 들어보고 좋아요·한마디 코멘트도!
-        </div>
-
         {publishOpen && (
           <div className="card" style={{ marginBottom: 12, padding: 14 }}>
             <div className="t-body" style={{ fontWeight: 700, marginBottom: 8 }}>내 곡 올리기</div>
@@ -374,7 +410,15 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
           </div>
         )}
 
-        {(items ?? []).map((item) => {
+        {/* C2: 정렬 토글 — 최신순 / 인기순(하트 수). 목록 즉시 반영. */}
+        {items !== null && !error && items.length > 0 && (
+          <div className="segment" style={{ marginBottom: 12 }}>
+            <button className="seg" data-on={sort === 'recent'} onClick={() => { setSort('recent'); setPage(0); }}>최신순</button>
+            <button className="seg" data-on={sort === 'popular'} onClick={() => { setSort('popular'); setPage(0); }}>인기순</button>
+          </div>
+        )}
+
+        {pageItems.map((item) => {
           const lk = likes[item.code] ?? { liked: item.liked, count: item.likeCount };
           const picked = picks.has(item.code);
           return (
@@ -402,27 +446,40 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                   )}
                 </div>
               </div>
-              {/* 하단: 들어보기 / 담기(선택) / 좋아요 / 댓글 — 곽소정 3버튼 + 댓글 칩(비파괴 추가) */}
+              {/* 하단: 들어보기·담기를 아이콘 버튼으로(C1, 좋아요·댓글 칩과 일관). 의미는 aria-label/title로 보존. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-                <button className="chip chip-ghost" style={{ flex: 1 }} disabled={busyPreview === item.code} onClick={() => void selectCard(item.code)}>
-                  {busyPreview === item.code ? '여는 중…' : active === item.code ? (playing ? '❚❚ 일시정지' : '▶ 재생') : '▶ 들어보기'}
+                <button
+                  className="chip chip-ghost"
+                  aria-label={busyPreview === item.code ? '여는 중' : active === item.code && playing ? '일시정지' : '들어보기'}
+                  title={busyPreview === item.code ? '여는 중…' : active === item.code && playing ? '일시정지' : '들어보기'}
+                  style={{ minWidth: 46, fontSize: 15 }}
+                  disabled={busyPreview === item.code}
+                  onClick={() => void selectCard(item.code)}
+                >
+                  {busyPreview === item.code ? '…' : active === item.code && playing ? '❚❚' : '▶'}
                 </button>
                 <button
                   className="chip"
-                  style={{ flex: 1, background: picked ? 'var(--blue)' : undefined, color: picked ? '#fff' : undefined }}
+                  aria-label={picked ? '담기 취소' : '담기'}
+                  aria-pressed={picked}
+                  title={picked ? '담음 — 다시 누르면 제외' : '담기(내 스튜디오에 얹기)'}
+                  style={{ minWidth: 46, background: picked ? 'var(--blue)' : undefined, color: picked ? '#fff' : undefined }}
                   onClick={() => togglePick(item.code)}
                 >
-                  {picked ? '✓ 담음' : '＋ 담기'}
+                  {picked ? '✓' : '＋'}
                 </button>
+                <span style={{ flex: 1 }} />
                 <button
                   className="chip chip-ghost"
+                  aria-label={lk.liked ? '좋아요 취소' : '좋아요'}
+                  aria-pressed={lk.liked}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, color: lk.liked ? 'var(--coral)' : 'var(--text-2)', background: lk.liked ? '#ffecec' : 'var(--bg)' }}
                   onClick={() => void like(item.code)}
                 >
                   <span style={{ fontSize: 15 }}>{lk.liked ? '❤️' : '🤍'}</span>
                   <span style={{ fontWeight: 800 }}>{lk.count}</span>
                 </button>
-                <button className="chip chip-ghost" onClick={() => void toggleComments(item.code)}>💬 {item.commentCount}</button>
+                <button className="chip chip-ghost" aria-label="댓글" onClick={() => void toggleComments(item.code)}>💬 {item.commentCount}</button>
               </div>
 
               {active === item.code && durMs > 0 && (
@@ -449,7 +506,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                 <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 10 }}>
                   {comments === null && <div className="t-cap c-sub">댓글 불러오는 중…</div>}
                   {comments !== null && comments.length === 0 && <div className="t-cap c-sub">첫 코멘트를 남겨보세요.</div>}
-                  {(comments ?? []).map((c) => (
+                  {commentView.map((c) => (
                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <span className="t-cap" style={{ fontWeight: 700 }}>{c.author}</span>{' '}
@@ -458,6 +515,13 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                       <button className="chip chip-ghost" style={{ fontSize: 11, padding: '2px 8px', opacity: reportedIds.has(c.id) ? 0.5 : 1 }} disabled={reportedIds.has(c.id)} onClick={() => void report(item.code, c.id)}>{reportedIds.has(c.id) ? '신고됨' : '신고'}</button>
                     </div>
                   ))}
+                  {comments && comments.length > commentsPerPage && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 6 }}>
+                      <button className="chip chip-ghost" style={{ fontSize: 12, padding: '3px 10px' }} disabled={commentSafePage <= 0} aria-label="이전 댓글" onClick={() => setCommentPage(commentSafePage - 1)}>‹ 이전</button>
+                      <span className="t-cap c-sub">{commentSafePage + 1} / {commentTotalPages}</span>
+                      <button className="chip chip-ghost" style={{ fontSize: 12, padding: '3px 10px' }} disabled={commentSafePage >= commentTotalPages - 1} aria-label="다음 댓글" onClick={() => setCommentPage(commentSafePage + 1)}>다음 ›</button>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     <input
                       value={commentText}
@@ -473,13 +537,22 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
             </div>
           );
         })}
+
+        {/* C3: 음원 목록 페이저 — 페이지당 개수는 화면 크기로 동적, 리사이즈 시 현재 페이지 자동 보정 */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '8px 0 2px' }}>
+            <button className="chip chip-ghost" disabled={safePage <= 0} aria-label="이전 페이지" onClick={() => setPage(safePage - 1)}>‹ 이전</button>
+            <span className="t-cap c-sub" style={{ fontWeight: 700 }}>{safePage + 1} / {totalPages}</span>
+            <button className="chip chip-ghost" disabled={safePage >= totalPages - 1} aria-label="다음 페이지" onClick={() => setPage(safePage + 1)}>다음 ›</button>
+          </div>
+        )}
       </div>
 
       {/* 다중 가져오기 바(곽소정) — getSession 합본 직렬화 중엔 비활성/표시 */}
       {picks.size > 0 && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, maxWidth: 480, margin: '0 auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: '0 -6px 20px rgba(17,24,39,.10)' }}>
-          <button className="btn" style={{ background: 'var(--blue)', color: '#fff' }} disabled={importing} onClick={() => void importPicks()}>
-            {importing ? '여는 중…' : `🎚 가져오기 (${picks.size}개) → 스튜디오에 얹기`}
+          <button className="btn" style={{ background: 'var(--blue)', color: '#fff', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} disabled={importing} aria-label={`선택한 ${picks.size}개를 내 스튜디오에 얹기`} onClick={() => void importPicks()}>
+            {importing ? '여는 중…' : `🎚 가져오기 ${picks.size}개 → 얹기`}
           </button>
         </div>
       )}

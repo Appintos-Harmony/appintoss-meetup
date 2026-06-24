@@ -20,21 +20,13 @@ export function Splash({ onDone }: { onDone: () => void }) {
           animation: 'harmonyReveal 0.6s var(--ease, cubic-bezier(0.22,1,0.36,1)) both',
         }}
       >
-        <div
-          style={{
-            width: 84,
-            height: 84,
-            borderRadius: 24,
-            background: 'linear-gradient(135deg, #3182f6, #8b5cf6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 46,
-            boxShadow: 'var(--e3)',
-          }}
-        >
-          🎹
-        </div>
+        <img
+          src="/logo.png"
+          width={84}
+          height={84}
+          alt="하모니"
+          style={{ borderRadius: 18, boxShadow: 'var(--e3)' }}
+        />
         <div className="t-display" style={{ fontWeight: 800 }}>하모니</div>
       </div>
     </div>

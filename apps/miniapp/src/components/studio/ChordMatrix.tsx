@@ -22,12 +22,12 @@ export function ChordMatrix({
 
   return (
     <div style={{ marginTop: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         <button className="chip" style={{ fontWeight: 800 }} disabled={disabled} onClick={onPreset}>
-          기본 팝 4코드 (C·Am·F·G)
+          기본 팝 4코드
         </button>
-        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={disabled} onClick={() => setOpen(true)}>
-          내 코드 직접 고르기 ▾
+        <button className="chip chip-ghost" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }} disabled={disabled} onClick={() => setOpen(true)}>
+          코드 고르기 ▾
         </button>
       </div>
 

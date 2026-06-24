@@ -1,0 +1,12 @@
+{
+  "name": "하모니",
+  "short_name": "하모니",
+  "description": "여러 악기로 함께 합주하는 미니 스튜디오",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f4f6",
+  "theme_color": "#3182f6",
+  "icons": [
+    { "src": "/logo.png", "type": "image/png", "sizes": "600x600", "purpose": "any" }
+  ]
+}

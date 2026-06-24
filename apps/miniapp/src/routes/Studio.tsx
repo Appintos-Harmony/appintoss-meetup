@@ -1059,17 +1059,25 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     setSongName(cur ? cur.name : `내 곡 ${listSongs().length + 1}`);
     setNameModal('save');
   }
-  function doSave() {
+  // asNew=false: 현재 곡 덮어쓰기(같은 id, 이어하기/같은 세션). asNew=true 또는 첫 저장: 새 id로 별도 곡.
+  function doSave(asNew: boolean) {
     const layered = buildLayered();
     if (!layered.length) return;
-    // 이어하기로 연 곡이면 같은 id로 갱신(원곡 보존), 아니면 새 곡. 빈 이름이면 이어하기는 기존 이름 유지(#11), 새 곡은 자동명.
     const cur = currentSongRef.current;
-    const name = songName.trim() || (cur ? cur.name : `내 곡 ${listSongs().length + 1}`);
-    const id = cur ? cur.id : newSongId();
-    saveSong({ id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
-    currentSongRef.current = { id, name };
-    setNameModal(null);
-    flashToast(`'${name}' 저장됨 (트랙 ${layered.length})`);
+    if (cur && !asNew) {
+      const name = songName.trim() || cur.name; // 빈 이름이면 기존 이름 유지(#11)
+      saveSong({ id: cur.id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
+      currentSongRef.current = { id: cur.id, name };
+      setNameModal(null);
+      flashToast(`'${name}' 저장됨 (트랙 ${layered.length})`);
+    } else {
+      const id = newSongId();
+      const name = songName.trim() || `내 곡 ${listSongs().length + 1}`;
+      saveSong({ id, name, bpm: BPM, createdAt: Date.now(), tracks: layered });
+      currentSongRef.current = { id, name };
+      setNameModal(null);
+      flashToast(`'${name}' ${cur ? '새 곡으로 ' : ''}저장됨 (트랙 ${layered.length})`);
+    }
   }
 
   // 구간 반복: 녹음 앞부분(loopBars 마디)을 잘라 loopCount회 이어붙인다. 이벤트 복제 방식(저장/공유/재생 일관).
@@ -1297,7 +1305,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           ? // 카메라는 CSS 회전 안 함(영상이 옆으로 눕는 문제) — 화면을 그대로 채우고 사용자가 폰을 가로로 돌려 사용.
             { position: 'fixed', inset: 0, zIndex: 70, background: '#0b0d10', overflow: 'hidden' }
           : showCamera
-          ? { position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)' }
+          ? // isolation: 인라인 카메라의 제스처 컨트롤(전체화면·더보기, z-index 75)을 이 블록 스택에 가둔다.
+            // 그러면 바텀시트/메뉴(루트 z 40·50)가 열릴 때 컨트롤이 시트 위로 새어 나오지 않고 시트 아래로 가려진다(B5).
+            { position: 'relative', marginTop: 14, borderRadius: 'var(--r-xl)', overflow: 'hidden', background: '#0b0d10', aspectRatio: '4 / 3', boxShadow: 'var(--e3)', isolation: 'isolate' }
           : { display: 'none' }
       }
     >
@@ -1400,16 +1410,17 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
       <div className="content" style={{ paddingBottom: 'calc(108px + env(safe-area-inset-bottom))' }}>
         {/* 설정 요약 칩바 — 연주법·악기·음색·입력을 한 줄로(탭하면 바텀시트, 현재값 라벨 표시) */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'stretch', marginTop: 4 }}>
+        {/* 4칩을 항상 1줄로 — 줄바꿈(flexWrap)·…(ellipsis) 금지. 작은 폰트로 균등폭에 맞춘다. */}
+        <div style={{ display: 'flex', gap: 5, alignItems: 'stretch', marginTop: 4 }}>
           {!drumMode && (
-            <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
-              {playMode === 'chord' ? '🎸 코드' : '🎹 멜로디'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+            <button className="chip chip-ghost" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '8px 6px', fontSize: 12, whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
+              {playMode === 'chord' ? '🎸 코드' : '🎹 멜로디'} <span aria-hidden style={{ opacity: 0.4, fontSize: 10 }}>▾</span>
             </button>
           )}
           <InstrumentCombo inline instrument={instrument} style={style} disabled={busy} onPick={chooseVoice} />
           {(drumMode || playMode === 'chord' || playMode === 'melody') && (
-            <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
-              {input === 'touch' ? '👆 터치' : '👋 제스처'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+            <button className="chip chip-ghost" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '8px 6px', fontSize: 12, whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
+              {input === 'touch' ? '👆 터치' : '👋 제스처'} <span aria-hidden style={{ opacity: 0.4, fontSize: 10 }}>▾</span>
             </button>
           )}
         </div>
@@ -1588,21 +1599,21 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             {sessionTracks.length > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px 4px', borderTop: '1px solid var(--line-2)', marginTop: 2 }}>
                 <div style={{ flex: 1 }}>
-                  <div className="t-cap c-sub2" style={{ fontWeight: 700 }}>🔁 녹음할 때 합주 반복</div>
-                  <div className="t-cap c-sub" style={{ marginTop: 1 }}>녹음 끝날 때까지 합주가 계속 돌아요</div>
+                  <div className="t-cap c-sub2" style={{ fontWeight: 700 }}>🔁 녹음할 때 합주 반복 재생</div>
                 </div>
                 <button className="chip" onClick={() => setMonitorLoop((v) => !v)} style={{ background: monitorLoop ? 'var(--blue)' : 'var(--bg)', color: monitorLoop ? '#fff' : 'var(--text-2)', fontWeight: 700, padding: '8px 18px', minWidth: 58 }}>{monitorLoop ? '켜짐' : '꺼짐'}</button>
               </div>
             )}
+            {/* 아이콘+글자가 좁은 화면에서 2줄로 깨지지 않게: nowrap + 작은 글자 + flex 균등(콘텐츠보다 못 줄어듦). */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {hasTake && !busy && (
-                <button className="btn" style={{ flex: '1 1 30%', background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어</button>
+                <button className="btn" style={{ flex: '1 1 0', whiteSpace: 'nowrap', fontSize: 13.5, padding: '12px 6px', background: 'var(--blue-weak)', color: 'var(--blue)', boxShadow: 'var(--e2)' }} onClick={addLayer}>＋ 레이어</button>
               )}
-              <button className="btn" style={{ flex: '1 1 30%', background: jamming ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
+              <button className="btn" style={{ flex: '1 1 0', whiteSpace: 'nowrap', fontSize: 13.5, padding: '12px 6px', background: jamming ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} disabled={busy} onClick={jamming ? stopJam : playSession}>
                 {jamming ? '■ 정지' : '🎶 합주 듣기'}
               </button>
               {!busy && (
-                <button className="btn" style={{ flex: '1 1 30%', background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={openSave}>💾 저장</button>
+                <button className="btn" style={{ flex: '1 1 0', whiteSpace: 'nowrap', fontSize: 13.5, padding: '12px 6px', background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={openSave}>💾 저장</button>
               )}
             </div>
           </div>
@@ -1743,10 +1754,22 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               maxLength={40}
               placeholder="곡 이름을 지어주세요"
               onChange={(e) => setSongName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { if (nameModal === 'save') doSave(); else void doPublish(); } }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { if (nameModal === 'save') doSave(false); else void doPublish(); } }}
               style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--line-2)', fontSize: 15 }}
             />
-            <button className="btn" style={{ marginTop: 12, background: 'var(--blue)', color: '#fff' }} onClick={() => { if (nameModal === 'save') doSave(); else void doPublish(); }}>{nameModal === 'save' ? '저장' : '올리기'}</button>
+            {nameModal === 'save' ? (
+              currentSongRef.current ? (
+                <>
+                  <div className="t-cap c-sub" style={{ marginTop: 8 }}>「{currentSongRef.current.name}」 이어 만드는 중 — 덮어쓰거나 새 곡으로 저장</div>
+                  <button className="btn" style={{ marginTop: 8, background: 'var(--blue)', color: '#fff' }} onClick={() => doSave(false)}>덮어쓰기</button>
+                  <button className="btn" style={{ marginTop: 8, background: 'var(--blue-weak)', color: 'var(--blue)' }} onClick={() => doSave(true)}>새 곡으로 저장</button>
+                </>
+              ) : (
+                <button className="btn" style={{ marginTop: 12, background: 'var(--blue)', color: '#fff' }} onClick={() => doSave(false)}>저장</button>
+              )
+            ) : (
+              <button className="btn" style={{ marginTop: 12, background: 'var(--blue)', color: '#fff' }} onClick={() => void doPublish()}>올리기</button>
+            )}
             <button className="btn" style={{ marginTop: 8, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={() => setNameModal(null)}>취소</button>
           </div>
         </>
