@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812" font-family="Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3182f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+  <rect x="0" y="0" width="375" height="812" fill="#ffffff"/>
+
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <rect x="151.5" y="244" width="72" height="72" rx="22" fill="url(#logoGrad)"/>
+  <text x="187.5" y="295" font-size="38" text-anchor="middle">🎹</text>
+
+  <text x="187.5" y="362" font-size="30" font-weight="800" fill="#191f28" text-anchor="middle">하모니</text>
+
+  <text x="187.5" y="398" font-size="15" fill="#4e5968" text-anchor="middle">토스에서 악기를 연주하고,</text>
+  <text x="187.5" y="420" font-size="15" fill="#4e5968" text-anchor="middle">친구와 한 곡을 완성해요.</text>
+
+  <text x="20" y="586" font-size="13" font-weight="700" fill="#8b95a1">닉네임</text>
+  <rect x="20" y="598" width="335" height="52" rx="12" fill="#f9fafb" stroke="#e5e8eb"/>
+  <text x="36" y="630" font-size="15" fill="#8b95a1">예: 토스밴드</text>
+
+  <text x="20" y="676" font-size="13" fill="#8b95a1">가입·로그인 없어요. 닉네임만 정하면 끝이에요.</text>
+
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">시작하기</text>
+</svg>

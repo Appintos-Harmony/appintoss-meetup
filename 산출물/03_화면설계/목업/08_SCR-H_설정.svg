@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812" font-family="Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <!-- Navigation 헤더 -->
+  <text x="20" y="82" font-size="18" font-weight="700" fill="#191f28">설정</text>
+
+  <!-- 카드1: InfoRow 2줄 -->
+  <rect x="20" y="112" width="335" height="100" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <!-- 닉네임 -->
+  <text x="38" y="148" font-size="15" font-weight="600" fill="#191f28">닉네임</text>
+  <text x="337" y="148" font-size="15" fill="#8b95a1" text-anchor="end">토스밴드</text>
+  <!-- 구분선 -->
+  <line x1="38" y1="162" x2="337" y2="162" stroke="#e5e8eb" stroke-width="1"/>
+  <!-- 버전 -->
+  <text x="38" y="192" font-size="15" font-weight="600" fill="#191f28">버전</text>
+  <text x="337" y="192" font-size="15" fill="#8b95a1" text-anchor="end">1.0.0</text>
+
+  <!-- 섹션 라벨 -->
+  <text x="38" y="248" font-size="13" font-weight="700" fill="#8b95a1">법적 고지 (초안)</text>
+
+  <!-- 카드2: 약관/처리방침 -->
+  <rect x="20" y="264" width="335" height="100" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <!-- 이용약관 -->
+  <text x="38" y="300" font-size="15" font-weight="600" fill="#191f28">이용약관</text>
+  <text x="337" y="300" font-size="15" fill="#8b95a1" text-anchor="end">준비 중</text>
+  <!-- 구분선 -->
+  <line x1="38" y1="314" x2="337" y2="314" stroke="#e5e8eb" stroke-width="1"/>
+  <!-- 개인정보 처리방침 -->
+  <text x="38" y="344" font-size="15" font-weight="600" fill="#191f28">개인정보 처리방침</text>
+  <text x="337" y="344" font-size="15" fill="#8b95a1" text-anchor="end">준비 중</text>
+
+  <!-- 안내 문단 -->
+  <text x="38" y="404" font-size="13" fill="#8b95a1">고객센터는 토스 공통 메뉴를 이용해 주세요.</text>
+  <text x="38" y="428" font-size="13" fill="#8b95a1">하모니는 토스 익명 식별만 사용하며, 개인정보를</text>
+  <text x="38" y="448" font-size="13" fill="#8b95a1">수집하지 않아요.</text>
+
+  <!-- 홈으로 버튼 (흰 배경, 옅은 그림자) -->
+  <rect x="20" y="488" width="335" height="52" fill="#ffffff" rx="16"/>
+  <rect x="20" y="490" width="335" height="52" fill="#000000" opacity="0.04" rx="16"/>
+  <rect x="20" y="488" width="335" height="52" fill="#ffffff" rx="16"/>
+  <text x="187.5" y="520" font-size="16" font-weight="700" fill="#191f28" text-anchor="middle">홈으로</text>
+</svg>
