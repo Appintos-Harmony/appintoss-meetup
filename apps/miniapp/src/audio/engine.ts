@@ -183,8 +183,10 @@ export async function unlockAudio(): Promise<void> {
   if (unlocked) return;
   await Tone.start();
   // 라이브 입력 지연↓: Tone 기본 lookAhead 0.1s(≈100ms 지연)가 터치/제스처가 늦게 들리는 주원인.
-  // 0.03(=기본 updateInterval, 안전 하한)로 낮춰 ≈30ms로 즉답. 더 낮추면 부하 시 드롭아웃 위험.
-  Tone.getContext().lookAhead = 0.03;
+  // lookAhead·updateInterval 동반 축소(0.02 ≈20ms)로 즉답. (제스처는 카메라/추론 지연이 별도로 존재.)
+  const ctx = Tone.getContext();
+  ctx.lookAhead = 0.02;
+  (ctx as unknown as { updateInterval: number }).updateInterval = 0.02; // Tone 타입 누락 — 런타임 존재(클럭 갱신 주기)
   synth = makeSynthFor(instrument, style);
   unlocked = true;
   ensureSampler(`${instrument}:${style}`);
