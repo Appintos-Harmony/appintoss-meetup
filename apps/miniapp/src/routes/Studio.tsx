@@ -220,6 +220,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const octaveRef = useRef(octave); // 멜로디 피아노 제스처 건반 옥타브
   octaveRef.current = octave;
   const melodyPrevRef = useRef<({ note: string; row: number; col: number } | null)[]>([null, null]); // 멜로디 제스처: 손별 현재 음/셀
+  const gestMoveRef = useRef<({ x: number; y: number; t: number } | null)[]>([null, null]); // 손별 직전 위치·시각(빠르게 지나갈 때 과다 트리거 억제)
   const monitorLoopRef = useRef(monitorLoop); // 반복 토글의 최신값(스케줄러가 읽음)
   monitorLoopRef.current = monitorLoop;
   const chordPointerRef = useRef<Set<number>>(new Set()); // 터치 코드 패드: 눌린 포인터 추적(지연-down 레이스·취소 방지)
@@ -670,6 +671,19 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const frames = detect(v, now, { zoneCount, mode: gestureModeRef.current, mirror }).slice(0, maxHands);
       if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
 
+      // ---- 과다 트리거 억제: 손이 빠르게 '지나갈' 때는 새 발음 보류, 천천히 놓을 때만 트리거(손별 속도). ----
+      const GESTURE_MOVE_GATE = 1.6; // 정규화 단위/초 — 이보다 빠르면 '지나가는 중'(실기 튜닝값)
+      const fast: [boolean, boolean] = [false, false];
+      for (let i = 0; i < 2; i++) {
+        const p = frames[i]?.pos ?? null;
+        const last = gestMoveRef.current[i];
+        if (p && last) {
+          const dt = Math.max(0.001, (now - last.t) / 1000);
+          fast[i] = Math.hypot(p.x - last.x, p.y - last.y) / dt > GESTURE_MOVE_GATE;
+        }
+        gestMoveRef.current[i] = p ? { x: p.x, y: p.y, t: now } : null;
+      }
+
       // ---- 효과 감지(토글 ON일 때만). handWaving = '팔랑팔랑 흔드는 중' → 1명 모드 연주 억제 판단. ----
       const solo = frames.length <= 1; // 감지된 손 1개=1명(효과·연주 안 겹침), 2개=2명+(겹침 OK)
       fxFrameRef.current = (fxFrameRef.current + 1) % 3;
@@ -689,7 +703,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           const f = frames[i];
           let piece: DrumPiece | null = null;
           const suppress = solo && (i === 0 ? waving0 : waving1);
-          if (!suppress && f && f.active && f.pos) {
+          if (!suppress && !fast[i] && f && f.active && f.pos) {
             const hx = mirror ? 1 - f.pos.x : f.pos.x;
             piece = nearestDrumPiece(hx, f.pos.y);
           }
@@ -709,7 +723,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           const f = frames[i];
           let hit: { note: string; row: number; col: number } | null = null;
           // 손가락(finger) + isPointing(active)일 때만 — 손바닥 모드는 자연 비활성.
-          if (i < maxHands && f && f.active && f.pos && gestureModeRef.current === 'finger') {
+          if (i < maxHands && !fast[i] && f && f.active && f.pos && gestureModeRef.current === 'finger') {
             const x = mirror ? 1 - f.pos.x : f.pos.x;
             const y = f.pos.y;
             if (x >= 0 && x < 1 && y >= 0 && y < 1) {
@@ -748,7 +762,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         for (let i = 0; i < 2; i++) {
           const f = frames[i];
           const suppress = solo && (i === 0 ? waving0 : waving1);
-          const target = !suppress && f && f.active && f.zone !== null && f.zone < zones.length ? zones[f.zone] : null;
+          const target = !suppress && !fast[i] && f && f.active && f.zone !== null && f.zone < zones.length ? zones[f.zone] : null;
           const cur = twoHandRef.current[i];
           if (target !== cur) {
             if (cur) {

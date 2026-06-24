@@ -33,10 +33,11 @@ export function GestureMelodyPiano({
             style={{
               flex: 1,
               position: 'relative',
-              background: on ? 'linear-gradient(180deg,#cfe0ff,#9bbcf0)' : 'rgba(252,253,255,0.95)',
-              borderRight: i < whites.length - 1 ? '1px solid #b9c2d0' : 'none',
+              // 투명: 카메라(손)가 비치게 — 평소엔 옅고, 누르면 파랗게 + 눌림 모션.
+              background: on ? 'rgba(120,170,255,0.55)' : 'rgba(255,255,255,0.13)',
+              border: '1px solid rgba(255,255,255,0.55)',
               borderRadius: '0 0 7px 7px',
-              boxShadow: on ? 'inset 0 -7px 12px rgba(40,80,160,.28)' : 'inset 0 -12px 16px rgba(0,0,0,.07)',
+              boxShadow: on ? 'inset 0 -7px 12px rgba(40,80,160,.4)' : 'none',
               transform: on ? 'translateY(4px) scaleY(0.98)' : 'none',
               transition: 'transform .05s var(--ease), background .05s, box-shadow .05s',
               display: 'flex',
@@ -45,7 +46,7 @@ export function GestureMelodyPiano({
               paddingBottom: 9,
             }}
           >
-            <span style={{ fontSize: camFull ? 15 : 11, fontWeight: 700, color: on ? '#1b3a7a' : '#7a8699' }}>{k.label}</span>
+            <span style={{ fontSize: camFull ? 15 : 11, fontWeight: 800, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.8)' }}>{k.label}</span>
           </div>
         );
       })}
@@ -62,9 +63,10 @@ export function GestureMelodyPiano({
               width: `${blackW}%`,
               height: '62%',
               transform: `translateX(-50%) ${on ? 'translateY(4px)' : ''}`,
-              background: on ? 'linear-gradient(180deg,#3a5db0,#22366e)' : 'linear-gradient(180deg,#2a2f3a,#14171d)',
+              background: on ? 'rgba(60,93,176,0.72)' : 'rgba(12,16,24,0.45)',
+              border: '1px solid rgba(255,255,255,0.35)',
               borderRadius: '0 0 5px 5px',
-              boxShadow: on ? '0 2px 7px rgba(40,80,180,.55)' : '0 3px 7px rgba(0,0,0,.55)',
+              boxShadow: on ? '0 2px 7px rgba(40,80,180,.6)' : 'none',
               transition: 'transform .05s var(--ease), background .05s',
               display: 'flex',
               alignItems: 'flex-end',
@@ -72,7 +74,7 @@ export function GestureMelodyPiano({
               paddingBottom: 6,
             }}
           >
-            <span style={{ fontSize: camFull ? 11 : 8, fontWeight: 700, color: on ? '#cfe0ff' : '#9aa3b5' }}>{b.label}</span>
+            <span style={{ fontSize: camFull ? 11 : 8, fontWeight: 800, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.9)' }}>{b.label}</span>
           </div>
         );
       })}
