@@ -1,0 +1,514 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 894 3520" width="894" height="3520" font-family="Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif">
+<rect width="894" height="3520" fill="#dde1e6"/>
+<text x="48" y="88" font-size="20" font-weight="800" fill="#191f28">1. SCR-A · 온보딩</text>
+<svg x="48" y="104" width="375" height="812" viewBox="0 0 375 812">
+  <defs>
+    <linearGradient id="s0_logoGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3182f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+  <rect x="0" y="0" width="375" height="812" fill="#ffffff"/>
+
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <rect x="151.5" y="244" width="72" height="72" rx="22" fill="url(#s0_logoGrad)"/>
+  <text x="187.5" y="295" font-size="38" text-anchor="middle">🎹</text>
+
+  <text x="187.5" y="362" font-size="30" font-weight="800" fill="#191f28" text-anchor="middle">하모니</text>
+
+  <text x="187.5" y="398" font-size="15" fill="#4e5968" text-anchor="middle">토스에서 악기를 연주하고,</text>
+  <text x="187.5" y="420" font-size="15" fill="#4e5968" text-anchor="middle">친구와 한 곡을 완성해요.</text>
+
+  <text x="20" y="586" font-size="13" font-weight="700" fill="#8b95a1">닉네임</text>
+  <rect x="20" y="598" width="335" height="52" rx="12" fill="#f9fafb" stroke="#e5e8eb"/>
+  <text x="36" y="630" font-size="15" fill="#8b95a1">예: 토스밴드</text>
+
+  <text x="20" y="676" font-size="13" fill="#8b95a1">가입·로그인 없어요. 닉네임만 정하면 끝이에요.</text>
+
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">시작하기</text>
+</svg>
+<rect x="48" y="104" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="471" y="88" font-size="20" font-weight="800" fill="#191f28">2. SCR-B · 홈</text>
+<svg x="471" y="104" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <!-- Navigation 헤더 -->
+  <text x="20" y="82" font-size="18" font-weight="700" fill="#191f28">하모니</text>
+  <text x="350" y="86" font-size="20" text-anchor="end">⚙️</text>
+
+  <!-- 인사 -->
+  <text x="20" y="138" font-size="22" font-weight="800" fill="#191f28">토스밴드님, 반가워요 🎶</text>
+
+  <!-- 섹션라벨 -->
+  <text x="20" y="178" font-size="13" font-weight="700" fill="#8b95a1">최근 곡</text>
+
+  <!-- 최근 곡 카드 1 -->
+  <rect x="20" y="190" width="335" height="74" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <text x="38" y="222" font-size="16" font-weight="700" fill="#191f28">첫 합주</text>
+  <!-- 코드칩 줄 -->
+  <rect x="38" y="234" width="26" height="18" rx="9" fill="#3182f6"/>
+  <text x="51" y="247" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">C</text>
+  <rect x="70" y="234" width="30" height="18" rx="9" fill="#8b5cf6"/>
+  <text x="85" y="247" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">Am</text>
+  <rect x="106" y="234" width="26" height="18" rx="9" fill="#15c47e"/>
+  <text x="119" y="247" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">F</text>
+  <rect x="138" y="234" width="26" height="18" rx="9" fill="#ff6b6b"/>
+  <text x="151" y="247" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">G</text>
+  <text x="337" y="232" font-size="20" fill="#b0b8c1" text-anchor="end">›</text>
+
+  <!-- 최근 곡 카드 2 -->
+  <rect x="20" y="276" width="335" height="74" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <text x="38" y="308" font-size="16" font-weight="700" fill="#191f28">첫 합주</text>
+  <rect x="38" y="320" width="26" height="18" rx="9" fill="#3182f6"/>
+  <text x="51" y="333" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">C</text>
+  <rect x="70" y="320" width="30" height="18" rx="9" fill="#8b5cf6"/>
+  <text x="85" y="333" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">Am</text>
+  <rect x="106" y="320" width="26" height="18" rx="9" fill="#15c47e"/>
+  <text x="119" y="333" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">F</text>
+  <rect x="138" y="320" width="26" height="18" rx="9" fill="#ff6b6b"/>
+  <text x="151" y="333" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">G</text>
+  <text x="337" y="318" font-size="20" fill="#b0b8c1" text-anchor="end">›</text>
+
+  <!-- 합주 받기 카드 -->
+  <rect x="20" y="362" width="335" height="66" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <text x="38" y="402" font-size="20">📋</text>
+  <text x="68" y="400" font-size="14" font-weight="500" fill="#4e5968">클립보드의 합주 코드를 붙여 얹어요</text>
+  <rect x="289" y="382" width="48" height="26" rx="999" fill="#e8f1fd"/>
+  <text x="313" y="399" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">받기</text>
+
+  <!-- 하단 진입 카드: 스튜디오 (강조) -->
+  <rect x="20" y="448" width="335" height="92" fill="#e8f1fd" rx="18" stroke="#3182f6" stroke-width="1"/>
+  <text x="38" y="492" font-size="26">🎹</text>
+  <text x="78" y="484" font-size="17" font-weight="700" fill="#191f28">스튜디오</text>
+  <text x="78" y="508" font-size="13.5" font-weight="500" fill="#4e5968">연주·녹음하기</text>
+  <text x="337" y="500" font-size="22" fill="#3182f6" text-anchor="end">›</text>
+
+  <!-- 하단 진입 카드: 커뮤니티 -->
+  <rect x="20" y="552" width="335" height="92" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <text x="38" y="596" font-size="26">🎧</text>
+  <text x="78" y="588" font-size="17" font-weight="700" fill="#191f28">커뮤니티</text>
+  <text x="78" y="612" font-size="13.5" font-weight="500" fill="#4e5968">합주 둘러보기</text>
+  <text x="337" y="604" font-size="22" fill="#b0b8c1" text-anchor="end">›</text>
+</svg>
+<rect x="471" y="104" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="48" y="956" font-size="20" font-weight="800" fill="#191f28">3. SCR-C · 합주방 생성·공유</text>
+<svg x="48" y="972" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1" font-weight="600">9:41</text>
+
+  <!-- Navigation -->
+  <text x="20" y="82" font-size="15" fill="#4e5968" font-weight="500">‹ 스튜디오</text>
+  <text x="187.5" y="82" font-size="18" font-weight="700" fill="#191f28" text-anchor="middle">공유하기</text>
+
+  <!-- 저장 완료 카드 -->
+  <rect x="20" y="112" width="335" height="78" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <text x="38" y="146" font-size="16" font-weight="700" fill="#191f28">내 곡이 저장됐어요 ✓</text>
+  <text x="38" y="169" font-size="13" fill="#8b95a1">첫 합주 · 100BPM · 4마디</text>
+
+  <!-- 공유 코드 카드 (강조) -->
+  <rect x="20" y="202" width="335" height="134" fill="#ffffff" rx="18" stroke="#cfe0fb" stroke-width="1.5"/>
+  <text x="187.5" y="268" font-size="30" font-weight="800" fill="#3182f6" letter-spacing="4" text-anchor="middle">AB12CD</text>
+  <text x="187.5" y="304" font-size="13" fill="#8b95a1" text-anchor="middle">친구에게 이 코드를 공유하세요</text>
+
+  <!-- 버튼 2개 가로 -->
+  <rect x="20" y="350" width="161.5" height="52" fill="#3182f6" rx="16"/>
+  <text x="100.75" y="382" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">코드 복사</text>
+
+  <rect x="193.5" y="350" width="161.5" height="52" fill="#e8f1fd" rx="16"/>
+  <text x="274.25" y="382" font-size="16" font-weight="700" fill="#3182f6" text-anchor="middle">링크 공유</text>
+
+  <!-- 구분선 -->
+  <line x1="20" y1="430" x2="355" y2="430" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 받은 합주 섹션 -->
+  <text x="20" y="464" font-size="14" font-weight="700" fill="#4e5968">받은 합주</text>
+
+  <!-- 트랙 카드 -->
+  <rect x="20" y="478" width="335" height="84" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="58" cy="520" r="20" fill="#ff6b6b"/>
+  <text x="58" y="525" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">토</text>
+  <text x="92" y="514" font-size="15" font-weight="700" fill="#191f28">토스밴드님 트랙</text>
+  <text x="92" y="535" font-size="13" fill="#8b95a1">4마디</text>
+  <rect x="240" y="500" width="98" height="38" fill="#e8f1fd" rx="999"/>
+  <text x="289" y="524" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">내 연주에 얹기</text>
+
+  <!-- 하단 상태칩 (코랄 외곽 점선) -->
+  <rect x="105.5" y="744" width="164" height="40" fill="#ffffff" rx="999" stroke="#ff6b6b" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="187.5" y="769" font-size="13" font-weight="600" fill="#ff6b6b" text-anchor="middle">업로드 실패 시 다시 시도</text>
+</svg>
+<rect x="48" y="972" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="471" y="956" font-size="20" font-weight="800" fill="#191f28">4. SCR-D · 악기·음색 선택</text>
+<svg x="471" y="972" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1" font-weight="600">9:41</text>
+
+  <!-- 흐릿한 스튜디오 배경 (상단 1/3) -->
+  <rect x="0" y="44" width="375" height="320" fill="#e9edf1"/>
+  <rect x="28" y="96" width="120" height="120" rx="14" fill="#dde3e9"/>
+  <rect x="168" y="84" width="92" height="92" rx="12" fill="#d8dee5"/>
+  <rect x="276" y="120" width="72" height="160" rx="12" fill="#dde3e9"/>
+  <rect x="40" y="236" width="180" height="48" rx="10" fill="#d8dee5"/>
+  <rect x="232" y="296" width="110" height="40" rx="10" fill="#dde3e9"/>
+  <text x="187" y="180" font-size="34" font-weight="800" fill="#cdd4db" text-anchor="middle" opacity="0.75">스튜디오</text>
+
+  <!-- 바텀시트 (하단 2/3) -->
+  <rect x="0" y="364" width="375" height="448" rx="24" fill="#ffffff"/>
+  <rect x="0" y="388" width="375" height="424" fill="#ffffff"/>
+
+  <!-- 그립 -->
+  <rect x="167.5" y="380" width="40" height="4" rx="2" fill="#d1d6db"/>
+
+  <!-- 시트 제목 -->
+  <text x="20" y="430" font-size="22" font-weight="800" fill="#191f28">악기 고르기</text>
+
+  <!-- 행 1: 어쿠스틱 피아노 (선택됨) -->
+  <rect x="0" y="456" width="375" height="56" fill="#e8f1fd"/>
+  <text x="20" y="490" font-size="22">🎹</text>
+  <text x="52" y="490" font-size="15" fill="#191f28" font-weight="600">어쿠스틱 피아노</text>
+  <path d="M335 484 l4 5 l9 -11" stroke="#3182f6" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="20" y1="512" x2="355" y2="512" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 행 2: 일렉트릭 피아노 -->
+  <text x="20" y="546" font-size="22">🎹</text>
+  <text x="52" y="546" font-size="15" fill="#191f28">일렉트릭 피아노</text>
+  <line x1="20" y1="568" x2="355" y2="568" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 행 3: 신스 베이스 -->
+  <text x="20" y="602" font-size="22">🎸</text>
+  <text x="52" y="602" font-size="15" fill="#191f28">신스 베이스</text>
+  <line x1="20" y1="624" x2="355" y2="624" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 행 4: 드럼 (패드) -->
+  <text x="20" y="658" font-size="22">🥁</text>
+  <text x="52" y="658" font-size="15" fill="#191f28">드럼 (패드)</text>
+  <line x1="20" y1="680" x2="355" y2="680" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 하단 고정 CTA -->
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">이 악기로 선택</text>
+</svg>
+<rect x="471" y="972" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="48" y="1824" font-size="20" font-weight="800" fill="#191f28">5. SCR-E · 녹음·재생(스튜디오 코어)</text>
+<svg x="48" y="1840" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- Status bar -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1" font-weight="600">9:41</text>
+
+  <!-- Navigation header -->
+  <text x="20" y="82" font-size="18" font-weight="700" fill="#191f28">스튜디오</text>
+  <text x="355" y="82" font-size="15" font-weight="600" fill="#4e5968" text-anchor="end">홈</text>
+
+  <!-- Segment / Tab -->
+  <rect x="20" y="108" width="335" height="44" rx="14" fill="#f2f4f6"/>
+  <rect x="24" y="112" width="163.5" height="36" rx="11" fill="#ffffff"/>
+  <text x="105.75" y="135" font-size="14.5" font-weight="700" fill="#191f28" text-anchor="middle">👋 제스처로 반주</text>
+  <text x="269.25" y="135" font-size="14.5" font-weight="700" fill="#8b95a1" text-anchor="middle">👆 터치로 멜로디</text>
+
+  <!-- Camera / Code-zone block (dark stage) -->
+  <rect x="20" y="164" width="335" height="220" rx="18" fill="#333d4b"/>
+  <!-- 4-split code zones -->
+  <line x1="103.75" y1="164" x2="103.75" y2="384" stroke="#4e5968" stroke-width="1"/>
+  <line x1="187.5" y1="164" x2="187.5" y2="384" stroke="#4e5968" stroke-width="1"/>
+  <line x1="271.25" y1="164" x2="271.25" y2="384" stroke="#4e5968" stroke-width="1"/>
+  <text x="61.9" y="320" font-size="28" font-weight="800" fill="#ffffff" text-anchor="middle">G</text>
+  <text x="145.6" y="320" font-size="28" font-weight="800" fill="#ffffff" text-anchor="middle">D</text>
+  <text x="229.4" y="320" font-size="28" font-weight="800" fill="#ffffff" text-anchor="middle">C</text>
+  <text x="313.1" y="320" font-size="28" font-weight="800" fill="#ffffff" text-anchor="middle">Em</text>
+  <!-- Camera PIP box (자체 컴포넌트 점선) -->
+  <rect x="263" y="176" width="80" height="60" rx="10" fill="#191f28" fill-opacity="0.55" stroke="#8b95a1" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="303" y="200" font-size="11" fill="#ffffff" fill-opacity="0.85" text-anchor="middle">📷 카메라</text>
+  <text x="303" y="218" font-size="11" fill="#ffffff" fill-opacity="0.7" text-anchor="middle">손을 펴면 연주</text>
+  <text x="32" y="184" font-size="11" fill="#ffffff" fill-opacity="0.55">코드존 · 자체 컴포넌트</text>
+
+  <!-- Recording bar card -->
+  <rect x="20" y="396" width="335" height="62" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <!-- record red dot -->
+  <circle cx="46" cy="427" r="13" fill="#ff6b6b"/>
+  <circle cx="46" cy="427" r="5" fill="#ffffff"/>
+  <!-- replay (disabled) -->
+  <text x="74" y="432" font-size="13" font-weight="600" fill="#b0b8c1">▶ 다시듣기</text>
+  <!-- stop -->
+  <text x="160" y="432" font-size="13" font-weight="600" fill="#4e5968">⏹ 정지</text>
+  <!-- 4 beat dots -->
+  <circle cx="226" cy="427" r="5" fill="#3182f6"/>
+  <circle cx="244" cy="427" r="5" fill="#d1d6db"/>
+  <circle cx="262" cy="427" r="5" fill="#d1d6db"/>
+  <circle cx="280" cy="427" r="5" fill="#d1d6db"/>
+  <!-- 녹음 중 -->
+  <text x="343" y="432" font-size="13" font-weight="700" fill="#ff6b6b" text-anchor="end">녹음 중</text>
+
+  <!-- 트랙 섹션 -->
+  <text x="20" y="494" font-size="15" font-weight="700" fill="#191f28">트랙</text>
+
+  <!-- Track row 1: 토스밴드 -->
+  <rect x="20" y="506" width="335" height="64" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="50" cy="538" r="20" fill="#ff6b6b"/>
+  <text x="50" y="543" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">밴</text>
+  <text x="82" y="534" font-size="14.5" font-weight="700" fill="#191f28">토스밴드</text>
+  <text x="82" y="552" font-size="12" fill="#8b95a1">기본트랙</text>
+  <text x="312" y="543" font-size="16" fill="#8b95a1" text-anchor="middle">🔇</text>
+  <text x="339" y="543" font-size="16" fill="#8b95a1" text-anchor="middle">🗑</text>
+
+  <!-- Track row 2: 나 -->
+  <rect x="20" y="582" width="335" height="64" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="50" cy="614" r="20" fill="#3182f6"/>
+  <text x="50" y="619" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">나</text>
+  <text x="82" y="610" font-size="14.5" font-weight="700" fill="#191f28">나</text>
+  <text x="82" y="628" font-size="12" fill="#8b95a1">피아노</text>
+  <text x="312" y="619" font-size="16" fill="#8b95a1" text-anchor="middle">🔇</text>
+  <text x="339" y="619" font-size="16" fill="#8b95a1" text-anchor="middle">🗑</text>
+
+  <!-- Bottom CTA -->
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">저장하고 공유</text>
+</svg>
+<rect x="48" y="1840" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="471" y="1824" font-size="20" font-weight="800" fill="#191f28">6. SCR-F · 편집(NoteEditor)</text>
+<svg x="471" y="1840" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <!-- Navigation 헤더 -->
+  <text x="20" y="82" font-size="18" font-weight="700" fill="#191f28">편집</text>
+  <text x="355" y="82" text-anchor="end" font-size="16" font-weight="700" fill="#3182f6">완료</text>
+
+  <!-- 상단 안내 -->
+  <text x="20" y="122" font-size="12" fill="#8b95a1">노트를 끌어 옮기고, 가장자리로 길이를 바꿔요</text>
+
+  <!-- 피아노롤 카드 (자체 컴포넌트, 점선 외곽) -->
+  <rect x="20" y="138" width="335" height="540" rx="18" fill="#ffffff" stroke="#3182f6" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="34" y="160" font-size="11" font-weight="700" fill="#8b95a1">피아노롤 · 자체 컴포넌트</text>
+
+  <!-- 롤 영역 좌표: x 32~343, y 172~666 -->
+  <!-- 좌측 sticky 레인 라벨열 (width 44) -->
+  <rect x="32" y="172" width="44" height="494" fill="#f9fafb"/>
+
+  <!-- 레인 12개, 각 높이 ~41.1 (494/12) -->
+  <!-- 그리드 우측 영역 x 76~343 -->
+
+  <!-- 가로 마디선 (레인 구분, #e5e8eb) -->
+  <g stroke="#e5e8eb" stroke-width="1">
+    <line x1="76" y1="213.2" x2="343" y2="213.2"/>
+    <line x1="76" y1="254.3" x2="343" y2="254.3"/>
+    <line x1="76" y1="295.5" x2="343" y2="295.5"/>
+    <line x1="76" y1="336.7" x2="343" y2="336.7"/>
+    <line x1="76" y1="377.8" x2="343" y2="377.8"/>
+    <line x1="76" y1="419.0" x2="343" y2="419.0"/>
+    <line x1="76" y1="460.2" x2="343" y2="460.2"/>
+    <line x1="76" y1="501.3" x2="343" y2="501.3"/>
+    <line x1="76" y1="542.5" x2="343" y2="542.5"/>
+    <line x1="76" y1="583.7" x2="343" y2="583.7"/>
+    <line x1="76" y1="624.8" x2="343" y2="624.8"/>
+  </g>
+
+  <!-- 세로 박자선 (얇은) + 굵은 마디선 -->
+  <g stroke="#e5e8eb" stroke-width="1">
+    <line x1="109.4" y1="172" x2="109.4" y2="666"/>
+    <line x1="142.8" y1="172" x2="142.8" y2="666"/>
+    <line x1="209.6" y1="172" x2="209.6" y2="666"/>
+    <line x1="243" y1="172" x2="243" y2="666"/>
+    <line x1="309.8" y1="172" x2="309.8" y2="666"/>
+  </g>
+  <g stroke="#d1d6db" stroke-width="1.6">
+    <line x1="176.2" y1="172" x2="176.2" y2="666"/>
+    <line x1="276.4" y1="172" x2="276.4" y2="666"/>
+  </g>
+
+  <!-- 레인 라벨 음이름 (C5 B A G F E D C — 위에서 아래) 12px #8b95a1 -->
+  <g font-size="12" fill="#8b95a1" text-anchor="middle">
+    <text x="54" y="197">C5</text>
+    <text x="54" y="238">B</text>
+    <text x="54" y="279">A</text>
+    <text x="54" y="320">G</text>
+    <text x="54" y="361">F</text>
+    <text x="54" y="403">E</text>
+    <text x="54" y="444">D</text>
+    <text x="54" y="485">C</text>
+    <text x="54" y="526">B</text>
+    <text x="54" y="567">A</text>
+    <text x="54" y="608">G</text>
+    <text x="54" y="649">C</text>
+  </g>
+
+  <!-- 노트 블록 -->
+  <!-- 멜로디 블록 (파랑 #3182f6 rx6) 5개 -->
+  <rect x="82" y="180" width="56" height="26" rx="6" fill="#3182f6"/>
+  <rect x="148" y="262.5" width="40" height="26" rx="6" fill="#3182f6"/>
+  <rect x="196" y="344.5" width="70" height="26" rx="6" fill="#3182f6"/>
+  <rect x="118" y="426.8" width="48" height="26" rx="6" fill="#3182f6"/>
+
+  <!-- 선택된 멜로디 블록 (외곽 2.5px 파랑 링 + 우측 3px 핸들) -->
+  <rect x="230" y="221.4" width="66" height="26" rx="6" fill="#3182f6"/>
+  <rect x="228.75" y="220.15" width="68.5" height="28.5" rx="7" fill="none" stroke="#3182f6" stroke-width="2.5"/>
+  <rect x="295" y="225.4" width="3" height="18" rx="1.5" fill="#1b64da"/>
+
+  <!-- 코드 블록 (violet #8b5cf6) 2개 -->
+  <rect x="86" y="509.8" width="120" height="26" rx="6" fill="#8b5cf6"/>
+  <rect x="216" y="591.0" width="100" height="26" rx="6" fill="#8b5cf6"/>
+
+  <!-- 하단 편집 툴바 (가로 스크롤 느낌) -->
+  <text x="20" y="708" font-size="12" font-weight="700" fill="#8b95a1">편집 도구</text>
+  <g>
+    <!-- ◀ -->
+    <rect x="20" y="718" width="48" height="40" rx="999" fill="#f2f4f6"/>
+    <text x="44" y="743" text-anchor="middle" font-size="15" fill="#4e5968">◀</text>
+    <!-- ▶ -->
+    <rect x="74" y="718" width="48" height="40" rx="999" fill="#f2f4f6"/>
+    <text x="98" y="743" text-anchor="middle" font-size="15" fill="#4e5968">▶</text>
+    <!-- ▲ 음 -->
+    <rect x="128" y="718" width="66" height="40" rx="999" fill="#e8f1fd"/>
+    <text x="161" y="743" text-anchor="middle" font-size="13.5" font-weight="700" fill="#3182f6">▲ 음</text>
+    <!-- ▼ 음 -->
+    <rect x="200" y="718" width="66" height="40" rx="999" fill="#e8f1fd"/>
+    <text x="233" y="743" text-anchor="middle" font-size="13.5" font-weight="700" fill="#3182f6">▼ 음</text>
+    <!-- ⏱ 맞춤 -->
+    <rect x="272" y="718" width="80" height="40" rx="999" fill="#f2f4f6"/>
+    <text x="312" y="743" text-anchor="middle" font-size="13.5" fill="#4e5968">⏱ 맞춤</text>
+    <!-- 🗑 (살짝 잘려 가로 스크롤 느낌) -->
+    <rect x="358" y="718" width="48" height="40" rx="999" fill="#f2f4f6"/>
+    <text x="382" y="743" text-anchor="middle" font-size="15" fill="#ff6b6b">🗑</text>
+  </g>
+
+  <!-- 스크롤 인디케이터 -->
+  <rect x="160" y="772" width="56" height="4" rx="2" fill="#d1d6db"/>
+</svg>
+<rect x="471" y="1840" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="48" y="2692" font-size="20" font-weight="800" fill="#191f28">7. SCR-G · 커뮤니티</text>
+<svg x="48" y="2708" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <!-- Navigation 헤더 -->
+  <text x="20" y="74" font-size="13" font-weight="600" fill="#4e5968">‹ 스튜디오</text>
+  <text x="20" y="96" font-size="18" font-weight="700" fill="#191f28">커뮤니티</text>
+
+  <!-- 세그먼트: 둘러보기 | 내 음원 -->
+  <rect x="20" y="110" width="335" height="44" rx="14" fill="#f2f4f6"/>
+  <rect x="23.5" y="113.5" width="164" height="37" rx="11" fill="#ffffff"/>
+  <text x="105.5" y="137" font-size="14.5" font-weight="700" fill="#191f28" text-anchor="middle">둘러보기</text>
+  <text x="269.5" y="137" font-size="14.5" font-weight="700" fill="#8b95a1" text-anchor="middle">내 음원</text>
+
+  <!-- 정렬 세그(작게): 최신 | 인기 -->
+  <rect x="251" y="164" width="104" height="32" rx="11" fill="#f2f4f6"/>
+  <rect x="253.5" y="166.5" width="49" height="27" rx="9" fill="#ffffff"/>
+  <text x="278" y="184" font-size="12.5" font-weight="700" fill="#191f28" text-anchor="middle">최신</text>
+  <text x="329" y="184" font-size="12.5" font-weight="700" fill="#8b95a1" text-anchor="middle">인기</text>
+
+  <!-- ===== 카드1 (재생중) ===== -->
+  <rect x="20" y="208" width="335" height="118" rx="18" fill="#ffffff" stroke="#3182f6" stroke-width="1.5"/>
+  <!-- 아바타 강조 -->
+  <circle cx="48" cy="244" r="23" fill="#3182f6" opacity="0.18"/>
+  <circle cx="48" cy="244" r="20" fill="#3182f6"/>
+  <text x="48" y="249" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">달</text>
+  <!-- 곡명 / 메타 -->
+  <text x="80" y="240" font-size="17" font-weight="700" fill="#191f28">달빛 산책</text>
+  <text x="80" y="260" font-size="13" fill="#8b95a1">민지 · 100BPM · 4마디</text>
+  <text x="338" y="240" font-size="18" font-weight="700" fill="#8b95a1" text-anchor="end">⋯</text>
+  <!-- 하단 행 -->
+  <rect x="36" y="282" width="76" height="30" rx="999" fill="#3182f6"/>
+  <text x="74" y="301" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">▶ 듣기</text>
+  <rect x="120" y="282" width="56" height="30" rx="999" fill="#f2f4f6"/>
+  <text x="148" y="301" font-size="13" font-weight="700" fill="#4e5968" text-anchor="middle">♡ 12</text>
+  <rect x="184" y="282" width="50" height="30" rx="999" fill="#e8f1fd"/>
+  <text x="209" y="301" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">얹기</text>
+  <!-- 진행바 (파랑 40%) -->
+  <rect x="18" y="322" width="339" height="3" rx="2" fill="#e8f1fd"/>
+  <rect x="18" y="322" width="135" height="3" rx="2" fill="#3182f6"/>
+
+  <!-- ===== 카드2 ===== -->
+  <rect x="20" y="338" width="335" height="114" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="48" cy="372" r="20" fill="#ff6b6b"/>
+  <text x="48" y="377" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">노</text>
+  <text x="80" y="368" font-size="17" font-weight="700" fill="#191f28">노을 베이스</text>
+  <text x="80" y="388" font-size="13" fill="#8b95a1">현우 · 100BPM · 4마디</text>
+  <text x="338" y="368" font-size="18" font-weight="700" fill="#8b95a1" text-anchor="end">⋯</text>
+  <rect x="36" y="410" width="76" height="30" rx="999" fill="#3182f6"/>
+  <text x="74" y="429" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">▶ 듣기</text>
+  <rect x="120" y="410" width="56" height="30" rx="999" fill="#f2f4f6"/>
+  <text x="148" y="429" font-size="13" font-weight="700" fill="#4e5968" text-anchor="middle">♡ 8</text>
+  <rect x="184" y="410" width="50" height="30" rx="999" fill="#e8f1fd"/>
+  <text x="209" y="429" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">얹기</text>
+
+  <!-- ===== 카드3 ===== -->
+  <rect x="20" y="464" width="335" height="114" rx="18" fill="#ffffff" stroke="#edf0f3" stroke-width="1"/>
+  <circle cx="48" cy="498" r="20" fill="#15c47e"/>
+  <text x="48" y="503" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">새</text>
+  <text x="80" y="494" font-size="17" font-weight="700" fill="#191f28">새벽 아르페지오</text>
+  <text x="80" y="514" font-size="13" fill="#8b95a1">서연 · 100BPM · 4마디</text>
+  <text x="338" y="494" font-size="18" font-weight="700" fill="#8b95a1" text-anchor="end">⋯</text>
+  <rect x="36" y="536" width="76" height="30" rx="999" fill="#3182f6"/>
+  <text x="74" y="555" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">▶ 듣기</text>
+  <rect x="120" y="536" width="56" height="30" rx="999" fill="#f2f4f6"/>
+  <text x="148" y="555" font-size="13" font-weight="700" fill="#4e5968" text-anchor="middle">♡ 21</text>
+  <rect x="184" y="536" width="50" height="30" rx="999" fill="#e8f1fd"/>
+  <text x="209" y="555" font-size="13" font-weight="700" fill="#3182f6" text-anchor="middle">얹기</text>
+
+  <!-- 하단 BottomCTA -->
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">＋ 내 음원 올리기</text>
+</svg>
+<rect x="48" y="2708" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+<text x="471" y="2692" font-size="20" font-weight="800" fill="#191f28">8. SCR-H · 설정</text>
+<svg x="471" y="2708" width="375" height="812" viewBox="0 0 375 812">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1">9:41</text>
+
+  <!-- Navigation 헤더 -->
+  <text x="20" y="82" font-size="18" font-weight="700" fill="#191f28">설정</text>
+
+  <!-- 카드1: InfoRow 2줄 -->
+  <rect x="20" y="112" width="335" height="100" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <!-- 닉네임 -->
+  <text x="38" y="148" font-size="15" font-weight="600" fill="#191f28">닉네임</text>
+  <text x="337" y="148" font-size="15" fill="#8b95a1" text-anchor="end">토스밴드</text>
+  <!-- 구분선 -->
+  <line x1="38" y1="162" x2="337" y2="162" stroke="#e5e8eb" stroke-width="1"/>
+  <!-- 버전 -->
+  <text x="38" y="192" font-size="15" font-weight="600" fill="#191f28">버전</text>
+  <text x="337" y="192" font-size="15" fill="#8b95a1" text-anchor="end">1.0.0</text>
+
+  <!-- 섹션 라벨 -->
+  <text x="38" y="248" font-size="13" font-weight="700" fill="#8b95a1">법적 고지 (초안)</text>
+
+  <!-- 카드2: 약관/처리방침 -->
+  <rect x="20" y="264" width="335" height="100" fill="#ffffff" rx="18" stroke="#edf0f3" stroke-width="1"/>
+  <!-- 이용약관 -->
+  <text x="38" y="300" font-size="15" font-weight="600" fill="#191f28">이용약관</text>
+  <text x="337" y="300" font-size="15" fill="#8b95a1" text-anchor="end">준비 중</text>
+  <!-- 구분선 -->
+  <line x1="38" y1="314" x2="337" y2="314" stroke="#e5e8eb" stroke-width="1"/>
+  <!-- 개인정보 처리방침 -->
+  <text x="38" y="344" font-size="15" font-weight="600" fill="#191f28">개인정보 처리방침</text>
+  <text x="337" y="344" font-size="15" fill="#8b95a1" text-anchor="end">준비 중</text>
+
+  <!-- 안내 문단 -->
+  <text x="38" y="404" font-size="13" fill="#8b95a1">고객센터는 토스 공통 메뉴를 이용해 주세요.</text>
+  <text x="38" y="428" font-size="13" fill="#8b95a1">하모니는 토스 익명 식별만 사용하며, 개인정보를</text>
+  <text x="38" y="448" font-size="13" fill="#8b95a1">수집하지 않아요.</text>
+
+  <!-- 홈으로 버튼 (흰 배경, 옅은 그림자) -->
+  <rect x="20" y="488" width="335" height="52" fill="#ffffff" rx="16"/>
+  <rect x="20" y="490" width="335" height="52" fill="#000000" opacity="0.04" rx="16"/>
+  <rect x="20" y="488" width="335" height="52" fill="#ffffff" rx="16"/>
+  <text x="187.5" y="520" font-size="16" font-weight="700" fill="#191f28" text-anchor="middle">홈으로</text>
+</svg>
+<rect x="471" y="2708" width="375" height="812" fill="none" stroke="#aeb6bf" stroke-width="1.5" rx="2"/>
+</svg>

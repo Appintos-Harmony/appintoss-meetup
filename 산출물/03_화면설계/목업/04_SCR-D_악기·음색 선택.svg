@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812" font-family="Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif">
+  <rect x="0" y="0" width="375" height="812" fill="#f2f4f6"/>
+
+  <!-- 상태바 -->
+  <text x="20" y="27" font-size="12" fill="#8b95a1" font-weight="600">9:41</text>
+
+  <!-- 흐릿한 스튜디오 배경 (상단 1/3) -->
+  <rect x="0" y="44" width="375" height="320" fill="#e9edf1"/>
+  <rect x="28" y="96" width="120" height="120" rx="14" fill="#dde3e9"/>
+  <rect x="168" y="84" width="92" height="92" rx="12" fill="#d8dee5"/>
+  <rect x="276" y="120" width="72" height="160" rx="12" fill="#dde3e9"/>
+  <rect x="40" y="236" width="180" height="48" rx="10" fill="#d8dee5"/>
+  <rect x="232" y="296" width="110" height="40" rx="10" fill="#dde3e9"/>
+  <text x="187" y="180" font-size="34" font-weight="800" fill="#cdd4db" text-anchor="middle" opacity="0.75">스튜디오</text>
+
+  <!-- 바텀시트 (하단 2/3) -->
+  <rect x="0" y="364" width="375" height="448" rx="24" fill="#ffffff"/>
+  <rect x="0" y="388" width="375" height="424" fill="#ffffff"/>
+
+  <!-- 그립 -->
+  <rect x="167.5" y="380" width="40" height="4" rx="2" fill="#d1d6db"/>
+
+  <!-- 시트 제목 -->
+  <text x="20" y="430" font-size="22" font-weight="800" fill="#191f28">악기 고르기</text>
+
+  <!-- 행 1: 어쿠스틱 피아노 (선택됨) -->
+  <rect x="0" y="456" width="375" height="56" fill="#e8f1fd"/>
+  <text x="20" y="490" font-size="22">🎹</text>
+  <text x="52" y="490" font-size="15" fill="#191f28" font-weight="600">어쿠스틱 피아노</text>
+  <path d="M335 484 l4 5 l9 -11" stroke="#3182f6" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="20" y1="512" x2="355" y2="512" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 행 2: 일렉트릭 피아노 -->
+  <text x="20" y="546" font-size="22">🎹</text>
+  <text x="52" y="546" font-size="15" fill="#191f28">일렉트릭 피아노</text>
+  <line x1="20" y1="568" x2="355" y2="568" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 행 3: 신스 베이스 -->
+  <text x="20" y="602" font-size="22">🎸</text>
+  <text x="52" y="602" font-size="15" fill="#191f28">신스 베이스</text>
+  <line x1="20" y1="624" x2="355" y2="624" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 행 4: 드럼 (패드) -->
+  <text x="20" y="658" font-size="22">🥁</text>
+  <text x="52" y="658" font-size="15" fill="#191f28">드럼 (패드)</text>
+  <line x1="20" y1="680" x2="355" y2="680" stroke="#e5e8eb" stroke-width="1"/>
+
+  <!-- 하단 고정 CTA -->
+  <rect x="20" y="744" width="335" height="52" rx="16" fill="#3182f6"/>
+  <text x="187.5" y="776" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">이 악기로 선택</text>
+</svg>
