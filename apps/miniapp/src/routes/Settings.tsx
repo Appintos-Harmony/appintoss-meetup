@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Route } from '../App';
 import { getNickname, getEmoji, setEmoji, EMOJI_CHOICES } from '../lib/identity';
+import { TERMS, PRIVACY, type LegalDoc } from '../lib/legal';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -8,6 +10,35 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span className="t-body" style={{ fontWeight: 600 }}>{label}</span>
       <span className="t-body c-sub">{value}</span>
     </div>
+  );
+}
+
+const legalRow: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 8px', width: '100%', border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', color: 'var(--text)' };
+
+// 법적 고지 모달(스크롤). 내용은 lib/legal.ts(초안).
+function LegalSheet({ doc, onClose }: { doc: LegalDoc; onClose: () => void }) {
+  return (
+    <>
+      <div className="backdrop" onClick={onClose} />
+      <div className="sheet" style={{ maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="sheet-grip" />
+        <div className="t-title" style={{ padding: '2px 6px 2px' }}>{doc.title}</div>
+        <div className="t-cap c-sub" style={{ padding: '0 6px 8px' }}>{doc.updated}</div>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '0 6px' }}>
+          <p className="t-body c-sub2" style={{ lineHeight: 1.7, marginTop: 0 }}>{doc.intro}</p>
+          {doc.sections.map((s, i) => (
+            <div key={i} style={{ marginTop: 14 }}>
+              <div className="t-body" style={{ fontWeight: 700 }}>{s.h}</div>
+              {s.p.map((para, j) => (
+                <p key={j} className="t-cap c-sub2" style={{ lineHeight: 1.7, margin: '6px 0 0' }}>· {para}</p>
+              ))}
+            </div>
+          ))}
+          <div style={{ height: 6 }} />
+        </div>
+        <button className="btn" style={{ marginTop: 10, background: 'var(--bg)', color: 'var(--text-2)' }} onClick={onClose}>닫기</button>
+      </div>
+    </>
   );
 }
 
@@ -22,6 +53,7 @@ export function Settings({
 }) {
   const [emoji, setEmojiState] = useState<string>(() => getEmoji());
   const [picker, setPicker] = useState(false);
+  const [legal, setLegal] = useState<'terms' | 'privacy' | null>(null);
 
   function pick(e: string) {
     setEmoji(e);
@@ -88,9 +120,15 @@ export function Settings({
 
         <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '20px 4px 8px' }}>법적 고지 (초안)</div>
         <div className="card" style={{ padding: '4px 10px' }}>
-          <InfoRow label="이용약관" value="준비 중" />
+          <button type="button" style={legalRow} onClick={() => setLegal('terms')}>
+            <span className="t-body" style={{ fontWeight: 600 }}>이용약관</span>
+            <span className="t-body c-sub">보기 ›</span>
+          </button>
           <div style={{ height: 1, background: 'var(--line)' }} />
-          <InfoRow label="개인정보 처리방침" value="준비 중" />
+          <button type="button" style={legalRow} onClick={() => setLegal('privacy')}>
+            <span className="t-body" style={{ fontWeight: 600 }}>개인정보 처리방침</span>
+            <span className="t-body c-sub">보기 ›</span>
+          </button>
         </div>
 
         <p className="t-cap c-sub" style={{ marginTop: 14, lineHeight: 1.7 }}>
@@ -131,6 +169,7 @@ export function Settings({
           </div>
         </>
       )}
+      {legal && <LegalSheet doc={legal === 'terms' ? TERMS : PRIVACY} onClose={() => setLegal(null)} />}
     </>
   );
 }
