@@ -48,12 +48,15 @@ import {
 import { getNickname, getUserKey, randomId } from '../lib/identity';
 import { InstrumentCombo } from '../components/studio/InstrumentCombo';
 import { GestureFretboard } from '../components/studio/GestureFretboard';
+import { GestureMelodyPiano } from '../components/studio/GestureMelodyPiano';
+import { GestureMelodyFretboard } from '../components/studio/GestureMelodyFretboard';
 import { ChordMatrix } from '../components/studio/ChordMatrix';
 import { NotePadGrid } from '../components/studio/NotePadGrid';
 import { DrumPad } from '../components/studio/DrumPad';
 import { DevOverlay } from '../components/studio/DevOverlay';
 import { NoteEditor } from '../components/studio/NoteEditor';
-import { ROMAN, chordColor, PRESET_POP, MAX_CHORDS, GESTURE_ZONES, GESTURE_ZONES_FULL, FRETS_NORMAL, FRETS_FULL, DRUM_KIT_LAYOUT, nearestDrumPiece, STYLE_OPTIONS, INSTRUMENTS } from '../components/studio/chords';
+import { ROMAN, chordColor, PRESET_POP, MAX_CHORDS, GESTURE_ZONES, GESTURE_ZONES_FULL, FRETS_NORMAL, FRETS_FULL, STRINGS_GUITAR, STRINGS_BASS, DRUM_KIT_LAYOUT, nearestDrumPiece, STYLE_OPTIONS, INSTRUMENTS } from '../components/studio/chords';
+import { transpose } from '../lib/notes';
 
 type Phase = 'idle' | 'countin' | 'recording';
 type Input = 'touch' | 'gesture';
@@ -130,6 +133,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [showReceive, setShowReceive] = useState(false);
   const [pending, setPending] = useState<Session | null>(null);
   const [octave, setOctave] = useState(4);
+  const [gMelody, setGMelody] = useState<{ note: string; row: number; col: number }[]>([]); // 멜로디 제스처: 현재 눌린 음/셀(오버레이 표시)
   const [heldNotes, setHeldNotes] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string[]>([...PRESET_POP]);
   const [editing, setEditing] = useState(false);
@@ -208,6 +212,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const sparkleIdRef = useRef(0);
   const effectsOnRef = useRef(effectsOn);
   effectsOnRef.current = effectsOn;
+  const playModeRef = useRef(playMode); // 루프에서 멜로디 분기 판별
+  playModeRef.current = playMode;
+  const instrumentRef = useRef(instrument); // 루프에서 피아노 vs 기타/베이스 판별
+  instrumentRef.current = instrument;
+  const octaveRef = useRef(octave); // 멜로디 피아노 제스처 건반 옥타브
+  octaveRef.current = octave;
+  const melodyPrevRef = useRef<({ note: string; row: number; col: number } | null)[]>([null, null]); // 멜로디 제스처: 손별 현재 음/셀
   const monitorLoopRef = useRef(monitorLoop); // 반복 토글의 최신값(스케줄러가 읽음)
   monitorLoopRef.current = monitorLoop;
   const chordPointerRef = useRef<Set<number>>(new Set()); // 터치 코드 패드: 눌린 포인터 추적(지연-down 레이스·취소 방지)
@@ -429,7 +440,35 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     heldRef.current.forEach((n) => upNote(n));
     heldRef.current.clear();
     pointerNoteRef.current.clear();
+    melodyPrevRef.current = [null, null];
     setHeldNotes(new Set());
+    setGMelody([]);
+  }
+
+  // 멜로디 제스처 발음+녹음(터치 melodyDown/Up과 동일 reducer poly 경로, source='gesture').
+  function gMelodyOn(note: string) {
+    stateRef.current = chordReducer(stateRef.current, { type: 'down', chord: note, source: 'gesture', tick: curTick(), nowMs: performance.now(), poly: true });
+    if (!heldRef.current.has(note)) {
+      heldRef.current.add(note);
+      downNote(note);
+      setHeldNotes(new Set(heldRef.current));
+    }
+  }
+  function gMelodyOff(note: string) {
+    stateRef.current = chordReducer(stateRef.current, { type: 'up', chord: note, source: 'gesture', tick: curTick(), nowMs: performance.now(), poly: true });
+    if (heldRef.current.has(note)) {
+      heldRef.current.delete(note);
+      upNote(note);
+      setHeldNotes(new Set(heldRef.current));
+    }
+  }
+  // 멜로디 제스처 오버레이 하이라이트(눌린 음/셀) — 변할 때만 setState.
+  function updateMelodyActive(arr: { note: string; row: number; col: number }[]) {
+    setGMelody((prev) => {
+      const a = arr.map((x) => `${x.note}:${x.row}:${x.col}`).sort().join('|');
+      const b = prev.map((x) => `${x.note}:${x.row}:${x.col}`).sort().join('|');
+      return a === b ? prev : arr;
+    });
   }
 
   function hitDrum(piece: DrumPiece, source: Source = 'touch') {
@@ -542,7 +581,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     soundingRef.current = null;
     setActive(null);
     clearMelody();
-    if (m === 'melody') selectTouch();
+    if (m === 'melody' && input === 'gesture') setGestureMode('finger'); // 멜로디 제스처는 손가락 전용
     setPlayMode(m);
   }
 
@@ -657,6 +696,52 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           if (piece !== null && (!prev.active || prev.piece !== piece)) hitDrum(piece, 'gesture');
           drumPrevRef.current[i] = { active: piece !== null, piece };
         }
+      } else if (playModeRef.current === 'melody') {
+        // ---- 멜로디 제스처(손가락 모드만): 손끝→건반/셀, 셀 진입 상승엣지로 발음. 한 현 가로 쓸기 = 연속 셀 전이 = 글리산도. ----
+        const inst = instrumentRef.current;
+        const isPiano = inst === 'piano';
+        const keys = isPiano ? buildKeys(octaveRef.current) : null;
+        const strings = isPiano ? [] : (inst === 'bass' ? STRINGS_BASS : STRINGS_GUITAR).slice().reverse();
+        const mFrets = fullscreenRef.current ? FRETS_FULL : FRETS_NORMAL;
+        const active: { note: string; row: number; col: number }[] = [];
+        for (let i = 0; i < 2; i++) {
+          const f = frames[i];
+          let hit: { note: string; row: number; col: number } | null = null;
+          // 손가락(finger) + isPointing(active)일 때만 — 손바닥 모드는 자연 비활성.
+          if (i < maxHands && f && f.active && f.pos && gestureModeRef.current === 'finger') {
+            const x = mirror ? 1 - f.pos.x : f.pos.x;
+            const y = f.pos.y;
+            if (x >= 0 && x < 1 && y >= 0 && y < 1) {
+              if (isPiano && keys) {
+                const nw = keys.whites.length;
+                let note: string | null = null;
+                if (y < 0.6) {
+                  for (const b of keys.blacks) {
+                    if (Math.abs(x - b.leftPct / 100) <= 0.3 / nw) {
+                      note = b.note;
+                      break;
+                    }
+                  }
+                }
+                if (note === null) note = keys.whites[Math.min(nw - 1, Math.floor(x * nw))].note;
+                hit = { note, row: 0, col: 0 };
+              } else if (strings.length) {
+                const col = Math.min(mFrets - 1, Math.floor(x * mFrets));
+                const row = Math.min(strings.length - 1, Math.floor(y * strings.length));
+                hit = { note: transpose(strings[row], col), row, col };
+              }
+            }
+          }
+          const prev = melodyPrevRef.current[i];
+          if ((hit?.note ?? null) !== (prev?.note ?? null)) {
+            if (prev) gMelodyOff(prev.note);
+            if (hit) gMelodyOn(hit.note);
+            melodyPrevRef.current[i] = hit;
+          }
+          if (hit) active.push(hit);
+        }
+        updateMelodyActive(active);
+        twoHandRef.current = [null, null];
       } else if (solo) {
         const f = frames[0];
         if (!waving0 && f && f.active && f.zone !== null && f.zone < zones.length) downChord(zones[f.zone], 'gesture');
@@ -714,6 +799,9 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       { active: false, piece: null },
     ];
     releaseTwoHand(); // 양손 보유 코드 잔류음 정리(selectTouch·제스처/카메라 실패 폴백 전부 이 길목 통과)
+    melodyPrevRef.current.forEach((m) => m && gMelodyOff(m.note)); // 멜로디 제스처 잔류음 해제
+    melodyPrevRef.current = [null, null];
+    setGMelody([]);
     setGestureChords([]);
   }
 
@@ -729,6 +817,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       if (!v) throw new Error('no video');
       streamRef.current = await startCamera(v, facing);
       setInput('gesture');
+      if (playMode === 'melody') setGestureMode('finger'); // 멜로디 제스처는 손가락 전용
       setCamMsg('');
       rafRef.current = requestAnimationFrame(loop);
     } catch {
@@ -1142,12 +1231,13 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const countdown = BEATS_PER_BAR - (beat < 0 ? 0 : beat);
   const statusText = camMsg || (countin ? `카운트인 ${countdown}` : recording ? '녹음 중' : !ready ? '눌러서 소리 켜기' : '준비됐어요');
   const mirror = facing === 'user';
-  const camMountable = drumMode || playMode === 'chord'; // 제스처 가능한 모드 → video 항상 마운트(ref 확보)
+  const camMountable = drumMode || playMode === 'chord' || playMode === 'melody'; // 제스처 가능한 모드(드럼·코드·멜로디) → video 항상 마운트
   const showCamera = input === 'gesture' && camMountable;
   const camFull = fullscreen && showCamera;
-  const melodyFull = fullscreen && !drumMode && playMode === 'melody';
+  const melodyFull = fullscreen && !drumMode && playMode === 'melody' && input !== 'gesture'; // 제스처 멜로디는 카메라 전체화면(camFull)으로
   const drumTouchFull = fullscreen && drumMode && input !== 'gesture';
   const zoneN = Math.min(selected.length, fullscreen ? GESTURE_ZONES_FULL : GESTURE_ZONES);
+  const melodyKeys = playMode === 'melody' && instrument === 'piano' ? buildKeys(octave) : null; // 멜로디 피아노 제스처 건반(터치 피아노와 동일)
 
   // 전체화면 가로 회전(CSS 90°). iOS WebView에서 Fullscreen/Orientation API보다 안정적.
   const landscapeBox: CSSProperties = { position: 'fixed', top: 0, left: '100vw', width: '100vh', height: '100vw', transformOrigin: 'top left', transform: 'rotate(90deg)', zIndex: 70, overflow: 'hidden' };
@@ -1173,13 +1263,22 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   };
   const gestureControls = (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'flex-start', padding: 'calc(8px + env(safe-area-inset-top)) 12px 12px', zIndex: 75, background: 'linear-gradient(180deg, rgba(0,0,0,.55), transparent)' }}>
-      <button className="btn" style={{ width: 'auto', padding: '9px 15px', fontSize: 14, background: 'var(--blue)', color: '#fff', boxShadow: 'var(--e2)', flex: 'none' }} onClick={() => { if (camFull) { setFullscreen(false); setLandscape(false); } else setFullscreen(true); }}>
+      <button className="btn" style={{ width: 'auto', padding: '9px 15px', fontSize: 14, background: 'var(--blue)', color: '#fff', boxShadow: 'var(--e2)', flex: 'none' }} onClick={() => { if (camFull) { setFullscreen(false); setLandscape(false); } else { setFullscreen(true); setLandscape(true); } }}>
         {camFull ? '‹ 나가기' : '⛶ 전체화면'}
       </button>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {camFull && <button className="chip" style={ctlChip} onClick={() => setLandscape((l) => !l)}>⟳ {landscape ? '세로' : '가로'}</button>}
         <button className="chip" style={ctlChip} onClick={switchHands}>{hands === 2 ? '🙌 양손' : '🤚 한손'}</button>
-        <button className="chip" style={ctlChip} onClick={() => setGestureMode((g) => (g === 'finger' ? 'palm' : 'finger'))}>{gestureMode === 'finger' ? '☝ 손가락' : '✋ 손바닥'}</button>
+        {playMode === 'melody' ? (
+          instrument === 'piano' ? (
+            <>
+              <button className="chip" style={ctlChip} onClick={() => shiftOctave(-1)}>옥타브 ▼</button>
+              <button className="chip" style={ctlChip} onClick={() => shiftOctave(1)}>옥타브 ▲</button>
+            </>
+          ) : null
+        ) : (
+          <button className="chip" style={ctlChip} onClick={() => setGestureMode((g) => (g === 'finger' ? 'palm' : 'finger'))}>{gestureMode === 'finger' ? '☝ 손가락' : '✋ 손바닥'}</button>
+        )}
         <button className="chip" style={effectsOn ? { ...ctlChip, background: 'var(--blue)', color: '#fff' } : ctlChip} onClick={toggleEffects}>{effectsOn ? '✨ 효과 ON' : '✨ 효과 OFF'}</button>
         <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.max(1, Math.round((z - 0.25) * 100) / 100))}>➖</button>
         <button className="chip" style={ctlChip} onClick={() => setCamZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100))}>➕</button>
@@ -1203,7 +1302,14 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       <video ref={videoRef} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scaleX(${mirror ? -1 : 1}) scale(${camZoom})`, transition: 'transform .15s var(--ease)' }} />
       {showCamera && (
         <>
-      {drumMode ? (
+      {playMode === 'melody' ? (
+        /* 멜로디 제스처: 피아노 건반(불투명) / 기타·베이스 현×프렛 그리드 */
+        instrument === 'piano' && melodyKeys ? (
+          <GestureMelodyPiano whites={melodyKeys.whites} blacks={melodyKeys.blacks} pressed={new Set(gMelody.map((g) => g.note))} camFull={camFull} />
+        ) : fretInstrument ? (
+          <GestureMelodyFretboard instrument={fretInstrument} frets={fullscreen ? FRETS_FULL : FRETS_NORMAL} pressed={gMelody.map((g) => ({ row: g.row, col: g.col }))} camFull={camFull} />
+        ) : null
+      ) : drumMode ? (
         /* 드럼 키트 모양(2D). 손을 모양 위로 가져가 타격 → 해당 드럼 소리 */
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           {DRUM_KIT_LAYOUT.map((s) => {
@@ -1299,7 +1405,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             </button>
           )}
           <InstrumentCombo inline instrument={instrument} style={style} disabled={busy} onPick={chooseVoice} />
-          {(drumMode || playMode === 'chord') && (
+          {(drumMode || playMode === 'chord' || playMode === 'melody') && (
             <button className="chip chip-ghost" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap' }} onClick={() => setInputSheet(true)}>
               {input === 'touch' ? '👆 터치' : '👋 제스처'} <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
             </button>
@@ -1400,17 +1506,17 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         )}
 
         {/* 멜로디 — 피아노 건반(인라인) */}
-        {!drumMode && playMode === 'melody' && instrument === 'piano' && !melodyFull && (
+        {!drumMode && playMode === 'melody' && instrument === 'piano' && !melodyFull && input !== 'gesture' && (
           <div style={{ marginTop: 14 }}>
-            <button className="chip chip-ghost" style={{ marginBottom: 10 }} onClick={() => setFullscreen(true)}>⛶ 전체화면</button>
+            <button className="chip chip-ghost" style={{ marginBottom: 10 }} onClick={() => { setFullscreen(true); setLandscape(true); }}>⛶ 전체화면</button>
             {renderPiano(false)}
           </div>
         )}
 
         {/* 멜로디 — 기타/베이스 패드(인라인) */}
-        {!drumMode && playMode === 'melody' && fretInstrument && !melodyFull && (
+        {!drumMode && playMode === 'melody' && fretInstrument && !melodyFull && input !== 'gesture' && (
           <div style={{ marginTop: 14 }}>
-            <button className="chip chip-ghost" style={{ marginBottom: 4 }} onClick={() => setFullscreen(true)}>⛶ 전체화면</button>
+            <button className="chip chip-ghost" style={{ marginBottom: 4 }} onClick={() => { setFullscreen(true); setLandscape(true); }}>⛶ 전체화면</button>
             <NotePadGrid instrument={fretInstrument} held={heldNotes} frets={FRETS_NORMAL} onDown={melodyDown} onUp={melodyUp} />
           </div>
         )}
@@ -1418,7 +1524,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         {/* 드럼 터치 패드(인라인) */}
         {drumMode && input !== 'gesture' && !drumTouchFull && (
           <>
-            <button className="chip chip-ghost" style={{ marginTop: 14 }} onClick={() => setFullscreen(true)}>⛶ 전체화면</button>
+            <button className="chip chip-ghost" style={{ marginTop: 14 }} onClick={() => { setFullscreen(true); setLandscape(true); }}>⛶ 전체화면</button>
             <DrumPad onHit={hitDrum} flash={flashPiece} />
           </>
         )}
