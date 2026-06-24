@@ -3,9 +3,21 @@
 import * as Tone from 'tone';
 import { playClick } from './engine';
 
-export const BPM = 100;
-export const BEATS_PER_BAR = 4;
+// 템포·박자는 런타임 설정(메트로놈 시트). tick은 박(=4분음표) 기준 — BPM이 박 템포.
+export let BPM = 100;
+export let BEATS_PER_BAR = 4; // 박자 분자(3/4→3, 4/4→4, 6/8→6). 클릭 수/바.
 export const TICKS_PER_BEAT = 4;
+
+/** 템포(박/분) 설정. 진행 중이면 즉시 반영. */
+export function setTempo(bpm: number): void {
+  BPM = bpm;
+  Tone.Transport.bpm.value = bpm;
+}
+/** 박자(바당 박 수) 설정. */
+export function setBeatsPerBar(beats: number): void {
+  BEATS_PER_BAR = beats;
+  Tone.Transport.timeSignature = beats;
+}
 
 export const msToTick = (ms: number) => Math.round((ms / 1000) * (BPM / 60) * TICKS_PER_BEAT);
 export const tickToMs = (tick: number) => (tick / TICKS_PER_BEAT) * (60 / BPM) * 1000;
