@@ -34,18 +34,20 @@ export function InstrumentCombo({
   }
 
   const comboBtn: CSSProperties = inline
-    ? { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
+    ? { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 6px', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
     : { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
+  // 좁은 폭에서 라벨이 칩을 넘치지 않게 — 라벨 span은 줄어들며 …처리, ▾는 고정.
+  const labelSpan: CSSProperties = { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' };
 
   const chips = (
     <>
       <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('instrument')}>
-        <span>{instMeta?.emoji} {instMeta?.label}</span>
-        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+        <span style={labelSpan}>{instMeta?.emoji} {instMeta?.label}</span>
+        <span aria-hidden style={{ opacity: 0.5, flex: 'none' }}>▾</span>
       </button>
       <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('style')}>
-        <span>{styleLabel}</span>
-        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+        <span style={labelSpan}>{styleLabel}</span>
+        <span aria-hidden style={{ opacity: 0.5, flex: 'none' }}>▾</span>
       </button>
     </>
   );

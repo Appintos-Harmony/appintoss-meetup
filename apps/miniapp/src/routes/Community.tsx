@@ -377,8 +377,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       <div className="appbar">
         <span onClick={() => { stopPreview(); go('studio'); }} style={{ cursor: 'pointer' }}>‹ 스튜디오</span>
         <span style={{ marginLeft: 'auto', fontWeight: 800 }}>커뮤니티</span>
-        <button className="chip chip-ghost" style={{ marginLeft: 'auto' }} disabled={items === null} aria-label="새로고침" onClick={() => void load()}>↻</button>
-        <button className="chip" style={{ marginLeft: 8 }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
+        <button className="chip chip-ghost" style={{ marginLeft: 'auto', padding: '8px 11px' }} disabled={items === null} aria-label="새로고침" onClick={() => void load()}>↻</button>
+        <button className="chip" style={{ marginLeft: 8, padding: '8px 12px' }} onClick={() => setPublishOpen((v) => !v)}>＋ 올리기</button>
       </div>
 
       <div className="content" style={{ paddingBottom: picks.size > 0 ? 92 : undefined }}>
@@ -551,8 +551,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       {/* 다중 가져오기 바(곽소정) — getSession 합본 직렬화 중엔 비활성/표시 */}
       {picks.size > 0 && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, maxWidth: 480, margin: '0 auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: '0 -6px 20px rgba(17,24,39,.10)' }}>
-          <button className="btn" style={{ background: 'var(--blue)', color: '#fff' }} disabled={importing} onClick={() => void importPicks()}>
-            {importing ? '여는 중…' : `🎚 가져오기 (${picks.size}개) → 스튜디오에 얹기`}
+          <button className="btn" style={{ background: 'var(--blue)', color: '#fff', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} disabled={importing} aria-label={`선택한 ${picks.size}개를 내 스튜디오에 얹기`} onClick={() => void importPicks()}>
+            {importing ? '여는 중…' : `🎚 가져오기 ${picks.size}개 → 얹기`}
           </button>
         </div>
       )}

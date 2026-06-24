@@ -370,9 +370,9 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
             <button style={tbtn('var(--coral)', '#fff')} disabled={!selNote} onClick={del}>🗑</button>
           </div>
           <div style={{ display: 'flex', gap: 8, padding: '4px 12px calc(12px + env(safe-area-inset-bottom))' }}>
-            <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={() => setNotes((ns) => quantizeNotes(ns, GRID, null))}>전체 박자 맞춤</button>
-            <button className="btn" style={{ flex: 1, background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={restart}>↺ 다시듣기</button>
-            <button className="btn" style={{ flex: 1.2, background: isPlaying ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} onClick={() => (isPlaying ? pause() : play())}>
+            <button className="btn" style={{ flex: 1, minWidth: 0, fontSize: 14, padding: '12px 6px', background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={() => setNotes((ns) => quantizeNotes(ns, GRID, null))}>전체 맞춤</button>
+            <button className="btn" style={{ flex: 1, minWidth: 0, fontSize: 14, padding: '12px 6px', background: 'var(--surface)', color: 'var(--text)', boxShadow: 'var(--e2)' }} onClick={restart}>↺ 다시듣기</button>
+            <button className="btn" style={{ flex: 1.2, minWidth: 0, fontSize: 14, padding: '12px 6px', background: isPlaying ? 'var(--coral)' : 'var(--blue)', color: '#fff' }} onClick={() => (isPlaying ? pause() : play())}>
               {isPlaying ? '■ 정지' : '▶ 실행'}
             </button>
           </div>
