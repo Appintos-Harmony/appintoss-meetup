@@ -3,13 +3,13 @@
 import type { ChordEvent } from '../audio/chordReducer';
 import type { Instrument } from '../audio/events';
 
-const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
 export interface SessionTrack {
   owner: string;
   events: ChordEvent[];
   createdAt: number;
-  instrument?: Instrument; // 녹음 악기(트랙별 재생 기준). 네트워크 라운드트립 전엔 로컬에서만 보존(백엔드 컬럼 추가 전).
+  instrument?: Instrument; // 녹음 악기(트랙별 재생 기준). 서버 tracks.instrument 컬럼에 영속(라운드트립 후에도 유지).
   style?: string;
 }
 export interface Session {

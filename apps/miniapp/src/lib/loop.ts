@@ -1,6 +1,7 @@
 // 구간 반복(루프) — 녹음 앞 loopTicks 구간을 잘라 count회 이어붙인다.
 // 이벤트 복제 방식이라 저장/공유/재생 결과가 동일하게 일관된다.
 import type { ChordEvent } from '../audio/chordReducer';
+import { isDrumKey } from '../audio/events';
 
 /**
  * events의 앞 [0, loopTicks) 구간을 단위로 count회 타일링한다.
@@ -12,7 +13,7 @@ export function loopEvents(events: ChordEvent[], loopTicks: number, count: numbe
   const unit = events.filter((e) => e.tick < loopTicks).map((e) => ({ ...e }));
   const open = new Map<string, ChordEvent['source']>();
   for (const e of unit) {
-    if (e.chord.startsWith('drum:')) continue;
+    if (isDrumKey(e.chord)) continue;
     if (e.phase === 'on') open.set(e.chord, e.source);
     else open.delete(e.chord);
   }

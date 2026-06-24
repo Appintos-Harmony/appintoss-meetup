@@ -59,13 +59,21 @@ import { DevOverlay } from '../components/studio/DevOverlay';
 import { NoteEditor } from '../components/studio/NoteEditor';
 import { ROMAN, chordColor, PRESET_POP, MAX_CHORDS, GESTURE_ZONES, GESTURE_ZONES_FULL, FRETS_NORMAL, FRETS_FULL, STRINGS_GUITAR, STRINGS_BASS, DRUM_KIT_LAYOUT, nearestDrumPiece, STYLE_OPTIONS, INSTRUMENTS } from '../components/studio/chords';
 import { transpose } from '../lib/notes';
+import { formatMmSs } from '../lib/format';
 
 type Phase = 'idle' | 'countin' | 'recording';
 type Input = 'touch' | 'gesture';
 type PlayMode = 'chord' | 'melody';
 type Facing = 'user' | 'environment';
+type TimeSig = '3/4' | '4/4' | '6/8';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
+
+const GESTURE_MOVE_GATE = 1.6; // 정규화 단위/초 — 이보다 빠르면 '지나가는 중'(실기 튜닝값)
+const SPARKLE_MS = 650; // 효과 스파클 자동 소멸(ms)
+const TOAST_MS = 2000; // 토스트 표시 시간(ms)
+const SESSION_POLL_MS = 1500; // 공유 세션 폴링 주기(ms)
+const DEV_PING_MS = 4000; // 개발자 모드 백엔드 핑 주기(ms)
 
 const WHITE_PC = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const SOLFA: Record<string, string> = { C: '도', D: '레', E: '미', F: '파', G: '솔', A: '라', B: '시' };
@@ -116,7 +124,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   const [phase, setPhase] = useState<Phase>('idle');
   const [playMode, setPlayMode] = useState<PlayMode>('chord');
   const [bpm, setBpm] = useState(100); // 템포(박/분), 메트로놈 시트에서 ±1
-  const [timeSig, setTimeSig] = useState<'3/4' | '4/4' | '6/8'>('4/4'); // 박자
+  const [timeSig, setTimeSig] = useState<TimeSig>('4/4'); // 박자
   const [metroSheet, setMetroSheet] = useState(false); // 메트로놈(박자·템포) 시트
   const [beat, setBeat] = useState(-1);
   const [hasTake, setHasTake] = useState(false);
@@ -296,8 +304,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   // take 길이 갱신(재생바 총 길이). 녹음 종료(phase)·편집·반복·레이어 변경 시 재계산.
   useEffect(() => {
-    const evs = stateRef.current.events;
-    setTakeMs(evs.length ? tickToMs(evs.reduce((m, e) => Math.max(m, e.tick), 0)) : 0);
+    setTakeMs(takeDurationMs());
     setPlayMs(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, hasTake, looped, editing, sessionTracks]);
@@ -325,7 +332,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       }
     };
     void tick();
-    const id = window.setInterval(() => void tick(), 1500);
+    const id = window.setInterval(() => void tick(), SESSION_POLL_MS);
     return () => {
       alive = false;
       window.clearInterval(id);
@@ -358,7 +365,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       if (alive) setLatency(ms);
     };
     void runPing();
-    const id = window.setInterval(() => void runPing(), 4000);
+    const id = window.setInterval(() => void runPing(), DEV_PING_MS);
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
@@ -635,7 +642,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
   function spawnSparkle(h: FxHit) {
     const id = ++sparkleIdRef.current;
     setSparkles((s) => [...s.slice(-8), { id, x: h.x, y: h.y, kind: h.kind }]);
-    window.setTimeout(() => setSparkles((s) => s.filter((p) => p.id !== id)), 650);
+    window.setTimeout(() => setSparkles((s) => s.filter((p) => p.id !== id)), SPARKLE_MS);
   }
 
   function toggleEffects() {
@@ -672,7 +679,6 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       if (devRef.current) setLandmarks(frames.flatMap((f) => f.landmarks ?? []));
 
       // ---- 과다 트리거 억제: 손이 빠르게 '지나갈' 때는 새 발음 보류, 천천히 놓을 때만 트리거(손별 속도). ----
-      const GESTURE_MOVE_GATE = 1.6; // 정규화 단위/초 — 이보다 빠르면 '지나가는 중'(실기 튜닝값)
       const fast: [boolean, boolean] = [false, false];
       for (let i = 0; i < 2; i++) {
         const p = frames[i]?.pos ?? null;
@@ -866,7 +872,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     }
   }
 
-  function beatsForSig(ts: '3/4' | '4/4' | '6/8'): number {
+  function beatsForSig(ts: TimeSig): number {
     return ts === '3/4' ? 3 : ts === '6/8' ? 6 : 4;
   }
   function changeTempo(d: number) {
@@ -876,7 +882,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       return next;
     });
   }
-  function changeTimeSig(ts: '3/4' | '4/4' | '6/8') {
+  function changeTimeSig(ts: TimeSig) {
     setTimeSig(ts);
     setBeatsPerBar(beatsForSig(ts));
   }
@@ -1022,10 +1028,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     void ensureAudio().then(() => {
       stopJam();
       stopPlayback();
-      const layered = [...sessionTracks];
-      if (stateRef.current.events.length) {
-        layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
-      }
+      const layered = buildLayered();
       if (!layered.length) return;
       const all: Voice[] = [];
       let maxMs = 0;
@@ -1108,15 +1111,12 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   function flashToast(msg: string) {
     setToast(msg);
-    window.setTimeout(() => setToast(''), 2000);
+    window.setTimeout(() => setToast(''), TOAST_MS);
   }
 
   // 공유: 모든 레이어 + 현재 take를 세션으로 업로드(첫 트랙=createSession, 나머지=addTrack).
   async function share() {
-    const layered = [...sessionTracks];
-    if (stateRef.current.events.length) {
-      layered.push({ owner: getNickname() || '나', events: stateRef.current.events, createdAt: Date.now(), instrument: takeVoiceRef.current.instrument, style: takeVoiceRef.current.style });
-    }
+    const layered = buildLayered();
     if (!layered.length) return;
     try {
       const first = layered[0];
@@ -1236,10 +1236,6 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   const busy = phase !== 'idle';
   const playPct = takeMs > 0 ? Math.min(100, (playMs / takeMs) * 100) : 0; // 재생바 진행률
-  const fmtMs = (ms: number) => {
-    const s = Math.max(0, Math.round(ms / 1000));
-    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  };
   const recording = phase === 'recording';
   const countin = phase === 'countin';
   const drumMode = instrument === 'drum';
@@ -1628,7 +1624,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           {/* 재생바: 녹음한 take 재생 위치(빨간 헤드) + 탭/드래그 스크럽 */}
           {hasTake && !busy && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
-              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMs(playMs)}</span>
+              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatMmSs(playMs)}</span>
               <div
                 ref={barRef}
                 onPointerDown={onBarDown}
@@ -1642,18 +1638,18 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
                   <span style={{ position: 'absolute', left: `${playPct}%`, top: '50%', transform: 'translate(-50%,-50%)', width: 15, height: 15, borderRadius: '50%', background: '#fff', border: '2.5px solid var(--blue)', boxShadow: 'var(--e1)' }} />
                 </div>
               </div>
-              <span className="t-cap c-sub" style={{ minWidth: 30, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(takeMs)}</span>
+              <span className="t-cap c-sub" style={{ minWidth: 30, fontVariantNumeric: 'tabular-nums' }}>{formatMmSs(takeMs)}</span>
             </div>
           )}
           {/* 녹음 중 합주(모니터) 진행 바 — 기존 레이어가 어디까지 재생됐는지. 반복 시 🔁 */}
           {phase === 'recording' && monDur > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
               <span className="t-cap" style={{ fontSize: 11, fontWeight: 800, color: 'var(--coral)' }}>합주</span>
-              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMs(monMs)}</span>
+              <span className="t-cap c-sub" style={{ minWidth: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatMmSs(monMs)}</span>
               <div style={{ flex: 1, height: 6, borderRadius: 999, background: 'var(--line-2)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.min(100, (monMs / monDur) * 100)}%`, background: 'var(--coral)', borderRadius: 999 }} />
               </div>
-              <span className="t-cap c-sub" style={{ minWidth: 46, fontVariantNumeric: 'tabular-nums' }}>{fmtMs(monDur)}{monitorLoop ? ' 🔁' : ''}</span>
+              <span className="t-cap c-sub" style={{ minWidth: 46, fontVariantNumeric: 'tabular-nums' }}>{formatMmSs(monDur)}{monitorLoop ? ' 🔁' : ''}</span>
             </div>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
