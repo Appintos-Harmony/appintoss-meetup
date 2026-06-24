@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { DRUM_PIECES } from './chords';
 import type { DrumPiece } from '../../audio/events';
 
-export function DrumPad({ onHit, disabled, flash }: { onHit: (piece: DrumPiece) => void; disabled?: boolean; flash?: DrumPiece | null }) {
+export function DrumPad({ onHit, flash }: { onHit: (piece: DrumPiece) => void; flash?: DrumPiece | null }) {
   return (
     <div className="drum-grid">
       {DRUM_PIECES.map((d) => (
@@ -12,7 +12,6 @@ export function DrumPad({ onHit, disabled, flash }: { onHit: (piece: DrumPiece) 
           key={d.key}
           className="pad"
           data-on={flash === d.key}
-          disabled={disabled}
           style={{ ['--accent' as string]: d.color, ['--accent-d' as string]: d.color } as CSSProperties}
           onPointerDown={() => onHit(d.key)}
         >

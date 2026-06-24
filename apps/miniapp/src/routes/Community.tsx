@@ -15,17 +15,13 @@ import { unlockAudio, createVoice, type Voice } from '../audio/engine';
 import { normalizeEvents } from '../audio/events';
 import { tickToMs } from '../audio/transport';
 import { getUserKey, getNickname, getEmoji, EMOJI_CHOICES, randomId } from '../lib/identity';
+import { formatMmSs } from '../lib/format';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
 function hashIdx(s: string, n: number): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   return Math.abs(h) % n;
-}
-
-function fmtTime(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 // 곽소정 이모지 아바타(보존) — 서버 항목엔 mine/id가 없으므로 키를 item.code로, 내 곡 여부는 author===닉네임으로 근사.
@@ -355,7 +351,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     }
   }
 
-  const myShongs = listSongs();
+  const mySongs = listSongs();
 
   // C2 정렬 + C3 페이징. 인기순은 라이브 하트 수(낙관적 갱신 반영) 우선, 동률은 안정 정렬이라 서버(최신) 순서 유지.
   const sorted = useMemo(() => {
@@ -385,8 +381,8 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         {publishOpen && (
           <div className="card" style={{ marginBottom: 12, padding: 14 }}>
             <div className="t-body" style={{ fontWeight: 700, marginBottom: 8 }}>내 곡 올리기</div>
-            {myShongs.length === 0 && <div className="t-cap c-sub">아직 녹음한 곡이 없어요 — 스튜디오에서 먼저 녹음하세요.</div>}
-            {myShongs.map((s) => (
+            {mySongs.length === 0 && <div className="t-cap c-sub">아직 녹음한 곡이 없어요 — 스튜디오에서 먼저 녹음하세요.</div>}
+            {mySongs.map((s) => (
               <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
                 <div className="t-body" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
                 <button className="chip" disabled={publishing === s.id} onClick={() => void publish(s)}>
@@ -497,7 +493,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                     <div style={{ position: 'absolute', left: `${Math.min(100, (playMs / durMs) * 100)}%`, width: 14, height: 14, marginLeft: -7, borderRadius: '50%', background: '#fff', border: '2px solid var(--blue)', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
                   </div>
                   <div className="t-cap c-sub" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-                    <span>{fmtTime(playMs)}</span><span>{fmtTime(durMs)}</span>
+                    <span>{formatMmSs(playMs, 'floor')}</span><span>{formatMmSs(durMs, 'floor')}</span>
                   </div>
                 </div>
               )}
