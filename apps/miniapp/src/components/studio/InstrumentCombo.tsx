@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { INSTRUMENTS, STYLE_OPTIONS } from './chords';
-import { InstrumentIcon } from './InstrumentIcon';
 import type { Instrument } from '../../audio/events';
 
 export function InstrumentCombo({
@@ -35,18 +34,18 @@ export function InstrumentCombo({
   }
 
   const comboBtn: CSSProperties = inline
-    ? { flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '9px 8px', fontSize: 13, whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
+    ? { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '8px 6px', fontSize: 12, whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }
     : { flex: 1, justifyContent: 'space-between', display: 'flex', alignItems: 'center', opacity: disabled ? 0.5 : 1 };
 
   const chips = (
     <>
       <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('instrument')}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><InstrumentIcon instrument={instrument} size={14} />{instMeta?.label}</span>
-        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+        <span>{instMeta?.emoji} {instMeta?.label}</span>
+        <span aria-hidden style={{ opacity: 0.4, fontSize: 10 }}>▾</span>
       </button>
       <button className="chip chip-ghost" style={comboBtn} disabled={disabled} onClick={() => setSheet('style')}>
         <span>{styleLabel}</span>
-        <span aria-hidden style={{ opacity: 0.5 }}>▾</span>
+        <span aria-hidden style={{ opacity: 0.4, fontSize: 10 }}>▾</span>
       </button>
     </>
   );
@@ -63,7 +62,7 @@ export function InstrumentCombo({
             <div className="t-title" style={{ padding: '4px 6px 8px' }}>악기 고르기</div>
             {INSTRUMENTS.map((i) => (
               <button key={i.key} className="sheet-row pick" data-on={instrument === i.key} onClick={() => pickInstrument(i.key)}>
-                <span style={{ justifySelf: 'center', display: 'inline-flex' }}><InstrumentIcon instrument={i.key} size={26} /></span>
+                <span style={{ fontSize: 26, justifySelf: 'center' }}>{i.emoji}</span>
                 <span className="t-body pick-label" style={{ fontWeight: 600 }}>{i.label}</span>
                 <span className="pick-check" style={{ visibility: instrument === i.key ? 'visible' : 'hidden' }}>✓</span>
               </button>
