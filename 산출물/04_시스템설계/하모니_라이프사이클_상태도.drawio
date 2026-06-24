@@ -1,0 +1,64 @@
+<mxfile host="Electron">
+  <diagram name="하모니_라이프사이클_상태도" id="하모니_라이프사이클_상태도">
+    <mxGraphModel dx="2054" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1640" pageHeight="940" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c2" parent="1" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#F0F9FF;strokeColor=#0EA5E9;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;fontColor=#1E293B;shadow=1;" value="&lt;b&gt;로컬 초안&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#64748B&quot;&gt;클라 전용 · localStorage · 서버 0&lt;/span&gt;" vertex="1">
+          <mxGeometry height="86" width="220" x="70" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" parent="1" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;fontColor=#1E293B;shadow=1;" value="&lt;b&gt;게시됨&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#64748B&quot;&gt;published=1 · 보드 노출&lt;/span&gt;" vertex="1">
+          <mxGeometry height="96" width="240" x="500" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" parent="1" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;fontColor=#1E293B;shadow=1;" value="&lt;b&gt;파생 곡 (자식)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#64748B&quot;&gt;자식 세션 · 부모 forkCount+1&lt;/span&gt;" vertex="1">
+          <mxGeometry height="96" width="250" x="1120" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" parent="1" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#DC2626;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;fontColor=#1E293B;shadow=1;" value="&lt;b&gt;숨김 (소유자 수동)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#64748B&quot;&gt;hidden=1 · seed 거부&lt;/span&gt;" vertex="1">
+          <mxGeometry height="74" width="240" x="500" y="372" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" parent="1" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#F0FDFA;strokeColor=#0D9488;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;fontColor=#1E293B;shadow=1;" value="&lt;b&gt;표시됨&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#64748B&quot;&gt;hidden=0 · 목록 노출&lt;/span&gt;" vertex="1">
+          <mxGeometry height="86" width="240" x="500" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" parent="1" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#DC2626;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;fontColor=#1E293B;shadow=1;" value="&lt;b&gt;자동 숨김&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#64748B&quot;&gt;hidden=1 · 자동 모더레이션&lt;/span&gt;" vertex="1">
+          <mxGeometry height="96" width="260" x="1070" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" edge="1" parent="1" source="c2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B7280;strokeWidth=2;dashed=1;dashPattern=6 5;endArrow=block;endFill=1;fontSize=10;fontColor=#6B7280;labelBackgroundColor=#FFFFFF;" target="c3" value="POST /sessions [published] / code 발급">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" edge="1" parent="1" source="c3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B7280;strokeWidth=2;dashed=1;dashPattern=6 5;endArrow=block;endFill=1;fontSize=10;fontColor=#6B7280;labelBackgroundColor=#FFFFFF;exitX=0.45;exitY=-0.031;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.638;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="c3" value="GET /:code / play_count++">
+          <mxGeometry relative="1" x="-0.0253" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="610" y="197" />
+              <mxPoint x="610" y="140" />
+              <mxPoint x="653" y="140" />
+            </Array>
+            <mxPoint x="610" y="184.03199999999993" as="sourcePoint" />
+            <mxPoint x="689.9200000000001" y="184.03199999999993" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c10" edge="1" parent="1" source="c3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8B5CF6;strokeWidth=2;endArrow=block;endFill=1;fontSize=10;fontColor=#8B5CF6;labelBackgroundColor=#FFFFFF;" target="c4" value="타인 publish [origin_code=this] / fork+1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" edge="1" parent="1" source="c3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B7280;strokeWidth=2;dashed=1;dashPattern=6 5;endArrow=block;endFill=1;fontSize=10;fontColor=#6B7280;labelBackgroundColor=#FFFFFF;" target="c5" value="POST /:code/hide [author_key·≠seed]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" edge="1" parent="1" source="c6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B7280;strokeWidth=2;dashed=1;dashPattern=6 5;endArrow=block;endFill=1;fontSize=10;fontColor=#6B7280;labelBackgroundColor=#FFFFFF;exitX=0.796;exitY=0.988;exitDx=0;exitDy=0;exitPerimeter=0;" target="c6" value="POST .../report [distinct] / reports+1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="690" y="645" />
+              <mxPoint x="690" y="760" />
+              <mxPoint x="620" y="760" />
+            </Array>
+            <mxPoint x="690" y="730" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c13" edge="1" parent="1" source="c6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#EF4444;strokeWidth=2;dashed=1;dashPattern=6 5;endArrow=block;endFill=1;fontSize=10;fontColor=#EF4444;labelBackgroundColor=#FFFFFF;" target="c7" value="reports ≥ 3 (THRESHOLD) / hidden=1">
+          <mxGeometry relative="1" x="-0.1795" y="-7" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
