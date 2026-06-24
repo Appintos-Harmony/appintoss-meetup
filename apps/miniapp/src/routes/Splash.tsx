@@ -21,11 +21,11 @@ export function Splash({ onDone }: { onDone: () => void }) {
         }}
       >
         <img
-          src="/logo.svg"
+          src="/logo.png"
           width={84}
           height={84}
           alt="하모니"
-          style={{ borderRadius: 24, boxShadow: 'var(--e3)' }}
+          style={{ borderRadius: 18, boxShadow: 'var(--e3)' }}
         />
         <div className="t-display" style={{ fontWeight: 800 }}>하모니</div>
       </div>
