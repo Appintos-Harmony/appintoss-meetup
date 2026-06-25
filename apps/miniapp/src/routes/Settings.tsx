@@ -15,7 +15,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 const legalRow: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 8px', width: '100%', border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', color: 'var(--text)' };
 
-// 법적 고지 모달(스크롤). 내용은 lib/legal.ts(초안).
+// 법적 고지 모달(스크롤). 내용은 lib/legal.ts.
 function LegalSheet({ doc, onClose }: { doc: LegalDoc; onClose: () => void }) {
   return (
     <>
@@ -118,7 +118,7 @@ export function Settings({
           </div>
         </div>
 
-        <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '20px 4px 8px' }}>법적 고지 (초안)</div>
+        <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '20px 4px 8px' }}>법적 고지</div>
         <div className="card" style={{ padding: '4px 10px' }}>
           <button type="button" style={legalRow} onClick={() => setLegal('terms')}>
             <span className="t-body" style={{ fontWeight: 600 }}>이용약관</span>
