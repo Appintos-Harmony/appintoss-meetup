@@ -52,7 +52,7 @@ related_adrs: [DL-018, DL-022]
 | 3.2 | 구간 반복(루프)·녹음 중 기존 레이어 모니터링 | 김민혁 | loop 테스트 | Done |
 | 3.3 | 음 편집(피아노롤 + 빨간 재생위치선 드래그) | 곽소정·김민혁 | noteEdit/notes 테스트 | Done |
 | 3.4 | 합주 공유(코드)·가져오기·얹기, 트랙별 악기 재생 | 김민혁 | 공유 흐름, events 테스트 | Done |
-| 3.5 | vitest 회귀·통합 스냅샷 확인 | 양록빈 | 테스트 결과서 | Done (단위 58/58, 통합 12/12) |
+| 3.5 | vitest 회귀·통합 2026-06-25 재실행 | 양록빈 | 테스트 결과서 | Done (단위 58/58, 통합 34/34) |
 | 3.6 | 발표자료·종료보고서 초안 | 이상혁 | 발표자료/, 종료보고서 | In Progress |
 
 합주는 실시간이 아니라 공유 코드 + 1.5초 폴링 기반이다. 트랙별로 owner·events·instrument·style을 저장하고, 다른 사람의 합주를 코드로 가져와 자기 트랙을 얹는다.
@@ -64,7 +64,7 @@ related_adrs: [DL-018, DL-022]
 | 4.1 | EC2 Ubuntu 26.04, nginx 정적+리버스프록시 | 김민혁 | infra/ | Done |
 | 4.2 | systemd harmony-api(:8080), Let's Encrypt certbot | 김민혁 | 배포 실행절차서 | Done |
 | 4.3 | vite build → /opt/harmony-web (chmod a+rX), HTTPS 동일출처 | 김민혁 | 배포 실행절차서 | Done |
-| 4.4 | Android·iOS 실기기 회귀, 카메라·오디오 권한 확인 | 양록빈 | 실기기검수표 | In Progress |
+| 4.4 | Android·iOS 실기기 회귀, 카메라·오디오 권한 확인 | 양록빈 | 실기기검수표 | 실기기 9건 S23 Ultra 육안 성공(증빙 EV-201~209 발표 전 첨부) |
 | 4.5 | 롤백 점검, 데모 데이터 고정 | 양록빈 | 롤백 계획서 | Not Started |
 
 백엔드는 의존성 없이 Node24 node:http + node:sqlite로 짰고, 엔드포인트는 /healthz·POST /sessions·GET /sessions/:code·POST .../tracks 4개다. 운영 URL은 https://3.39.167.74.nip.io.

@@ -121,7 +121,7 @@ related_adrs: []
 - task: vitest 7파일 58개 정비, AWS EC2(nginx 정적+리버스프록시·systemd harmony-api:8080·Let's Encrypt) 배포 준비, develop 통합
 - input_artifact: apps/miniapp, apps/api(node:http+node:sqlite 4엔드포인트)
 - output_artifact: https://3.39.167.74.nip.io 운영, develop tip ebdad0a(마지막 feature 6372dc3 위 조장 docs 커밋), 작업 브랜치 review/fullstudio HEAD 219b6ac
-- automated_checks: vitest 58 PASS(chordReducer·poly·events·tuning·noteEdit·notes·loop), 통합 12/12(과거 스냅샷)
+- automated_checks: vitest 58 PASS(chordReducer·poly·events·tuning·noteEdit·notes·loop), 통합 34/34 성공(API 12·보안 7·클라 6·실기기 9, 2026-06-25 재실행·커밋 c13b818)
 - human_reviewer: 이상혁(커밋 자동·푸시 사람 게이트)
 - correction_made: 없음
 - accepted/rejected: accepted

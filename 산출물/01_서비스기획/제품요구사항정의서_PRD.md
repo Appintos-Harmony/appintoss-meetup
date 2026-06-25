@@ -62,7 +62,7 @@ related_adrs: [DL-016, DL-018, DL-019, DL-020, DL-022]
 | NFR-05 | TypeScript strict, reducer 단위테스트(현재 7파일 58개 통과) |
 | NFR-06 | 오디오 지연: 코드 입력→발음, 트랙 동시 재생 시 트랙 간 어긋남이 합주에서 거슬리지 않을 것(실기기 청취 검증 대기, 목표 수치 미정) |
 
-NFR-05의 단위테스트 대상은 chordReducer·poly·events·tuning·noteEdit·notes·loop. 통합은 과거 스냅샷 12/12.
+NFR-05의 단위테스트 대상은 chordReducer·poly·events·tuning·noteEdit·notes·loop. 통합은 34/34(API 12·보안 7·클라 6·실기기 9), 2026-06-25 재실행(커밋 c13b818).
 
 ## 5. 정책 요구사항 (POL)
 
