@@ -215,7 +215,7 @@ originCode, originName, originAuthor(없으면 '익명')
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| 통합 12/12 PASS | Not Run(현 시점) — 과거 커밋 `6372dc3` 스냅샷 | 입력 사실 |
+| 통합 34/34 성공 | 2026-06-25 재실행 · 커밋 `c13b818` | 입력 사실 |
 | `getAnonymousKey`(클라 익명키) | Unverified — 클라 mock, 토스 SDK 미연동(Assumption) | 입력 사실 |
 | CORS allowlist | 미구현(데모 `*`) — production 사람 게이트 | `server.mjs:131` |
 | 운영자 강제 숨김 API | 미구현 | 코드 부재 |
