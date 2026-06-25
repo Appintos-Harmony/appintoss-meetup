@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import type { CSSProperties } from 'react';
 import type { Route } from '../App';
-import { getNickname, getEmoji, setEmoji, EMOJI_CHOICES } from '../lib/identity';
+import { getNickname, getEmoji, setEmoji, EMOJI_CHOICES, getUserKey } from '../lib/identity';
 import { TERMS, PRIVACY, type LegalDoc } from '../lib/legal';
+import { getRuntimeEnv, isToss } from '../lib/platform';
+
+// 샌드박스 폰 실증용 TDS 배지(토스에서만 동적 로드 → AWS 번들은 평가하지 않음).
+const TdsBadge = isToss() ? lazy(() => import('../ui/TdsBadge')) : null;
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -54,6 +58,19 @@ export function Settings({
   const [emoji, setEmojiState] = useState<string>(() => getEmoji());
   const [picker, setPicker] = useState(false);
   const [legal, setLegal] = useState<'terms' | 'privacy' | null>(null);
+  const [proofKey, setProofKey] = useState<string>('…');
+  const runtimeEnv = getRuntimeEnv();
+
+  // 2트랙 실증 패널용: 실제 식별키(토스=toss_hash, web=anon_)를 비동기로 읽는다.
+  useEffect(() => {
+    let alive = true;
+    getUserKey().then((k) => {
+      if (alive) setProofKey(k);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   function pick(e: string) {
     setEmoji(e);
@@ -117,6 +134,29 @@ export function Settings({
             <span style={{ position: 'absolute', top: 3, left: devMode ? 23 : 3, width: 22, height: 22, borderRadius: '50%', background: '#fff', boxShadow: 'var(--e1)', transition: 'left .18s var(--spring)' }} />
           </div>
         </div>
+
+        {/* 2트랙 실증 패널: 개발자 모드일 때만. 샌드박스 폰에서 한 화면 = 환경·식별키·TDS 증거 */}
+        {devMode && (
+          <div className="card" style={{ marginTop: 14, padding: '4px 10px' }}>
+            <div className="t-body" style={{ fontWeight: 700, padding: '12px 8px 6px' }}>🔬 2트랙 실증</div>
+            <InfoRow label="실행 환경" value={runtimeEnv === 'web' ? 'web (브라우저/AWS)' : runtimeEnv} />
+            <div style={{ height: 1, background: 'var(--line)' }} />
+            <InfoRow label="식별키" value={proofKey.length > 16 ? proofKey.slice(0, 16) + '…' : proofKey} />
+            <div style={{ height: 1, background: 'var(--line)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 8px' }}>
+              <span className="t-body" style={{ fontWeight: 600 }}>TDS 렌더</span>
+              <span className="t-body c-sub">
+                {TdsBadge ? (
+                  <Suspense fallback={<>로딩…</>}>
+                    <TdsBadge />
+                  </Suspense>
+                ) : (
+                  '미적용 (web)'
+                )}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="t-cap c-sub" style={{ fontWeight: 700, margin: '20px 4px 8px' }}>법적 고지 (초안)</div>
         <div className="card" style={{ padding: '4px 10px' }}>

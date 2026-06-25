@@ -1,5 +1,7 @@
 // 사용자 식별 (DL-016: 토스 로그인/자체 회원가입 금지 → getAnonymousKey 익명 + 닉네임).
-// 프로덕션: @apps-in-toss/web-framework 의 getAnonymousKey 로 교체. 현재는 mock fallback.
+// 2트랙: 토스(WebView/샌드박스)=getAnonymousKey 실제 hash, 일반 브라우저(AWS)=익명 mock 폴백.
+import { getAnonymousKey } from '@apps-in-toss/web-framework';
+import { isToss } from './platform';
 
 const KEY_STORE = 'harmony.anonKey';
 const NICK_STORE = 'harmony.nickname';
@@ -16,9 +18,23 @@ export function setEmoji(e: string): void {
 }
 
 export async function getUserKey(): Promise<string> {
-  // TODO(prod): import { getAnonymousKey } from '@apps-in-toss/web-framework' 로 교체.
-  // SDK 2.4.5 미만은 undefined 반환 가능 → 암호학적 난수 키로 폴백(128bit, crypto.getRandomValues).
-  // 주의: 엔트로피 상향은 키 추측(타인 키 사칭으로 hide/dedup 위조)만 줄인다. 서버가 author_key를 검증하지 않으므로
+  // 토스(WebView/샌드박스): getAnonymousKey 반환은 3갈래다.
+  //   { type:'HASH', hash } = 성공 / 'ERROR' = 오류 / undefined = 사용자 토스앱 버전 5.232.0 미만.
+  // 주의: 샌드박스에서는 host(토스앱)가 mock hash 를 내려준다(실 per-user 식별 아님). 실사용자 식별은
+  //       정식배포/토스앱 QR(intoss-private://) 진입에서만 검증된다.
+  // 실패(ERROR·undefined·호출 throw)는 모두 아래 익명 mock 폴백으로 떨어진다. 'toss_' 접두로 출처를 구분한다.
+  if (isToss()) {
+    try {
+      const res = await getAnonymousKey();
+      if (res && res !== 'ERROR' && res.type === 'HASH') {
+        return 'toss_' + res.hash;
+      }
+    } catch {
+      // 브릿지 호출 실패 → 폴백
+    }
+  }
+  // 일반 브라우저(AWS)·미지원 환경: 암호학적 난수 익명 키(128bit, crypto.getRandomValues).
+  // 주의: 엔트로피 상향은 키 추측(사칭으로 hide/dedup 위조)만 줄인다. 서버가 author_key를 검증하지 않으므로
   //       레이트리밋·스팸 방어는 서버 IP 기준에 의존한다(server.mjs).
   let k = localStorage.getItem(KEY_STORE);
   if (!k) {
