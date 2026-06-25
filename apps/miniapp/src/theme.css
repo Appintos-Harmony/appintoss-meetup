@@ -96,6 +96,20 @@ body {
   .drum-grid .pad { aspect-ratio: 2.2; font-size: 15px; border-radius: 16px; }
 }
 
+/* 코드 터치 패드 — 코드 개수/화면 방향에 맞춰 스크롤 없이 한 화면에 들어오게 자동 리사이즈.
+   기본(≤4개): 2열 정사각. 5~6개: 3열로 늘려 버튼이 각각 작아지되 2행 유지(총 면적 유사·한 화면). */
+.chord-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.chord-grid .pad { aspect-ratio: 1; font-size: 30px; }
+.chord-grid[data-count="5"], .chord-grid[data-count="6"] { grid-template-columns: repeat(3, 1fr); }
+.chord-grid[data-count="5"] .pad, .chord-grid[data-count="6"] .pad { font-size: 22px; border-radius: 18px; }
+@media (orientation: landscape) {
+  /* 가로: 뷰포트 높이가 짧다 — 열을 늘리고 패드를 납작하게 해 스크롤 없이 한 화면. */
+  .chord-grid { grid-template-columns: repeat(4, 1fr); }
+  .chord-grid .pad { aspect-ratio: 1.8; font-size: 19px; border-radius: 16px; }
+  .chord-grid[data-count="5"], .chord-grid[data-count="6"] { grid-template-columns: repeat(3, 1fr); }
+  .chord-grid[data-count="5"] .pad, .chord-grid[data-count="6"] .pad { aspect-ratio: 1.7; font-size: 16px; }
+}
+
 /* 세그먼트(입력 상태) */
 .segment { display: flex; gap: 4px; padding: 4px; background: var(--bg); border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
 .seg { flex: 1; border: 0; border-radius: 11px; padding: 11px 0; font-weight: 700; font-size: 14.5px; letter-spacing: -.2px; white-space: nowrap;

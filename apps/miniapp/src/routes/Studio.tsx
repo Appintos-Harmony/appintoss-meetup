@@ -1428,15 +1428,15 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             <div className="sheet">
               <div className="sheet-grip" />
               <div className="t-title" style={{ padding: '4px 6px 8px' }}>연주법</div>
-              <button className="sheet-row" data-on={playMode === 'chord'} onClick={() => { switchMode('chord'); setModeSheet(false); }}>
-                <span style={{ fontSize: 24 }}>🎸</span>
-                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>코드</span>
-                {playMode === 'chord' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              <button className="sheet-row pick" data-on={playMode === 'chord'} onClick={() => { switchMode('chord'); setModeSheet(false); }}>
+                <span style={{ fontSize: 24, justifySelf: 'center' }}>🎸</span>
+                <span className="t-body pick-label" style={{ fontWeight: 600 }}>코드</span>
+                <span className="pick-check" style={{ visibility: playMode === 'chord' ? 'visible' : 'hidden' }}>✓</span>
               </button>
-              <button className="sheet-row" data-on={playMode === 'melody'} onClick={() => { switchMode('melody'); setModeSheet(false); }}>
-                <span style={{ fontSize: 24 }}>🎹</span>
-                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>멜로디</span>
-                {playMode === 'melody' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              <button className="sheet-row pick" data-on={playMode === 'melody'} onClick={() => { switchMode('melody'); setModeSheet(false); }}>
+                <span style={{ fontSize: 24, justifySelf: 'center' }}>🎹</span>
+                <span className="t-body pick-label" style={{ fontWeight: 600 }}>멜로디</span>
+                <span className="pick-check" style={{ visibility: playMode === 'melody' ? 'visible' : 'hidden' }}>✓</span>
               </button>
             </div>
           </>
@@ -1449,15 +1449,15 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             <div className="sheet">
               <div className="sheet-grip" />
               <div className="t-title" style={{ padding: '4px 6px 8px' }}>입력 방식</div>
-              <button className="sheet-row" data-on={input === 'touch'} onClick={() => { selectTouch(); setInputSheet(false); }}>
-                <span style={{ fontSize: 24 }}>👆</span>
-                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>터치</span>
-                {input === 'touch' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              <button className="sheet-row pick" data-on={input === 'touch'} onClick={() => { selectTouch(); setInputSheet(false); }}>
+                <span style={{ fontSize: 24, justifySelf: 'center' }}>👆</span>
+                <span className="t-body pick-label" style={{ fontWeight: 600 }}>터치</span>
+                <span className="pick-check" style={{ visibility: input === 'touch' ? 'visible' : 'hidden' }}>✓</span>
               </button>
-              <button className="sheet-row" data-on={input === 'gesture'} onClick={() => { void selectGesture(); setInputSheet(false); }}>
-                <span style={{ fontSize: 24 }}>👋</span>
-                <span className="t-body" style={{ flex: 1, fontWeight: 600 }}>제스처 (카메라)</span>
-                {input === 'gesture' && <span style={{ color: 'var(--blue)', fontWeight: 800 }}>✓</span>}
+              <button className="sheet-row pick" data-on={input === 'gesture'} onClick={() => { void selectGesture(); setInputSheet(false); }}>
+                <span style={{ fontSize: 24, justifySelf: 'center' }}>👋</span>
+                <span className="t-body pick-label" style={{ fontWeight: 600 }}>제스처 (카메라)</span>
+                <span className="pick-check" style={{ visibility: input === 'gesture' ? 'visible' : 'hidden' }}>✓</span>
               </button>
             </div>
           </>
@@ -1511,7 +1511,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           selected.length === 0 ? (
             <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 20 }}>연주할 코드를 골라보세요</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+            <div className="chord-grid" data-count={selected.length}>
               {selected.map((c, idx) => {
                 const [base, dark] = chordColor(c, idx);
                 return (
