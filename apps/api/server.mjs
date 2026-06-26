@@ -5,7 +5,7 @@
 // 인증 없음(code=접근, author_key=클라 자기신고 약한 소유권 — 데모 한정). 식별=클라 getAnonymousKey/닉네임. 실시간 아님(1.5s polling).
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 
 const PORT = Number(process.env.PORT) || 8080;
 const db = new DatabaseSync(process.env.DB_PATH || 'harmony.db');
@@ -37,10 +37,12 @@ try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_board ON sessions(publish
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_dedup ON sessions(author_key, content_hash, published, hidden)'); } catch { /* noop */ }
 
 // 혼동 문자(0/O/1/I) 제외한 코드.
+// 비공개 세션은 code가 유일한 접근 자격이므로 암호학적 RNG(crypto.randomInt)로 생성한다 — 비암호학적 Math.random은
+// 내부 상태가 관측·복원될 수 있어 다음 code 추측이 이론상 가능하다(보안 위험 高-2). charset·길이는 그대로 유지.
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function genCode() {
   let c = '';
-  for (let i = 0; i < 6; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  for (let i = 0; i < 6; i++) c += CODE_CHARS[randomInt(CODE_CHARS.length)];
   return c;
 }
 
