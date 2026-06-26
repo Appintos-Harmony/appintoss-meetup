@@ -2,7 +2,7 @@
 status: Draft
 owner: 이상혁
 reviewers: [양록빈]
-last_updated: 2026-06-23
+last_updated: 2026-06-25
 related_requirements: []
 related_adrs: [DL-018, DL-022]
 ---
@@ -18,7 +18,7 @@ related_adrs: [DL-018, DL-022]
 - 동결: 6/24 이후 구조 변경 금지, 6/25 발표 파손 변경 금지
 - 6/25 외부 일정으로 가용 시간이 줄어든다.
 
-주제 전환이 6/20 이후 확정되면서 초반 일정과 산출물은 밋업 기준으로 작성됐다가 하모니로 다시 맞췄다. 현재 develop에는 멀티트랙·루프·음 편집·합주 공유까지 통합·푸시됐고(마지막 feature 커밋 6372dc3, 그 위 조장 docs 커밋 ebdad0a가 develop tip), AWS EC2에 https://3.39.167.74.nip.io 로 배포돼 있다. 남은 일은 토스 WebView 등록(ait deploy), 발표자료·종료보고서 마감, 키 로테이션이다.
+주제 전환이 6/20 이후 확정되면서 초반 일정과 산출물은 밋업 기준으로 작성됐다가 하모니로 다시 맞췄다. 현재 develop에는 멀티트랙·루프·음 편집·합주 공유까지 통합·푸시됐고(마지막 feature 커밋 6372dc3, 그 위 조장 docs 커밋 ebdad0a가 develop tip), AWS EC2에 https://3.39.167.74.nip.io 로 배포돼 있다. 토스 WebView 앱은 2026-06-25 appName=harmony로 콘솔 정식 등록·심사 제출 완료(검토 중). 남은 일은 발표자료·종료보고서 마감, 키 로테이션, 심사 결과 통지 대기다.
 
 ## 일자별 작업 (담당: 이상혁=조장/Product, 곽소정=Design, 김민혁=Backend, 양록빈=QA)
 
@@ -64,7 +64,7 @@ related_adrs: [DL-018, DL-022]
 | 4.1 | EC2 Ubuntu 26.04, nginx 정적+리버스프록시 | 김민혁 | infra/ | Done |
 | 4.2 | systemd harmony-api(:8080), Let's Encrypt certbot | 김민혁 | 배포 실행절차서 | Done |
 | 4.3 | vite build → /opt/harmony-web (chmod a+rX), HTTPS 동일출처 | 김민혁 | 배포 실행절차서 | Done |
-| 4.4 | Android·iOS 실기기 회귀, 카메라·오디오 권한 확인 | 양록빈 | 실기기검수표 | 실기기 9건 S23 Ultra 육안 성공(증빙 EV-201~209 발표 전 첨부) |
+| 4.4 | Android·iOS 실기기 회귀, 카메라·오디오 권한 확인 | 양록빈 | 실기기검수표 | 실기기 9건 S23 Ultra 육안 성공(증빙 EV-201~209 Figma 화면설계서 보관) |
 | 4.5 | 롤백 점검, 데모 데이터 고정 | 양록빈 | 롤백 계획서 | Not Started |
 
 백엔드는 의존성 없이 Node24 node:http + node:sqlite로 짰고, 엔드포인트는 /healthz·POST /sessions·GET /sessions/:code·POST .../tracks 4개다. 운영 URL은 https://3.39.167.74.nip.io.
@@ -73,13 +73,13 @@ related_adrs: [DL-018, DL-022]
 
 | WBS | 작업 | 담당 | 산출물 | 상태 |
 |---|---|---|---|---|
-| 5.1 | ait deploy: granite.config appName meetup-lite → harmony 교체 | 김민혁 | granite.config | Not Started |
-| 5.2 | 토스 WebView 앱 재등록·샌드박스 검수 | 양록빈·이상혁 | 심사제출서 | Not Started (팀 주제 확정 후) |
+| 5.1 | ait deploy: granite.config appName meetup-lite → harmony 교체 | 김민혁 | granite.config | Done (appName=harmony, 코드 일치) |
+| 5.2 | 토스 WebView 앱 등록·심사 제출 | 양록빈·이상혁·곽소정 | 심사제출서 | Done (2026-06-25 정식 등록·심사 제출, 검토 중) |
 | 5.3 | 키 로테이션 | 김민혁 | (운영) | Not Started |
 | 5.4 | 외부 일정 후 회귀, P0 결함만 수정, 영상 확정 | 양록빈 | 데모 영상 | Not Started |
 | 5.5 | 버전 동결, 종료보고서 초안 마감 | 이상혁 | 종료보고서 | Not Started |
 
-앱 재등록은 팀의 주제 확정(DL-018 승인)이 선행 조건이다. 식별은 getAnonymousKey + 닉네임으로 계정 없이 가고, 비게임으로 유지한다.
+앱은 2026-06-25 appName=harmony로 콘솔 정식 등록·심사 제출을 마쳤다(검토 중, 승인·출시는 미완료). 식별은 getAnonymousKey + 닉네임으로 계정 없이 가고, 비게임으로 유지한다.
 
 ### Day 8 — 6/26 제출·발표
 
@@ -93,4 +93,4 @@ related_adrs: [DL-018, DL-022]
 
 `주제 전환 합의(DL-018) → 코어 악기 엔진(코드+멜로디+드럼) → 합주(멀티트랙·루프·음편집·공유) → 풀스튜디오 → AWS 배포·HTTPS → 토스 등록(ait deploy) → 실기기 검수 → 발표(6/26 14:00)`
 
-지금 막힌 지점은 토스 등록(5.1·5.2)이다. granite.config의 appName을 meetup-lite에서 harmony로 바꾸고 앱을 재등록해야 하는데, 팀의 주제 확정이 안 끝나 대기 중이다. 코어 엔진·합주·풀스튜디오·AWS 배포는 develop에 통합·배포돼 있어 크리티컬 패스에서 빠졌다. 관련: [의사결정 기록](의사결정_기록.md) DL-018·DL-022, [리스크 관리대장](리스크_관리대장.md).
+토스 등록(5.1·5.2)은 2026-06-25 완료됐다. granite.config의 appName=harmony가 콘솔 등록값과 일치하고, 앱은 정식 등록·심사 제출을 마쳐 검토 중이다(승인·출시는 통지 대기). 남은 크리티컬 항목은 발표자료·종료보고서 마감과 심사 결과 통지다. 코어 엔진·합주·풀스튜디오·AWS 배포는 develop에 통합·배포돼 있어 크리티컬 패스에서 빠졌다. 관련: [의사결정 기록](의사결정_기록.md) DL-018·DL-022, [리스크 관리대장](리스크_관리대장.md).

@@ -2,7 +2,7 @@
 status: Draft
 owner: 김민혁
 reviewers: [이상혁]
-last_updated: 2026-06-24
+last_updated: 2026-06-25
 related_requirements: []
 related_adrs: []
 ---
@@ -31,5 +31,6 @@ related_adrs: []
 
 - `related_requirements`는 PRD의 FR/NFR/POL ID와 연결할 자리이지만, 본 ADR 작성 시점에 ID 매핑이
   추적표에서 ADR 단위로 확정되지 않아 비워 둔다(Assumption). 추적표 갱신 시 같은 변경에서 채운다.
-- 익명키 `getAnonymousKey`는 현재 mock 단계(미연동, ADR-0002 참조)이며, granite.config `appName`은
-  `meetup-lite`(토스 미등재, ADR-0001 참조)다. 두 사실은 각 ADR의 "결과"·"미해결"에 명시한다.
+- 익명키 `getAnonymousKey`는 현재 mock 단계(미연동, ADR-0002 참조)다. granite.config `appName`은
+  `harmony`로, 토스 앱마켓 정식 등록·심사 제출 완료(검토 중, 2026-06-25 기준) 상태와 일치한다
+  (ADR-0001 작성 시점 임시값 `meetup-lite` 해소). ADR-0001/0002 본문은 작성 당시 사실을 보존한 역사 기록이다.

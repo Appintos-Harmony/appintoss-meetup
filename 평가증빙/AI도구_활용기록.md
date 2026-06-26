@@ -104,7 +104,7 @@ related_adrs: []
 - tool: Claude Code (Opus)
 - role: 주 구현
 - task: 오디오 엔진(평균율 A4=440·보이싱·음색 2종·멜로디 폴리포니), 초기화면 홈 허브 라우팅
-- input_artifact: DEBATE-20260622-013(4-AI 페르소나 토의), 피아노 음원 레퍼런스 리서치
+- input_artifact: DEBATE-20260622-013(4-AI 실모델 토의: ChatGPT Pro·Gemini Pro·Codex·Claude), 피아노 음원 레퍼런스 리서치
 - output_artifact: tuning.ts·engine.ts·chordReducer.ts·Studio.tsx·App.tsx·Home.tsx·Community.tsx, 평가증빙/에이전트_실행기록/AI실행_20260622_초기화면_오디오.md
 - automated_checks: npm test 24/24 PASS, tsc --noEmit exit 0
 - human_reviewer: 이상혁
@@ -200,7 +200,7 @@ related_adrs: []
 
 ## 추가 기록 (2026-06-21~23 후속)
 - 주제 전환(DL-018 Proposed): 소모임 밋업 → 악기 합주 미니앱 「하모니」. 제스처 입력은 스파이크(923e545)로 모바일 브라우저 검증 후 채택했다.
-- 4-AI 설계 토의: 6/22 오디오/홈 허브 설계를 ChatGPT-Pro·Gemini-Pro·Codex·Claude 페르소나 토의(DEBATE-20260622-013)로 진행했다. 이후 REVIEW-032를 Codex 독립검토 정본으로 보강해 PR#1 Rework / PR#2 GO 판정을 확정했다(AI실행_20260622 기록 참조).
+- 4-AI 설계 토의: 6/22 오디오/홈 허브 설계를 ChatGPT-Pro·Gemini-Pro·Codex·Claude 실모델 토의(DEBATE-20260622-013)로 진행했다 — Claude Code가 토의 프롬프트를 작성하면 사람이 각 모델에 입력해 제안·반박·통합을 받았다. 이후 REVIEW-032를 Codex 독립검토 정본으로 보강해 PR#1 Rework / PR#2 GO 판정을 확정했다(AI실행_20260622 기록 참조).
 - 적대적 코드리뷰가 차단한 결함: 멜로디 폴리포니 HIGH 3건(clearMelody desync 등)을 머지 전에 잡아 수정했다.
 - 배포: develop 통합·푸시 완료(마지막 feature 6372dc3, 그 위 조장 docs 커밋 ebdad0a가 develop tip), AWS EC2에 HTTPS 동일출처로 운영(https://3.39.167.74.nip.io). 커밋은 자동, 푸시는 사람 게이트.
 - 한계: 실기기 멀티터치·실제 음색 청취·제품 통합테스트(EV-101 이후)는 사람 확인이 남았다.

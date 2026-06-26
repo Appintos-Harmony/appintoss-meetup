@@ -1,12 +1,81 @@
-<mxfile host="app.diagrams.net" type="device"><diagram name="하모니_데이터모델_ERD_DA" id="erd-da"><mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1720" pageHeight="1150" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="c2" value="&lt;b style=&quot;font-size:14px;color:#4F46E5&quot;&gt;곡&lt;/b&gt;&amp;nbsp;&lt;font style=&quot;font-size:9px;color:#94A3B8&quot;&gt;sessions&lt;/font&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;&lt;b&gt;code&lt;/b&gt;&lt;/u&gt;&lt;hr size=&quot;1&quot;&gt;name&lt;br&gt;bpm&lt;br&gt;created_at&lt;br&gt;published&lt;br&gt;author&lt;br&gt;author_key&lt;br&gt;origin_code &lt;font style=&quot;color:#2563EB;font-size:9px&quot;&gt;[FK]&lt;/font&gt;&lt;br&gt;play_count&lt;br&gt;hidden&lt;br&gt;content_hash&lt;br&gt;track_count" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=8;fontSize=12;fontColor=#1E293B;shadow=1;" vertex="1" parent="1"><mxGeometry x="640" y="180" width="340" height="392" as="geometry"/></mxCell>
-<mxCell id="c3" value="&lt;b style=&quot;font-size:14px;color:#2563EB&quot;&gt;트랙&lt;/b&gt;&amp;nbsp;&lt;font style=&quot;font-size:9px;color:#94A3B8&quot;&gt;tracks&lt;/font&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;&lt;b&gt;id&lt;/b&gt;&lt;/u&gt;&lt;hr size=&quot;1&quot;&gt;code &lt;font style=&quot;color:#2563EB;font-size:9px&quot;&gt;[FK]&lt;/font&gt;&lt;br&gt;owner&lt;br&gt;events&lt;br&gt;instrument&lt;br&gt;style&lt;br&gt;author_key&lt;br&gt;created_at" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=8;fontSize=12;fontColor=#1E293B;shadow=1;" vertex="1" parent="1"><mxGeometry x="100" y="210" width="330" height="282" as="geometry"/></mxCell>
-<mxCell id="c4" value="&lt;b style=&quot;font-size:14px;color:#DB2777&quot;&gt;좋아요&lt;/b&gt;&amp;nbsp;&lt;font style=&quot;font-size:9px;color:#94A3B8&quot;&gt;reactions&lt;/font&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;&lt;b&gt;code&lt;/b&gt;&lt;/u&gt; &lt;font style=&quot;color:#2563EB;font-size:9px&quot;&gt;[FK]&lt;/font&gt;&lt;br&gt;&lt;u&gt;&lt;b&gt;anon_key&lt;/b&gt;&lt;/u&gt;&lt;hr size=&quot;1&quot;&gt;created_at" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DB2777;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=8;fontSize=12;fontColor=#1E293B;shadow=1;" vertex="1" parent="1"><mxGeometry x="1240" y="200" width="330" height="150" as="geometry"/></mxCell>
-<mxCell id="c5" value="&lt;b style=&quot;font-size:14px;color:#0D9488&quot;&gt;댓글&lt;/b&gt;&amp;nbsp;&lt;font style=&quot;font-size:9px;color:#94A3B8&quot;&gt;comments&lt;/font&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;&lt;b&gt;id&lt;/b&gt;&lt;/u&gt;&lt;hr size=&quot;1&quot;&gt;code &lt;font style=&quot;color:#2563EB;font-size:9px&quot;&gt;[FK]&lt;/font&gt;&lt;br&gt;author_key&lt;br&gt;author&lt;br&gt;text&lt;br&gt;created_at&lt;br&gt;reports&lt;br&gt;hidden" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=8;fontSize=12;fontColor=#1E293B;shadow=1;" vertex="1" parent="1"><mxGeometry x="640" y="690" width="340" height="300" as="geometry"/></mxCell>
-<mxCell id="c6" value="&lt;b style=&quot;font-size:14px;color:#D97706&quot;&gt;신고&lt;/b&gt;&amp;nbsp;&lt;font style=&quot;font-size:9px;color:#94A3B8&quot;&gt;comment_reports&lt;/font&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;&lt;b&gt;comment_id&lt;/b&gt;&lt;/u&gt; &lt;font style=&quot;color:#2563EB;font-size:9px&quot;&gt;[FK]&lt;/font&gt;&lt;br&gt;&lt;u&gt;&lt;b&gt;reporter_key&lt;/b&gt;&lt;/u&gt;&lt;hr size=&quot;1&quot;&gt;created_at" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=8;fontSize=12;fontColor=#1E293B;shadow=1;" vertex="1" parent="1"><mxGeometry x="1240" y="690" width="330" height="150" as="geometry"/></mxCell>
-<mxCell id="c7" value="비식별 1:N" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=6 4;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#475569;fontSize=10;fontColor=#475569;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="c3"><mxGeometry relative="1" as="geometry"/></mxCell>
-<mxCell id="c8" value="식별 1:N" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#475569;fontSize=10;fontColor=#475569;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="c4"><mxGeometry relative="1" as="geometry"/></mxCell>
-<mxCell id="c9" value="비식별 1:N" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=6 4;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#475569;fontSize=10;fontColor=#475569;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="c5"><mxGeometry relative="1" as="geometry"/></mxCell>
-<mxCell id="c10" value="식별 1:N" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#475569;fontSize=10;fontColor=#475569;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c5" target="c6"><mxGeometry relative="1" as="geometry"/></mxCell>
-<mxCell id="c11" value="origin_code (파생·비식별)" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=6 4;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;strokeColor=#475569;fontSize=10;fontColor=#475569;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="c2" target="c2"><mxGeometry relative="1" as="geometry"/></mxCell>
-<mxCell id="c12" value="&lt;b style=&quot;color:#C2410C&quot;&gt;⌀ users / auth 개체 — 없음&lt;/b&gt;&lt;br&gt;회원·세션·토큰 개체 부재.&lt;br&gt;식별 = 익명키 컬럼만(author_key·anon_key·reporter_key)&lt;br&gt;→ 인증 없음 = 의도된 데모 범위." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#FB923C;dashed=1;dashPattern=7 5;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=11;fontColor=#9A3412;" vertex="1" parent="1"><mxGeometry x="100" y="560" width="330" height="120" as="geometry"/></mxCell>
-<mxCell id="c13" value="&lt;b&gt;DA# 표기&lt;/b&gt;  실선=식별 관계(FK가 자식 PK 구성: 좋아요·신고) · 점선=비식별(트랙·댓글·자기참조) · ERmany(까마귀발)=N · ERone(바)=1 · &lt;u&gt;밑줄&lt;/u&gt;=식별자(PK) · [FK]=외래키 · 속성=실제 SQLite 컬럼(테이블_정의서.md 순서·이름 1:1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#E2E8F0;align=left;verticalAlign=middle;spacingLeft=12;fontSize=11;fontColor=#334155;" vertex="1" parent="1"><mxGeometry x="100" y="1030" width="1470" height="56" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>
+<mxfile host="Electron">
+  <diagram id="d" name="하모니 — 데이터 모델 ERD">
+    <mxGraphModel dx="1571" dy="972" grid="1" gridSize="8" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1480" pageHeight="1040" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontColor=#0F172A;" value="&lt;b style=&quot;font-size:20px&quot;&gt;하모니 — 데이터 모델 ERD&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="1000" x="40" y="14" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sub" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=17;" value="&lt;font color=&quot;#475569&quot;&gt;엔터티 5 · node:sqlite 단일파일(harmony.db) · 크로우풋(바=1·까마귀발=N) · 점선=비식별 / 실선=식별 · users/auth 없음&lt;/font&gt;" vertex="1">
+          <mxGeometry height="22" width="1200" x="40" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sessions" parent="1" style="rounded=1;arcSize=6;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fillColor=#FFFFFF;strokeColor=#CBD5E1;fontColor=#0F172A;fontSize=16;" value="&lt;b&gt;곡  sessions&lt;/b&gt;&lt;hr&gt;&lt;u&gt;code&lt;/u&gt;&lt;br&gt;name&lt;br&gt;bpm&lt;br&gt;published&lt;br&gt;author&lt;br&gt;author_key&lt;br&gt;origin_code (FK→code)&lt;br&gt;play_count&lt;br&gt;hidden&lt;br&gt;content_hash&lt;br&gt;track_count" vertex="1">
+          <mxGeometry height="320" width="340" x="560" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="tracks" parent="1" style="rounded=1;arcSize=6;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fillColor=#FFFFFF;strokeColor=#CBD5E1;fontColor=#0F172A;fontSize=16;" value="&lt;b&gt;트랙  tracks&lt;/b&gt;&lt;hr&gt;&lt;u&gt;id&lt;/u&gt;&lt;br&gt;code (FK)&lt;br&gt;owner&lt;br&gt;instrument&lt;br&gt;style&lt;br&gt;author_key&lt;br&gt;created_at" vertex="1">
+          <mxGeometry height="200" width="320" x="120" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="comments" parent="1" style="rounded=1;arcSize=6;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fillColor=#FFFFFF;strokeColor=#CBD5E1;fontColor=#0F172A;fontSize=16;" value="&lt;b&gt;댓글  comments&lt;/b&gt;&lt;hr&gt;&lt;u&gt;id&lt;/u&gt;&lt;br&gt;code (FK)&lt;br&gt;author_key&lt;br&gt;author&lt;br&gt;text&lt;br&gt;reports&lt;br&gt;hidden" vertex="1">
+          <mxGeometry height="200" width="320" x="1040" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="reactions" parent="1" style="rounded=1;arcSize=6;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fillColor=#FFFFFF;strokeColor=#CBD5E1;fontColor=#0F172A;fontSize=16;" value="&lt;b&gt;좋아요  reactions&lt;/b&gt;&lt;hr&gt;&lt;u&gt;code (FK)&lt;/u&gt;&lt;br&gt;&lt;u&gt;anon_key&lt;/u&gt;&lt;br&gt;created_at" vertex="1">
+          <mxGeometry height="130" width="320" x="570" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="reports" parent="1" style="rounded=1;arcSize=6;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fillColor=#FFFFFF;strokeColor=#CBD5E1;fontColor=#0F172A;fontSize=16;" value="&lt;b&gt;신고  comment_reports&lt;/b&gt;&lt;hr&gt;&lt;u&gt;comment_id (FK)&lt;/u&gt;&lt;br&gt;&lt;u&gt;reporter_key&lt;/u&gt;&lt;br&gt;created_at" vertex="1">
+          <mxGeometry height="130" width="320" x="1040" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="e100" edge="1" parent="1" source="sessions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;dashed=1;strokeColor=#64748B;strokeWidth=1.4;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" target="tracks" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="400" />
+              <mxPoint x="280" y="400" />
+              <mxPoint x="280" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e101" edge="1" parent="1" source="sessions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;dashed=1;strokeColor=#64748B;strokeWidth=1.4;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" target="comments" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="400" />
+              <mxPoint x="1200" y="400" />
+              <mxPoint x="1200" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e102" edge="1" parent="1" source="sessions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;dashed=0;strokeColor=#1E293B;strokeWidth=1.8;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" target="reactions" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="440" />
+              <mxPoint x="730" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e103" edge="1" parent="1" source="comments" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;dashed=0;strokeColor=#1E293B;strokeWidth=1.8;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" target="reports" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1200" y="740" />
+              <mxPoint x="1200" y="820" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e104" edge="1" parent="1" source="sessions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERmany;endFill=0;dashed=0;strokeColor=#1E293B;strokeWidth=1.8;fontSize=16;fontColor=#334155;labelBackgroundColor=#FFFFFF;" target="sessions" value="자기참조(파생)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="200" />
+              <mxPoint x="1040" y="200" />
+              <mxPoint x="1040" y="340" />
+              <mxPoint x="900" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="nt0" parent="1" style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=15;fillColor=#F8FAFC;strokeColor=#E2E8F0;fontColor=#334155;" value="&lt;b style=&quot;color:#334155&quot;&gt;범례 · 표기 규칙&lt;/b&gt;&lt;br&gt;바(│)=1 · 까마귀발(&amp;lt;)=N · from=부모 · to=자식&lt;br&gt;실선=식별 관계(복합 PK에 부모키 포함: reactions / comment_reports)&lt;br&gt;점선=비식별 관계(자식이 독립 PK 보유: tracks / comments)&lt;br&gt;origin_code → code 자기참조 = 리믹스/파생 트리" vertex="1">
+          <mxGeometry height="130" width="700" x="120" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="nt1" parent="1" style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=15;fillColor=#F8FAFC;strokeColor=#E2E8F0;fontColor=#334155;" value="&lt;b style=&quot;color: rgb(51, 65, 85);&quot;&gt;users / auth 개체 없음&lt;/b&gt;&lt;br&gt;author_key·anon_key·reporter_key = 약한 익명 식별자" vertex="1">
+          <mxGeometry height="96" width="400" x="120" y="130" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
