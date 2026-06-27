@@ -1,8 +1,8 @@
 ---
-status: Draft
+status: In Review
 owner: 이상혁
 reviewers: [곽소정, 양록빈]
-last_updated: 2026-06-21
+last_updated: 2026-06-27
 related_requirements: []
 related_adrs: []
 ---
@@ -10,7 +10,9 @@ related_adrs: []
 # 토스 WebView 카메라 샌드박스 테스트 절차
 
 ## 목적
-악기 합주앱의 플래그십(카메라 손 제스처 연주)이 **실제 토스 WebView**에서 동작하는지 실기기로 검증한다. 모바일 브라우저는 이미 통과(스파이크 커밋 923e545, 카메라+핸드트래킹+녹음, 45/30fps). 남은 단 하나의 기술 관문이다(DL-018 ⓑ).
+악기 합주앱의 플래그십(카메라 손 제스처 연주)이 **실제 토스 WebView**에서 동작하는지 실기기로 검증한다. 모바일 브라우저는 이미 통과(스파이크 커밋 923e545, 카메라+핸드트래킹+녹음, 45/30fps).
+
+> **검증 완료(2026-06-25).** 이 절차로 검증했고, 아이폰13·갤S23U 실기기에서 카메라 권한·손 인식·제스처 연주(RT-04·05) Pass 확인([통합테스트_결과서](통합테스트_결과서.md)·[앱인토스_실기기검수표](앱인토스_실기기검수표.md) 참조). 아래 절차는 재현용으로 유지한다.
 
 ## 이 테스트가 답할 질문
 1. 토스 WebView에서 **`getUserMedia`(라이브 카메라)** 가 허용되는가?
@@ -20,10 +22,10 @@ related_adrs: []
 ## 공식 근거 (긍정 신호)
 - WebView는 **표준 Web API 대부분 허용** → Web Audio·getUserMedia 가능성. ([WebView 속성](https://developers-apps-in-toss.toss.im/bedrock/reference/framework/속성))
 - 권한 문서: **마이크는 "WebView라면 Web API로 직접 구현"** 명시 → 라이브 미디어(getUserMedia)를 WebView에서 직접 쓰는 것을 의도. 카메라 권한은 `granite.config.ts`에 선언(검토용). ([권한](https://developers-apps-in-toss.toss.im/bedrock/reference/framework/권한/permission.md))
-- 단, **샌드박스 실측 전엔 미확정**(근거목록 #9). 이 절차가 확정한다.
+- **샌드박스·실기기 실측으로 확정됨(2026-06-25, RT-04·05 Pass)**(근거목록 #9). 토스 WebView에서 getUserMedia·MediaPipe 추론이 연주 가능한 수준으로 동작함.
 
 ## 준비물 (전제)
-- 토스 **비즈니스 계정**(콘솔 등록 계정) + 등록 앱. **테스트는 `meetup-lite` 등록 재사용 가능**(이름은 무관, 카메라 가능여부만 확인). 제출 후보는 하모니 앱 등록 후 실제 ID로 재검수한다.
+- 토스 **비즈니스 계정**(콘솔 등록 계정) + 등록 앱. **`harmony` 앱으로 등록·테스트트랙 출시(20260626-1) 완료.** `meetup-lite`는 과거 테스트 진입값이며, 현재 검수·출시는 harmony 등록 ID로 수행한다.
 - **샌드박스 앱**(개발용, 일반 토스앱 아님): Android APK / iOS(시뮬레이터·실기기). ([샌드박스](https://developers-apps-in-toss.toss.im/development/test/sandbox.md))
 - 폰 + 카메라. (Android) USB 케이블 + `adb`(USB 디버깅) / (iOS 실기기) 로컬 서버와 **같은 WiFi** + "로컬 네트워크" 허용.
 - 토스 인증용: 등록 토스 계정의 토스앱이 깔린 폰(푸시 인증).
@@ -40,7 +42,7 @@ npx ait init        # granite.config.ts 생성
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  appName: 'meetup-lite',        // 콘솔 등록 앱 ID(테스트용 재사용). 제출 후보는 harmony 등록 ID로 교체
+  appName: 'harmony',            // 콘솔 등록 앱 ID(harmony, 테스트트랙 출시 완료)
   displayName: '하모니',          // 콘솔 등록 이름과 동일해야 함
   permissions: [
     { name: 'camera', access: 'access' },   // 검토용 선언(라이브는 getUserMedia)
@@ -64,11 +66,11 @@ ipconfig             # (Windows) 로컬 IPv4 확인
 
 ### 3) 샌드박스 연결
 1. 샌드박스 앱 설치 → **비즈니스 개인 계정 로그인**.
-2. 워크스페이스에서 **앱 선택**(meetup-lite 임시 또는 harmony 등록 ID) → **토스 인증**(등록 토스 계정 폰 푸시).
+2. 워크스페이스에서 **앱 선택**(harmony 등록 ID) → **토스 인증**(등록 토스 계정 폰 푸시). (meetup-lite는 과거 테스트 진입값)
 3. 로컬 서버 연결:
    - **Android:** `adb reverse tcp:5173 tcp:5173` (필요시 `tcp:8081`도)
    - **iOS 실기기:** 같은 WiFi + 서버 IP 입력 + "로컬 네트워크" 허용
-4. 스킴 접속: **`intoss://meetup-lite`**(임시) 또는 실제 하모니 등록 ID.
+4. 스킴 접속: **`intoss://harmony`**(harmony 등록 스킴). (`intoss://meetup-lite`는 과거 테스트 진입값)
 > 샌드박스는 http 허용(라이브는 https만). 핀치줌·appName/displayName 콘솔 일치 필수.
 
 ### 4) 카메라 테스트
