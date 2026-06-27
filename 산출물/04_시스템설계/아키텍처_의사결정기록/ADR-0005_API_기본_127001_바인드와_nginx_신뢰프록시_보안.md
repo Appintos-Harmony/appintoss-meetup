@@ -41,7 +41,7 @@ API(ADR-0004)는 인증 없이 IP 기반 레이트리밋·신고 임계에 의�
 
 - **공유 IP 한계:** 프록시/NAT 뒤 공유 IP에서는 다른 사용자가 한 레이트/신고 버킷으로 묶일 수 있다
   (server.mjs 52행, OQ-B·DECISION-001 정책 판정 대상 — Open Question).
-- **키 취급:** SSH pem/ppk는 저장소 미반영, 노출 키 로테이션 권장(DL-021). 키 로테이션은 남은 일.
+- **키 취급:** SSH pem/ppk는 저장소에 두지 않는다(DL-021). 키 로테이션 완료.
 - **HTTPS 안정성:** 초기엔 cloudflared 터널(DL-021), 현재는 nip.io + Let's Encrypt. 도메인/터널 안정화는 후속.
 
 ## 대안
