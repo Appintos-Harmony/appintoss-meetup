@@ -216,6 +216,6 @@ originCode, originName, originAuthor(없으면 '익명')
 | 항목 | 상태 | 근거 |
 |---|---|---|
 | 통합 34/34 성공 | 2026-06-25 재실행 · 커밋 `c13b818` | 입력 사실 |
-| `getAnonymousKey`(클라 익명키) | Unverified — 클라 mock, 토스 SDK 미연동(Assumption) | 입력 사실 |
+| `getAnonymousKey`(클라 익명키) | 2트랙 배선 완료 — 토스 실호출 / 브라우저 폴백(머지 f506717). 정식 per-user 검증은 정식 출시·QR 진입 | 코드 반영 |
 | CORS allowlist | 미구현(데모 `*`) — production 사람 게이트 | `server.mjs:131` |
 | 운영자 강제 숨김 API | 미구현 | 코드 부재 |

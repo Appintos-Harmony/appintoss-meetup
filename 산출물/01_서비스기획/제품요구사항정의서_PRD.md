@@ -94,5 +94,4 @@ NFR-05의 단위테스트 대상은 chordReducer·poly·events·tuning·noteEdit
 ## 9. 미결정 (Open Question)
 
 - POL-04 성인·연령 확인 방식 — 추가 확인([공식문서_근거목록](../02_정책준수/공식문서_근거목록.md)).
-- `ait deploy`(토스 WebView 등록): granite.config appName을 `meetup-lite` → `harmony`로 교체 후 앱 재등록 필요(DL-018·DL-022).
 - 렌더링(CSR/SSG), 계약 형식(OpenAPI) 확정.
