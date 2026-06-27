@@ -1,5 +1,5 @@
 ---
-status: In Review
+status: Approved
 owner: 이상혁
 reviewers: [양록빈]
 last_updated: 2026-06-27
@@ -65,7 +65,7 @@ related_adrs: [DL-018, DL-019, DL-022]
 | 4.2 | systemd harmony-api(:8080), Let's Encrypt certbot | 김민혁 | 배포 실행절차서 | Done |
 | 4.3 | vite build → /opt/harmony-web (chmod a+rX), HTTPS 동일출처 | 김민혁 | 배포 실행절차서 | Done |
 | 4.4 | Android·iOS 실기기 회귀, 카메라·오디오 권한 확인 | 양록빈 | 실기기검수표 | 실기기 9건 아이폰 13·갤럭시 S23 Ultra 육안 성공(증빙 EV-201~209 Figma 화면설계서 보관) |
-| 4.5 | 롤백 점검, 데모 데이터 고정 | 양록빈 | 롤백 계획서 | 부분 (롤백 계획서 존재·프리로드 DEMO01 고정, 데모 백업 녹화 잔여) |
+| 4.5 | 롤백 점검, 데모 데이터 고정 | 양록빈 | 롤백 계획서 | 완료 (롤백 계획서 존재·프리로드 DEMO01 고정, 데모 백업 녹화·제출 완료 2026-06-27) |
 
 백엔드는 의존성 없이 Node24 node:http + node:sqlite로 짰고, 엔드포인트는 /healthz·POST /sessions·GET /sessions/:code·POST .../tracks 4개다. 운영 URL은 https://3.39.167.74.nip.io.
 
@@ -76,7 +76,7 @@ related_adrs: [DL-018, DL-019, DL-022]
 | 5.1 | ait deploy: granite.config appName meetup-lite → harmony 교체 | 김민혁 | granite.config | Done (appName=harmony, 코드 일치) |
 | 5.2 | 토스 WebView 앱 등록·심사 제출·출시 | 양록빈·이상혁·곽소정 | 심사제출서 | Done (2026-06-25 등록·심사 제출 → 2026-06-26 테스트 트랙 출시 `20260626-1`) |
 | 5.3 | 배포 환경 변수(VITE_API_BASE) 검증 | 김민혁 | (운영) | 완료 |
-| 5.4 | 외부 일정 후 회귀, P0 결함만 수정, 영상 확정 | 양록빈 | 데모 영상 | 부분 (회귀 완료, 데모 백업 영상 미보유) |
+| 5.4 | 외부 일정 후 회귀, P0 결함만 수정, 영상 확정 | 양록빈 | 데모 영상 | 완료 (회귀 완료, 데모 백업 영상 녹화·제출 완료 2026-06-27) |
 | 5.5 | 버전 동결, 종료보고서 초안 마감 | 이상혁 | 종료보고서 | Done (초안 마감, 출시 후 갱신 반영) |
 
 앱은 2026-06-25 appName=harmony로 콘솔 정식 등록·심사 제출 후 2026-06-26 테스트 트랙 출시됐다(20260626-1, 정식 전체공개 전환은 사람 확인). 식별은 getAnonymousKey + 닉네임으로 계정 없이 가고, 비게임으로 유지한다.
