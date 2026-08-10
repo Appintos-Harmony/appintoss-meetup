@@ -245,6 +245,28 @@ tooling/                   검증·커밋 스크립트, git 훅
 | 백엔드·데이터 | 김민혁 |
 | QA·릴리즈 | 양록빈 |
 
-**문서** [앱 개발 종료보고서](산출물/99_제출파일/하모니_앱_개발_종료보고서.md) · [프로그램 목록](산출물/05_개발설계/프로그램_목록.md) · [통합테스트 결과서](산출물/06_테스트/통합테스트_결과서.md) · [개발 규칙·하네스](CLAUDE.md)
+**문서** [앱 개발 종료보고서](산출물/99_제출파일/하모니_앱_개발_종료보고서.md) · [프로그램 목록](산출물/05_개발설계/프로그램_목록.md) · [통합테스트 결과서](산출물/06_테스트/통합테스트_결과서.md)
+
+### 내 기여
+
+백엔드 전량과 공유·커뮤니티 클라이언트 배선을 맡았다. 위 표의 "제품·정책·팀장" 표기는 실제 작업 범위보다 좁게 적힌 것이라 아래에 근거를 함께 남긴다.
+
+| 항목 | 값 | 확인 방법 |
+| :--- | :--- | :--- |
+| 커밋 | 240 / 301 (80%) | `git shortlog -sne origin/develop` |
+| PR | 10건 작성, 10건 병합 | 저장소 Pull requests 탭 |
+| `apps/api/server.mjs` | 378 / 450줄 (84%) | `git blame` 라인 집계 |
+| `apps/miniapp/src/audio/chordReducer.ts` | 95 / 105줄 (90%) | 같음 |
+| `apps/miniapp/src/routes/Studio.tsx` | 782 / 1,921줄 (41%) | 같음 |
+| `apps/miniapp/src/routes/Community.tsx` | 231 / 563줄 (41%) | 같음 |
+
+오디오 엔진과 제스처는 김민혁, 커뮤니티 UI와 화면 디자인은 곽소정이 주도했다.
+
+대표 작업 세 건이다.
+
+- [#12](https://github.com/Appintos-Harmony/appintoss-meetup/pull/12) 토스 TDS와 익명 식별키 2트랙 배선. 로그인 없는 환경에서 사용자를 식별하면서 공개 코드로 남의 곡을 오염시키지 못하게 서버에서 막았다.
+- [#9](https://github.com/Appintos-Harmony/appintoss-meetup/pull/9) 유지보수성 정리 10건을 행위 보존 상태로 반영하고 게이트로 검증했다.
+- [#8](https://github.com/Appintos-Harmony/appintoss-meetup/pull/8) 커뮤니티 미리듣기의 `stopPreview` 누락을 수정했다. 독립 검토에서 지적된 결함이다.
+
 
 <sub>비게임 미니앱 · 앱인토스 출품 프로젝트 · [맨 위로](#top)</sub>
