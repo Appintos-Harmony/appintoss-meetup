@@ -9,7 +9,7 @@ reviewed_commit: 3943db9
 status: Superseded
 ```
 
-> **Superseded** — 정본: [REVIEW-20260620-012_pathspec재검토.md](../REVIEW-20260620-012_pathspec재검토.md) (@5cfa779). 본 문서는 @3943db9(커밋 전) 시점 검토로 보존용이다.
+> **Superseded**: 정본: [REVIEW-20260620-012_pathspec재검토.md](../REVIEW-20260620-012_pathspec재검토.md) (@5cfa779). 본 문서는 @3943db9(커밋 전) 시점 검토로 보존용이다.
 
 ## 판정
 

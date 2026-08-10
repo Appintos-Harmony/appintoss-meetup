@@ -7,7 +7,7 @@ related_requirements: []
 related_adrs: [ADR-0001]
 ---
 
-# ADR-0006 — Tone.js 샘플 우선 재생 + 합성 폴백
+# ADR-0006 · Tone.js 샘플 우선 재생 + 합성 폴백
 
 ## 상태
 
@@ -40,7 +40,7 @@ Accepted. 근거: [DL-018](../../00_프로젝트관리/의사결정_기록.md#dl
 ### 미해결 / Open Question
 
 - **토스 WebView CSP 미확정:** 외부 CDN(jsDelivr·tonejs.github.io) 샘플 로드가 토스 WebView CSP에서 허용되는지 미확인이다
-  (engine.ts 34행 주석 "토스 WebView CSP는 추후 확인" — Open Question). CSP가 외부 fetch를 막으면 합성 폴백으로 동작한다(설계상 안전).
+  (engine.ts 34행 주석 "토스 WebView CSP는 추후 확인", Open Question). CSP가 외부 fetch를 막으면 합성 폴백으로 동작한다(설계상 안전).
 - 일부 드럼 심벌(크래시·라이드)은 샘플이 없어 합성 폴백을 사용한다(engine.ts 76행).
 
 ## 대안

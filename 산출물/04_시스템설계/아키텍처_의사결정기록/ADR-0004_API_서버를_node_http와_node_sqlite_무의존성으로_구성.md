@@ -7,7 +7,7 @@ related_requirements: []
 related_adrs: [ADR-0003, ADR-0005]
 ---
 
-# ADR-0004 — API 서버를 node:http + node:sqlite 무의존성으로 구성
+# ADR-0004 · API 서버를 node:http + node:sqlite 무의존성으로 구성
 
 ## 상태
 
