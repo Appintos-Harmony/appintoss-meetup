@@ -1,4 +1,4 @@
-# harmony-api — 하모니 합주 공유 백엔드
+# harmony-api · 하모니 합주 공유 백엔드
 
 비동기 합주("얹기") 공유용 최소 API. **Node 내장 모듈만**(무의존): `node:http` + `node:sqlite`(Node ≥ 22.5, 플래그 불필요).
 
@@ -18,7 +18,7 @@ PORT=8080 DB_PATH=./harmony.db node server.mjs
 `events` = 클라 `chordReducer`의 `ChordEvent[]`(tick 기반). `instrument`·`style`은 트랙별 음색 재생용 선택 필드다. 클라 `src/lib/share.ts`와 계약 일치.
 
 ## AWS Ubuntu 배포
-> ⚠️ SSH 키(pem)는 저장소에 두지 않는다. 키 로테이션·접속 권한은 사람이 관리한다.
+> 주의: SSH 키(pem)는 저장소에 두지 않는다. 키 로테이션·접속 권한은 사람이 관리한다.
 
 현재 운영 계약(DL-021): `https://3.39.167.74.nip.io` 한 도메인에서 정적 미니앱(`/opt/harmony-web`)과 API(`/healthz`, `/sessions`)를 함께 서빙한다.
 
@@ -33,5 +33,5 @@ PORT=8080 DB_PATH=./harmony.db node server.mjs
 
 ## 한계 (데모 범위)
 - **인증 없음**(코드 = 접근권한). 공개 배포 전 rate-limit·입력 검증·코드 만료 추가 권장.
-- 실시간 아님 — 클라 1~2초 polling.
+- 실시간 아님 · 클라 1~2초 polling.
 - 단일 인스턴스·로컬 SQLite 파일(수평 확장 시 별도 DB 필요).

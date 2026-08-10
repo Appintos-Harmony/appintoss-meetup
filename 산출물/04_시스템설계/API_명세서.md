@@ -20,7 +20,7 @@ README에 4개로 기록된 것과 달리 실제 구현은 그 이상이며(커�
 | 런타임 | Node.js 내장 모듈만 (`node:http`·`node:sqlite`·`node:crypto`), 외부 의존성 0 | `server.mjs:6-8` |
 | 서버 바인드 | 기본 `127.0.0.1:8080` (nginx 리버스프록시만 접근). `HOST`·`PORT` 환경변수로 변경 | `server.mjs:432-433` |
 | 저장소 | SQLite 파일 (`DB_PATH` 기본 `harmony.db`) | `server.mjs:11` |
-| 인증 | **무인증** — `code`=접근권한, `author_key`=클라 자기신고 약한 소유권(데모 한정) | `server.mjs:5` |
+| 인증 | **무인증**: `code`=접근권한, `author_key`=클라 자기신고 약한 소유권(데모 한정) | `server.mjs:5` |
 | 식별 헤더 | `x-anon-key` (좋아요 여부 조회용 익명키). 본문 필드 `author_key`(소유권). 둘 다 클라가 보낸 값 | `server.mjs:133, 203-205` |
 | 신고자 식별 | 서버 도출 IP (`author_key` 회전으로 위조 불가, Codex P0) | `server.mjs:310-311` |
 | 파라미터 바인딩 | 모든 SQL은 `db.prepare(...).run/get/all(?)` 위치 바인딩. 문자열 인터폴레이션 없음 | `server.mjs` 전체 |
@@ -33,7 +33,7 @@ README에 4개로 기록된 것과 달리 실제 구현은 그 이상이며(커�
 
 모든 응답은 `application/json; charset=utf-8`. CORS 헤더:
 
-- `access-control-allow-origin: *` — **데모 한정**. production은 오리진 allowlist로 좁힐 것(사람 게이트, 코드 주석 명시)
+- `access-control-allow-origin: *` · **데모 한정**. production은 오리진 allowlist로 좁힐 것(사람 게이트, 코드 주석 명시)
 - `access-control-allow-methods: GET,POST,OPTIONS`
 - `access-control-allow-headers: content-type, x-anon-key`
 - `OPTIONS` 프리플라이트는 항상 `204` 반환 (`server.mjs:190`)
@@ -196,13 +196,13 @@ originCode, originName, originAuthor(없으면 '익명')
 |---|---|---|
 | GET /healthz | 없음 | 예 |
 | GET /community | 없음(`x-anon-key`는 liked 표시만) | published·미숨김만 노출 |
-| POST /sessions | 없음(생성). dedup·origin은 `author_key`/실재 검증 | — |
-| POST .../comments | 없음(레이트·정화). 숨김 세션 차단 | — |
+| POST /sessions | 없음(생성). dedup·origin은 `author_key`/실재 검증 | - |
+| POST .../comments | 없음(레이트·정화). 숨김 세션 차단 | - |
 | GET .../comments | 없음. 숨김 세션 차단 | 미숨김 댓글만 |
-| POST .../comments/:id/report | 없음. 신고자=IP, 1인 1회 | — |
-| POST .../tracks | 공개 세션은 **owner_key 일치자만**, 비공개는 code 보유자 | — |
-| POST .../like | 없음(`anon_key` 토글). 숨김 세션 차단 | — |
-| POST .../hide | **owner_key 일치자만**, 시드 불가 | — |
+| POST .../comments/:id/report | 없음. 신고자=IP, 1인 1회 | - |
+| POST .../tracks | 공개 세션은 **owner_key 일치자만**, 비공개는 code 보유자 | - |
+| POST .../like | 없음(`anon_key` 토글). 숨김 세션 차단 | - |
+| POST .../hide | **owner_key 일치자만**, 시드 불가 | - |
 | GET /sessions/:code | 없음(code=접근). 숨김 차단 | 미숨김만 |
 
 > Open Question: 현재 모델에 운영자/관리자 전용 인증 경로가 없다. 신고 누적 자동숨김 외 운영자 강제 숨김·복구 API는 미구현(코드에 없음). 운영 정책은 `DECISION-001`·`OQ-B`(프록시 뒤 공유 IP 신고 버킷 한계, `server.mjs:50-52`) 판정 대상이다.
@@ -216,6 +216,6 @@ originCode, originName, originAuthor(없으면 '익명')
 | 항목 | 상태 | 근거 |
 |---|---|---|
 | 통합 34/34 성공 | 2026-06-25 재실행 · 커밋 `c13b818` | 입력 사실 |
-| `getAnonymousKey`(클라 익명키) | 2트랙 배선 완료 — 토스 실호출 / 브라우저 폴백(머지 f506717). 정식 per-user 검증은 정식 출시·QR 진입 | 코드 반영 |
-| CORS allowlist | 미구현(데모 `*`) — production 사람 게이트 | `server.mjs:131` |
+| `getAnonymousKey`(클라 익명키) | 2트랙 배선 완료 · 토스 실호출 / 브라우저 폴백(머지 f506717). 정식 per-user 검증은 정식 출시·QR 진입 | 코드 반영 |
+| CORS allowlist | 미구현(데모 `*`) · production 사람 게이트 | `server.mjs:131` |
 | 운영자 강제 숨김 API | 미구현 | 코드 부재 |

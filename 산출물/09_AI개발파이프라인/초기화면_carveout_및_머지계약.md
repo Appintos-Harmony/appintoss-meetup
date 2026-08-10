@@ -1,6 +1,6 @@
 ---
-status: 확정 — A안(carve-out). 초기화면 = 이 세션(김민혁측) 구현 / 곽소정 = 스튜디오+audio
-supersedes: (없음 — B안 미채택, 파일 미작성)
+status: 확정 · A안(carve-out). 초기화면 = 이 세션(김민혁측) 구현 / 곽소정 = 스튜디오+audio
+supersedes: (없음 · B안 미채택, 파일 미작성)
 last_updated: 2026-06-23
 related: [DEBATE-20260622-013_초기화면설계, TASK-20260622-030_풀스튜디오UI_곽소정]
 branch: develop (머지 완료, 6372dc3)
@@ -20,8 +20,8 @@ branch: develop (머지 완료, 6372dc3)
 - `feat/TASK-20260622-031-home-hub`: `App.tsx`(기본 route `home` + `community` append + Community 렌더) · `Home.tsx`(스튜디오/커뮤니티 2카드 + 이어하기 + 설정 진입, 빈 상태 스튜디오 강조) · `Community.tsx`(스텁) · 온보딩 완료→home 착지.
 - 검증: `tsc --noEmit` exit 0 · `npm test` **24/24 PASS**.
 
-## 3. 머지 조율 계약 (각 측이 고정 — 실파일 분석 검증)
-> **진짜 git 충돌 파일은 `App.tsx` 하나** — A 단독 소유하면 충돌 0. 나머지는 런타임/타입 계약.
+## 3. 머지 조율 계약 (각 측이 고정 · 실파일 분석 검증)
+> **진짜 git 충돌 파일은 `App.tsx` 하나**: A 단독 소유하면 충돌 0. 나머지는 런타임/타입 계약.
 
 | 접점 | 정의자 | 고정 계약 |
 |---|---|---|
@@ -39,16 +39,16 @@ branch: develop (머지 완료, 6372dc3)
 ## 4. 머지 순서 (3 = 먼저 끝나는 쪽, 단 계약 우선)
 0. (선행) **계약 동결:** events.ts NoteEvent·`Route` 최종형·Studio props를 타입스텁+문서로 develop 먼저.
 1. 하류 공유타입(곽소정 ChordEvent/engine, 이상혁 share) 확정.
-2. **A: App.tsx Route·렌더·Community 단독 확정 머지** — App.tsx 충돌면을 닫는 주체.
+2. **A: App.tsx Route·렌더·Community 단독 확정 머지** · App.tsx 충돌면을 닫는 주체.
 3. **B(TASK-030) 마지막:** `git merge develop`로 A의 Route 흡수 후 Studio props 정합 확인. B는 carve-out 파일 미편집.
 - 통합 오너: App.tsx/Route=A · ChordEvent=곽소정 · share=이상혁 · **머지 게이트=조장**(develop 흡수 후 `tsc`+테스트 그린).
 
-## 5. 남는 위험 (정적검사 사각 — 사람 주의)
+## 5. 남는 위험 (정적검사 사각 · 사람 주의)
 - Studio가 `SessionTrack`을 **인라인 리터럴**로 생성 → 이상혁이 optional 필드 추가 시 런타임 누락(tsc 통과).
 - `ChordEvent.chord`의 **의미**(코드명 vs 개별음) 변경 시 Home 칩·Studio 보이스 분기 조용히 오작동(타입 string 유지).
 - `storage`/`share`는 **JSON 직렬화** 의존 → 비직렬화 필드 추가 시 런타임 깨짐.
 - `share` ↔ `apps/api` 백엔드 스키마 드리프트(프런트만으론 미검증).
 - `audio/gesture.ts` 오너 미명시(곽소정 도메인 추정) → 조장 확정 필요.
 
-## 6. 식별/데이터 계약 (김민혁 — 확정, A 구현이 사용)
+## 6. 식별/데이터 계약 (김민혁 · 확정, A 구현이 사용)
 익명키 `getUserKey()`→`localStorage['harmony.anonKey']`(클라 생성, prod=토스 getAnonymousKey) · 닉 `getNickname()/setNickname()`→`harmony.nickname` · 이어하기 `listSongs()`→`harmony.songs`(읽기전용·오프라인 안전). **백엔드 API 의존 0.**

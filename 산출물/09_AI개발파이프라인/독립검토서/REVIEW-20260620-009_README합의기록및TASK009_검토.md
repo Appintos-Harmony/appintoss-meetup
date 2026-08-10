@@ -136,7 +136,7 @@ DL-013의 체크리스트에 다음을 추가하는 것을 권고한다.
 
 | 명령 | 종료코드 | 결과 |
 |---|---:|---|
-| `node tooling/scripts/검증_전체.mjs` | 0 | PASS — 하네스 기본 검증 |
+| `node tooling/scripts/검증_전체.mjs` | 0 | PASS · 하네스 기본 검증 |
 | `node tooling/scripts/링크_검증.mjs` | 0 | PASS, Markdown 52개·내부 링크 51개 |
 | `node tooling/scripts/팀공유문서_검증.mjs` | 0 | PASS |
 | `git status --short --branch` | 0 | 아직 커밋 없음, README 포함 전체 미추적 |
