@@ -1,10 +1,10 @@
 <mxfile host="Electron">
-  <diagram id="d" name="하모니 — 합주 공유 서비스 흐름">
+  <diagram id="d" name="하모니: 합주 공유 서비스 흐름">
     <mxGraphModel dx="1571" dy="972" grid="1" gridSize="8" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="t_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontColor=#0F172A;fontSize=15;" value="&lt;b&gt;하모니 — 합주 공유 서비스 흐름&lt;/b&gt;" vertex="1">
+        <mxCell id="t_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontColor=#0F172A;fontSize=15;" value="&lt;b&gt;하모니: 합주 공유 서비스 흐름&lt;/b&gt;" vertex="1">
           <mxGeometry height="30" width="1000" x="40" y="14" as="geometry" />
         </mxCell>
         <mxCell id="t_sub" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;" value="&lt;font color=&quot;#475569&quot;&gt;세로 3레인 · 번호=진행 순서 · 점선=출처(origin) 파생 루프 · 1.5s 폴링 · 인증 없음(code=접근권한)&lt;/font&gt;" vertex="1">
@@ -174,7 +174,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="nt0" parent="1" style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=15;fillColor=#F8FAFC;strokeColor=#E2E8F0;fontColor=#334155;" value="&lt;b style=&quot;color: rgb(51, 65, 85);&quot;&gt;범례&lt;/b&gt;&lt;br&gt;실선 → 진행 순서(①~⑥) · 점선 → 회신·폴링·출처(origin) 파생 루프&lt;br&gt;A 솔로 연주(①)는 로컬 완결 — 공유(②)부터만 서버 사용" vertex="1">
+        <mxCell id="nt0" parent="1" style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=15;fillColor=#F8FAFC;strokeColor=#E2E8F0;fontColor=#334155;" value="&lt;b style=&quot;color: rgb(51, 65, 85);&quot;&gt;범례&lt;/b&gt;&lt;br&gt;실선 → 진행 순서(①~⑥) · 점선 → 회신·폴링·출처(origin) 파생 루프&lt;br&gt;A 솔로 연주(①)는 로컬 완결 · 공유(②)부터만 서버 사용" vertex="1">
           <mxGeometry height="76" width="760" x="60" y="904" as="geometry" />
         </mxCell>
       </root>

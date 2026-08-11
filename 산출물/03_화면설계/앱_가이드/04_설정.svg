@@ -1,10 +1,10 @@
-<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>설정 — 프로필과 환경</title><desc>설정 화면(좌)에 번호 콜아웃을 달고, 우측에 4단계 설명(이모지 프로필·닉네임과 버전·개발자 모드 디버그·법적 고지 준비 중)을 설명하는 발표/도움말용 한 장. 이모지·닉네임으로 내 프로필, 개발자 모드는 디버그용.</desc>
+<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>설정: 프로필과 환경</title><desc>설정 화면(좌)에 번호 콜아웃을 달고, 우측에 4단계 설명(이모지 프로필·닉네임과 버전·개발자 모드 디버그·법적 고지 준비 중)을 설명하는 발표/도움말용 한 장. 이모지·닉네임으로 내 프로필, 개발자 모드는 디버그용.</desc>
 
   <!-- 배경 -->
   <rect x="0" y="0" width="760" height="560" rx="18" fill="#f7f9fb"/>
 
   <!-- 제목 -->
-  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">설정 — 프로필과 환경</text>
+  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">설정: 프로필과 환경</text>
   <text x="34" y="61" font-size="12.5" fill="#6b7684">이모지 프로필 · 닉네임과 버전 · 개발자 모드 · 법적 고지</text>
 
   <!-- ===================== 좌: 폰 목업(콜아웃) ===================== -->

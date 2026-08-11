@@ -96,7 +96,7 @@ export function diffGuard(task, opts = {}) {
     if (touchesHumanApproval(p)) { violations.push(`HUMAN_APPROVAL 구역 파일 수정 금지: ${p}`); continue; }
     if (matchesForbidden(p, forbidden)) { violations.push(`작업 forbidden_paths 위반: ${p}`); continue; }
     if (!withinAllowed(p, allowed)) { violations.push(`allowed_paths 밖 변경: ${p}`); continue; }
-    if (isUngatedCode(p)) violations.push(`자동 게이트 없는 코드 경로 — 사람 검증 필요: ${p}`);
+    if (isUngatedCode(p)) violations.push(`자동 게이트 없는 코드 경로 · 사람 검증 필요: ${p}`);
   }
   return { ok: violations.length === 0, changed, violations };
 }
@@ -113,7 +113,7 @@ function writeState(s) {
 }
 
 function preflight(id) {
-  out('# 루프 가드 — preflight');
+  out('# 루프 가드: preflight');
   if (!tryGit(['rev-parse', '--is-inside-work-tree'])) { out('STOP: git 저장소 아님.'); process.exit(10); }
   let branch = null;
   try { branch = git(['symbolic-ref', '--short', 'HEAD']).trim(); }
@@ -126,7 +126,7 @@ function preflight(id) {
   const safety = pathSafety(task);
   if (!safety.safe) { out(`STOP: 경로안전 위반:\n - ${safety.violations.join('\n - ')}`); process.exit(10); }
   // 활성 작업 기록 → pre-commit 백스톱이 이 작업 범위로 커밋을 강제(루프가 --guard-task를 빠뜨려도 차단).
-  // 다른 작업이 이미 활성이면 덮어쓰지 않는다(동시 루프 레이스 차단, Codex X8 — 사람 --reset 필요).
+  // 다른 작업이 이미 활성이면 덮어쓰지 않는다(동시 루프 레이스 차단, Codex X8: 사람 --reset 필요).
   const s = readState();
   if (s.activeTask && s.activeTask !== id) { out(`STOP: 다른 활성 작업 ${s.activeTask} 진행 중. 사람이 --reset 후 재개.`); process.exit(10); }
   s.activeTask = id; writeState(s);
@@ -151,7 +151,7 @@ function preCommit() {
 }
 
 function checkDiff(id, staged) {
-  out('# 루프 가드 — check-diff');
+  out('# 루프 가드: check-diff');
   const task = findTask(id);
   if (!task) { out(`STOP: 작업 ${id} 없음.`); process.exit(11); }
   const r = diffGuard(task, { staged });
@@ -166,13 +166,13 @@ function iteration(max) {
   if (!s.runStartedAt) { s.runStartedAt = new Date().toISOString(); s.max = Math.min(max || DEFAULT_MAX_ITER, ABS_MAX_ITER); }
   else { s.max = Math.min(s.max || DEFAULT_MAX_ITER, max || s.max || DEFAULT_MAX_ITER, ABS_MAX_ITER); } // 단조: 올릴 수 없음
   if (s.iteration >= s.max) {
-    out(`# 루프 가드 — iteration\n캡 도달: ${s.iteration}/${s.max}(절대상한 ${ABS_MAX_ITER}). 사람이 --reset 해야 재개.`);
+    out(`# 루프 가드: iteration\n캡 도달: ${s.iteration}/${s.max}(절대상한 ${ABS_MAX_ITER}). 사람이 --reset 해야 재개.`);
     writeState(s);
     process.exit(12);
   }
   s.iteration += 1;
   writeState(s);
-  out(`# 루프 가드 — iteration\n반복 ${s.iteration}/${s.max} 진행 가능.`);
+  out(`# 루프 가드: iteration\n반복 ${s.iteration}/${s.max} 진행 가능.`);
   process.exit(0);
 }
 

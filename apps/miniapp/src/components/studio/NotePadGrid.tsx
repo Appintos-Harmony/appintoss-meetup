@@ -1,5 +1,5 @@
 // 기타/베이스 계이름 패드 블록(SCR-ST-04). 실제 지판처럼 한 칸 = 반음(크로매틱: 도 도# 레 레#…).
-// 입력 경로는 멜로디와 동일(downNote/upNote, kind:'melody') — 콤보(setVoice)로만 기타/베이스 소리.
+// 입력 경로는 멜로디와 동일(downNote/upNote, kind:'melody'). 콤보(setVoice)로만 기타/베이스 소리.
 // frets = 칸 수(일반 6 / 전체화면 13). 칸 음 = 개방현 + 반음*칸(lib/notes.transpose), 라벨 = 계이름(solfa).
 import type { CSSProperties } from 'react';
 import { STRINGS_GUITAR, STRINGS_BASS } from './chords';

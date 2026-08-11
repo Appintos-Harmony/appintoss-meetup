@@ -1,4 +1,4 @@
-// 스튜디오 UI/음악 상수 — 28코드 매트릭스·색·로마숫자·악기/스타일·멜로디 건반·기타베이스·드럼.
+// 스튜디오 UI/음악 상수: 28코드 매트릭스·색·로마숫자·악기/스타일·멜로디 건반·기타베이스·드럼.
 // 음정값(Hz/구성음)은 audio/tuning.ts가 단일 진실원. 여기는 '이름/라벨/색/배치'만 둔다.
 // (TASK-030 §5: Chord/CHORDS/ACCENT/ROMAN을 이 파일로 이전.)
 import type { Instrument, DrumPiece } from '../../audio/events';
@@ -21,7 +21,7 @@ export function buildChordName(root: Root, quality: Quality): string {
   return root + (q ? q.suffix : '');
 }
 
-/** 종류별 인터벌(반음) — 검증/문서용. 실제 음정 산출은 tuning.ts(근음중심 보이싱). */
+/** 종류별 인터벌(반음): 검증/문서용. 실제 음정 산출은 tuning.ts(근음중심 보이싱). */
 export const QUALITY_INTERVALS: Record<Quality, number[]> = {
   maj: [0, 4, 7],
   m: [0, 3, 7],

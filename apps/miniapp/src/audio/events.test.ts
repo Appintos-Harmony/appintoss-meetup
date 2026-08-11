@@ -1,4 +1,4 @@
-// 이벤트 계약 v2 검증 — 28코드 인터벌(tuning 기준)·normalizeEvents 하위호환·드럼 키.
+// 이벤트 계약 v2 검증: 28코드 인터벌(tuning 기준)·normalizeEvents 하위호환·드럼 키.
 // 순수 모듈만 import(Tone/Web Audio 비의존)이라 vitest에서 바로 실행된다. TASK-20260622-030.
 import { describe, it, expect } from 'vitest';
 import { normalizeEvents, toNoteEvent, drumKey, wireKey } from './events';
@@ -6,7 +6,7 @@ import type { ChordEvent } from './chordReducer';
 import { notesFor, noteToMidi } from './tuning';
 import { ROOTS, QUALITIES, QUALITY_INTERVALS, buildChordName } from '../components/studio/chords';
 
-describe('28코드 — buildChordName이 tuning 기준 정확한 인터벌을 가리킨다', () => {
+describe('28코드: buildChordName이 tuning 기준 정확한 인터벌을 가리킨다', () => {
   it('7루트 × 4종류 = 28코드, 근음 기준 반음 인터벌이 종류와 일치', () => {
     let count = 0;
     for (const root of ROOTS) {
@@ -33,7 +33,7 @@ describe('28코드 — buildChordName이 tuning 기준 정확한 인터벌을 �
   });
 });
 
-describe('normalizeEvents — 레거시(kind 없음) → 타입드 NoteEvent', () => {
+describe('normalizeEvents: 레거시(kind 없음) → 타입드 NoteEvent', () => {
   it('코드 이름은 kind:chord', () => {
     const raw: ChordEvent[] = [{ tick: 0, phase: 'on', chord: 'G7', source: 'touch' }];
     expect(normalizeEvents(raw)).toEqual([{ kind: 'chord', tick: 0, phase: 'on', chord: 'G7', source: 'touch' }]);
@@ -56,7 +56,7 @@ describe('normalizeEvents — 레거시(kind 없음) → 타입드 NoteEvent', (
   });
 });
 
-describe('wireKey / drumKey — NoteEvent ↔ 와이어 chord 필드 왕복', () => {
+describe('wireKey / drumKey: NoteEvent ↔ 와이어 chord 필드 왕복', () => {
   it('drumKey와 복원이 일치', () => {
     expect(drumKey('kick')).toBe('drum:kick');
     expect(wireKey({ kind: 'drum', tick: 0, phase: 'hit', piece: 'kick', source: 'touch' })).toBe('drum:kick');

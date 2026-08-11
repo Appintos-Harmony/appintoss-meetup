@@ -1,10 +1,10 @@
-<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 — 한눈에 보는 전체 흐름</title><desc>하모니 앱의 전체 사용자 여정 개요. 시작(스플래시·닉네임) → 홈(새 곡·둘러보기·이어하기) → 스튜디오(녹음·레이어·합주·저장) → 커뮤니티(올리기·들어보기·담기·합주해서 올리기·반응)를 미니 단계 카드로 연결하고, 우측에 단계 설명과 하단에 핵심 루프 요약 띠를 둔 발표/도움말용 한 장.</desc>
+<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니: 한눈에 보는 전체 흐름</title><desc>하모니 앱의 전체 사용자 여정 개요. 시작(스플래시·닉네임) → 홈(새 곡·둘러보기·이어하기) → 스튜디오(녹음·레이어·합주·저장) → 커뮤니티(올리기·들어보기·담기·합주해서 올리기·반응)를 미니 단계 카드로 연결하고, 우측에 단계 설명과 하단에 핵심 루프 요약 띠를 둔 발표/도움말용 한 장.</desc>
 
   <!-- 배경 -->
   <rect x="0" y="0" width="760" height="560" rx="18" fill="#f7f9fb"/>
 
   <!-- 제목 -->
-  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">하모니 — 한눈에 보는 전체 흐름</text>
+  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">하모니: 한눈에 보는 전체 흐름</text>
   <text x="34" y="61" font-size="12.5" fill="#6b7684">시작 · 홈 · 스튜디오 · 커뮤니티로 이어지는 전체 사용자 여정</text>
 
   <!-- ===================== 좌: 미니 단계 카드 흐름 ===================== -->
@@ -92,28 +92,28 @@
     <!-- step 1 -->
     <g transform="translate(0,0)">
       <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">1</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">시작 — 스플래시 · 닉네임</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">시작: 스플래시 · 닉네임</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">앱을 열면 스플래시가 보이고, 처음이면 닉네임을</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">정해요(온보딩). 이 이름으로 곡과 한마디가 남아요.</text>
     </g>
     <!-- step 2 -->
     <g transform="translate(0,68)">
       <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">2</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">홈 — 세 갈래로 출발</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">홈: 세 갈래로 출발</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">＋새 곡(스튜디오) · 둘러보기(커뮤니티) ·</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">이어하기(최근 곡). 원하는 길로 바로 들어가요.</text>
     </g>
     <!-- step 3 -->
     <g transform="translate(0,136)">
       <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">3</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">스튜디오 — 녹음하고 쌓기</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">스튜디오: 녹음하고 쌓기</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">코드 · 멜로디 · 드럼을 녹음해 레이어로 쌓고,</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">합주로 들어본 뒤 이름을 지어 저장해요.</text>
     </g>
     <!-- step 4 -->
     <g transform="translate(0,204)">
       <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">4</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">커뮤니티 — 함께 합주하기</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">커뮤니티: 함께 합주하기</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">내 곡을 올리고, 남의 음원을 재생바로 들어보며</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">＋담기. 스튜디오에 얹어 합주한 뒤 ‘합주해서</text>
       <text x="38" y="61" font-size="11" fill="#6b7684">올리기’(출처 표시), 좋아요 · 댓글로 반응해요.</text>
@@ -128,7 +128,7 @@
     <!-- 핵심 루프 요약 띠 -->
     <g transform="translate(0,330)">
       <rect x="0" y="0" width="372" height="102" rx="12" fill="#eef5ff" stroke="#cfe0ff" stroke-width="1"/>
-      <text x="16" y="24" font-size="12" font-weight="800" fill="#3182f6">핵심 루프 — 돌수록 음악이 커져요</text>
+      <text x="16" y="24" font-size="12" font-weight="800" fill="#3182f6">핵심 루프: 돌수록 음악이 커져요</text>
       <!-- 루프 단계 -->
       <g font-size="10" font-weight="700">
         <rect x="14" y="36" width="60" height="22" rx="7" fill="#ffffff" stroke="#cfe0ff" stroke-width="1"/>

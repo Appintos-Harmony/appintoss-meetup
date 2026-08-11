@@ -98,7 +98,7 @@ if (guardTask) {
   const r = diffGuard(task, { staged: true });
   if (!r.ok) {
     tryGit(['reset', '--quiet']);
-    fail(`커밋 가드 차단(작업 ${guardTask}) — 스테이징 해제:\n - ${r.violations.join('\n - ')}`, 1);
+    fail(`커밋 가드 차단(작업 ${guardTask}). 스테이징 해제:\n - ${r.violations.join('\n - ')}`, 1);
   }
   out(`커밋 가드 통과(작업 ${guardTask}): 스테이징 ${r.changed.length}건 범위 내.`);
 }

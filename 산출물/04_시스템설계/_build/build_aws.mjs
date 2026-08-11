@@ -73,8 +73,8 @@ function frame(w, h, title, subs) {
 
 function buildAws() {
   const W = 1520, H = 1090;
-  let s = frame(W, H, '하모니 — AWS 배포 아키텍처 (현재형 · as-built)',
-    ['단일 AWS EC2(Ubuntu) 1대에 nginx · harmony-api · SQLite 동거 — 멀티 AZ / ALB / RDS / Auto Scaling "없음"이 사실(의도된 데모 범위)',
+  let s = frame(W, H, '하모니: AWS 배포 아키텍처 (현재형 · as-built)',
+    ['단일 AWS EC2(Ubuntu) 1대에 nginx · harmony-api · SQLite 동거: 멀티 AZ / ALB / RDS / Auto Scaling "없음"이 사실(의도된 데모 범위)',
      'AWS 공식 아이콘 · 중첩 그룹 표기(AWS Cloud › Region › VPC › 가용영역 › 서브넷)']);
 
   // 사용자/인터넷 (클라우드 밖)
@@ -104,7 +104,7 @@ function buildAws() {
   // systemd 바
   s += `<rect x="${ex + 18}" y="${ey + eh - 36}" width="${ew - 36}" height="26" rx="8" fill="#F5F3FF" stroke="${COL.purple}" stroke-width="1.3"/>`;
   s += `<image x="${ex + 26}" y="${ey + eh - 33}" width="20" height="20" href="${uri('systemd')}"/>`;
-  s += `<text x="${ex + 52}" y="${ey + eh - 18}" font-size="11.5" font-weight="700" fill="#6D28D9">systemd — 감독·자동복구·권한격리(NoNewPrivileges·ProtectSystem) · certbot.timer 자동갱신</text>`;
+  s += `<text x="${ex + 52}" y="${ey + eh - 18}" font-size="11.5" font-weight="700" fill="#6D28D9">systemd: 감독·자동복구·권한격리(NoNewPrivileges·ProtectSystem) · certbot.timer 자동갱신</text>`;
 
   // 화살표
   // 사용자 → nginx (HTTPS 443) 수평
@@ -119,12 +119,12 @@ function buildAws() {
   // 설계 메모 패널 (하단)
   const my = 866;
   s += `<rect x="44" y="${my}" width="1432" height="118" rx="14" fill="#F8FAFC" stroke="#E2E8F0"/>`;
-  s += `<text x="64" y="${my + 26}" font-size="14" font-weight="800" fill="${COL.ink}">설계 메모 — "작게, 그러나 의도적으로" (현재형 한계 = 정직하게 표기)</text>`;
+  s += `<text x="64" y="${my + 26}" font-size="14" font-weight="800" fill="${COL.ink}">설계 메모: "작게, 그러나 의도적으로" (현재형 한계 = 정직하게 표기)</text>`;
   const memos = [
     ['#EF4444', '단일 AZ · 단일 인스턴스 → 고가용성(HA)·장애격리 없음(단일 장애 도메인)'],
     ['#EF4444', 'SQLite 단일 파일 → 복제·스냅샷·오프사이트 백업 없음 = 손실 시 전손(공개배포 1순위 보강)'],
     ['#10B981', '무의존(node:http+node:sqlite, 의존성 0) → 공급망 공격면 최소 · RDS/캐시/큐/LB 의도적 미선택'],
-    ['#8B5CF6', '대체 HTTPS: cloudflared quick tunnel(harmony-tunnel.service) — 토스 WebView용 즉시 https 폴백'],
+    ['#8B5CF6', '대체 HTTPS: cloudflared quick tunnel(harmony-tunnel.service) · 토스 WebView용 즉시 https 폴백'],
   ];
   memos.forEach((m, i) => {
     const col = i % 2, row = Math.floor(i / 2);

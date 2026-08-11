@@ -1,4 +1,4 @@
-// 데이터모델 ERD — DA# 표기(식별자 PK영역 + 일반속성영역, 식별/비식별 관계, 까마귀발)
+// 데이터모델 ERD: DA# 표기(식별자 PK영역 + 일반속성영역, 식별/비식별 관계, 까마귀발)
 // 속성·순서·키 표기를 테이블_정의서.md(=apps/api/server.mjs 스키마)와 1:1 일치시킨다.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -83,7 +83,7 @@ function build() {
   e += relDA(1000, 230, 1250, 228, true, '식별 1:N', 1125, 206);  // 곡 ─< 좋아요
   e += relDA(830, ses.bottom, 830, 660, false, '비식별 1:N', 830, 600); // 곡 ─< 댓글
   e += relDA(1000, 760, 1250, 712, true, '식별 1:N', 1125, 700);  // 댓글 ─< 신고
-  // 자기참조(origin_code) — 곡 위 루프, 비식별
+  // 자기참조(origin_code): 곡 위 루프, 비식별
   const lcx = ses.cx, top = ses.y;
   e += `<path d="M${lcx + 70},${top} C ${lcx + 70},${top - 52} ${lcx - 70},${top - 52} ${lcx - 70},${top}" fill="none" stroke="${COL.line}" stroke-width="1.8" stroke-dasharray="6 4"/>`;
   // 부모쪽 바(오른쪽), 자식쪽 까마귀발(왼쪽)
@@ -98,7 +98,7 @@ function build() {
   // users/auth 부재 콜아웃
   const mx = 110, my = 500, mw = 330, mh = 150;
   s += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="#FFF7ED" stroke="#FB923C" stroke-width="1.5" stroke-dasharray="7 5"/>`;
-  s += `<text x="${mx + 14}" y="${my + 26}" font-size="13.5" font-weight="800" fill="#C2410C">⌀ users / auth 개체 — 없음</text>`;
+  s += `<text x="${mx + 14}" y="${my + 26}" font-size="13.5" font-weight="800" fill="#C2410C">⌀ users / auth 개체: 없음</text>`;
   [' 회원·세션·토큰 개체가 모델에 부재.', ' 식별 = 익명키 컬럼만(author_key ·', ' anon_key · reporter_key) = 자기신고.', ' → 인증 없음 = 의도된 데모 범위.'].forEach((t, i) => { s += `<text x="${mx + 14}" y="${my + 50 + i * 22}" font-size="12" fill="#9A3412">${esc(t)}</text>`; });
 
   // 범례

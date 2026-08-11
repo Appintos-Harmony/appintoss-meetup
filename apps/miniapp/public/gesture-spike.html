@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <!-- 앱인토스 정책: 핀치줌 비활성화(심사 반려 사유 회피) -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>핸드 제스처 악기 — 스파이크</title>
+  <title>핸드 제스처 악기: 스파이크</title>
   <style>
     :root { --blue:#3182f6; --bg:#0b0d12; --line:#2a2f3a; --text:#f2f4f6; --sub:#8b95a1; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -77,7 +77,7 @@
     let frames = 0, fps = 0, lastFpsT = 0;
 
     function openFingers(lm) {
-      // tip 이 pip 보다 위(y 작음)면 폄 — 직립 손 기준 간이 판정
+      // tip 이 pip 보다 위(y 작음)면 폄: 직립 손 기준 간이 판정
       let n = 0; for (const [t,p] of FINGERS) if (lm[t].y < lm[p].y) n++; return n;
     }
     function zoneOf(lm) {
@@ -145,7 +145,7 @@
         $('#start').style.display='none'; log(''); loop();
       } catch (e) {
         $('#start').disabled = false;
-        log('실패: ' + (e && e.name ? e.name+' — ' : '') + (e && e.message ? e.message : e) +
+        log('실패: ' + (e && e.name ? e.name+' · ': '') + (e && e.message ? e.message: e) +
             '\n(카메라 권한/HTTPS·localhost 필요. 토스 WebView면 getUserMedia 미지원일 수 있음 = 핵심 확인 포인트)');
       }
     }

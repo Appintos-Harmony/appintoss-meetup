@@ -22,12 +22,12 @@ const tools = [
   ['Unit (vitest run)', join('node_modules', 'vitest', 'vitest.mjs'), ['run']],
 ];
 
-out('# 코드 게이트 — apps/miniapp');
+out('# 코드 게이트: apps/miniapp');
 
 // node_modules 미설치 시 게이트를 실행할 수 없으므로 FAIL 로 보고한다.
 if (!existsSync(join(MINIAPP, 'node_modules'))) {
-  out('\napps/miniapp/node_modules 없음 — `npm install`(apps/miniapp) 후 다시 실행하세요.');
-  out('\n전체 결과: FAIL — 코드 게이트 (의존성 미설치)');
+  out('\napps/miniapp/node_modules 없음. `npm install`(apps/miniapp) 후 다시 실행하세요.');
+  out('\n전체 결과: FAIL · 코드 게이트 (의존성 미설치)');
   process.exit(1);
 }
 
@@ -61,5 +61,5 @@ for (const [label, bin, args] of tools) {
 
 out('\n===== 코드 게이트 요약 =====');
 summary.forEach((s) => out(' ' + s));
-out(failed ? `\n전체 결과: FAIL — 코드 게이트 (${failed}건)` : '\n전체 결과: PASS — 코드 게이트');
+out(failed ? `\n전체 결과: FAIL · 코드 게이트 (${failed}건)`: '\n전체 결과: PASS · 코드 게이트');
 process.exit(failed ? 1 : 0);

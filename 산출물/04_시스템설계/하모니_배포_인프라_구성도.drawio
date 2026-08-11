@@ -1,10 +1,10 @@
 <mxfile host="Electron">
-  <diagram id="d" name="하모니 — 배포·서비스 구성도">
+  <diagram id="d" name="하모니: 배포·서비스 구성도">
     <mxGraphModel dx="1571" dy="934" grid="1" gridSize="8" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1640" pageHeight="980" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="t_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontColor=#0F172A;" value="&lt;b style=&quot;font-size:20px&quot;&gt;하모니 — 배포·서비스 구성도&lt;/b&gt;" vertex="1">
+        <mxCell id="t_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontColor=#0F172A;" value="&lt;b style=&quot;font-size:20px&quot;&gt;하모니: 배포·서비스 구성도&lt;/b&gt;" vertex="1">
           <mxGeometry height="30" width="1000" x="40" y="14" as="geometry" />
         </mxCell>
         <mxCell id="t_sub" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;" value="&lt;font color=&quot;#475569&quot;&gt;GitHub Actions(검증) → 사람 게이트 → 두 갈래: 프론트=Apps-in-Toss 심사·유통 / 백엔드=AWS EC2(nginx·node·sqlite) · 실선=배포 흐름&lt;/font&gt;" vertex="1">
@@ -13,7 +13,7 @@
         <mxCell id="g0" parent="1" style="rounded=1;arcSize=6;html=1;fillColor=#F8FAFC;strokeColor=#5A6B7B;dashed=0;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontColor=#5A6B7B;fontSize=13;fontStyle=1;" value="CI · GitHub Actions (검증 → 사람 게이트)" vertex="1">
           <mxGeometry height="360" width="420" x="40" y="150" as="geometry" />
         </mxCell>
-        <mxCell id="g1" parent="1" style="rounded=1;arcSize=6;html=1;fillColor=#F5F9FF;strokeColor=#3182F6;dashed=0;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontColor=#3182F6;fontSize=13;fontStyle=1;" value="프론트 배포 — Apps-in-Toss (토스 콘솔 심사·유통)" vertex="1">
+        <mxCell id="g1" parent="1" style="rounded=1;arcSize=6;html=1;fillColor=#F5F9FF;strokeColor=#3182F6;dashed=0;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontColor=#3182F6;fontSize=13;fontStyle=1;" value="프론트 배포: Apps-in-Toss (토스 콘솔 심사·유통)" vertex="1">
           <mxGeometry height="250" width="1040" x="560" y="130" as="geometry" />
         </mxCell>
         <mxCell id="g2" parent="1" style="rounded=1;arcSize=6;html=1;fillColor=#FFF8F2;strokeColor=#ED7100;dashed=0;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontColor=#ED7100;fontSize=13;fontStyle=1;" value="AWS EC2 1대 · Ubuntu (서울) · EIP 3.39.167.74.nip.io · systemd 하드닝" vertex="1">

@@ -1,4 +1,4 @@
-<svg width="100%" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 커뮤니티 보드 — 스케치/와이어프레임/목업 3단계</title><desc>커뮤니티 음원 공유 보드 화면을 스케치, 와이어프레임, 목업 순으로 한 장에 그린 발표용 명세. 상단 앱바(‹ 스튜디오, 커뮤니티, ＋올리기)와 이모지 아바타 카드(음원명-작성자, 트랙·재생수·파생수 메타, 보라 출처줄, 들어보기·담기·댓글 버튼행)를 포함.</desc>
+<svg width="100%" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 커뮤니티 보드: 스케치/와이어프레임/목업 3단계</title><desc>커뮤니티 음원 공유 보드 화면을 스케치, 와이어프레임, 목업 순으로 한 장에 그린 발표용 명세. 상단 앱바(‹ 스튜디오, 커뮤니티, ＋올리기)와 이모지 아바타 카드(음원명-작성자, 트랙·재생수·파생수 메타, 보라 출처줄, 들어보기·담기·댓글 버튼행)를 포함.</desc>
 
 <!-- 헤더 라벨 -->
 <text x="120" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#191f28">1 · 스케치</text>
@@ -69,7 +69,7 @@
   <rect x="12" y="82" width="176" height="94" rx="9" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.2"/>
   <circle cx="33" cy="106" r="13" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
   <rect x="52" y="98" width="120" height="10" rx="3" fill="#eef1f4" stroke="#c4ccd4" stroke-width="0.8"/>
-  <text x="55" y="106" font-size="8" fill="#8b95a1">음원명 – 작성자</text>
+  <text x="55" y="106" font-size="8" fill="#8b95a1">음원명 · 작성자</text>
   <text x="52" y="124" font-size="9" fill="#8b95a1">트랙 N · ▶ 재생수 · 이어 파생수</text>
   <rect x="14" y="146" width="84" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
   <text x="56" y="160" text-anchor="middle" font-size="9" fill="#8b95a1">▶ 들어보기</text>
@@ -82,10 +82,10 @@
   <rect x="12" y="184" width="176" height="106" rx="9" fill="#ffffff" stroke="#c4ccd4" stroke-width="1.2"/>
   <circle cx="33" cy="208" r="13" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
   <rect x="52" y="200" width="120" height="10" rx="3" fill="#eef1f4" stroke="#c4ccd4" stroke-width="0.8"/>
-  <text x="55" y="208" font-size="8" fill="#8b95a1">음원명 – 작성자</text>
+  <text x="55" y="208" font-size="8" fill="#8b95a1">음원명 · 작성자</text>
   <text x="52" y="226" font-size="9" fill="#8b95a1">트랙 N · ▶ 재생수 · 이어 파생수</text>
   <rect x="52" y="232" width="130" height="13" rx="4" fill="#f1ecfb" stroke="#cdbdf0" stroke-width="1"/>
-  <text x="55" y="242" font-size="8" fill="#8b5cf6">🎵 출처 — ○○의 △△ 위에 쌓음</text>
+  <text x="55" y="242" font-size="8" fill="#8b5cf6">🎵 출처: ○○의 △△ 위에 쌓음</text>
   <rect x="14" y="260" width="84" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
   <text x="56" y="274" text-anchor="middle" font-size="9" fill="#8b95a1">▶ 들어보기</text>
   <rect x="102" y="260" width="50" height="22" rx="6" fill="#eef1f4" stroke="#c4ccd4" stroke-width="1"/>
@@ -116,11 +116,11 @@
   <text x="14" y="71" font-size="9" fill="#8b95a1">마음에 드는 음원을 담아 가져오면</text>
   <text x="14" y="82" font-size="9" fill="#8b95a1">내 스튜디오에 레이어로 올라가요.</text>
 
-  <!-- 카드 1 (목업 — 원곡) -->
+  <!-- 카드 1 (목업: 원곡) -->
   <rect x="12" y="90" width="176" height="90" rx="10" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
   <circle cx="34" cy="114" r="15" fill="#3182f622"/>
   <text x="34" y="120" text-anchor="middle" font-size="17">🎹</text>
-  <text x="56" y="110" font-size="11" font-weight="700" fill="#191f28">여름밤 코드 <tspan font-weight="500" fill="#8b95a1">– 상혁</tspan></text>
+  <text x="56" y="110" font-size="11" font-weight="700" fill="#191f28">여름밤 코드 <tspan font-weight="500" fill="#8b95a1">· 상혁</tspan></text>
   <text x="56" y="126" font-size="9.5" fill="#8b95a1">트랙 3개 · ▶ 128 · 이어 4</text>
   <rect x="14" y="148" width="86" height="24" rx="7" fill="#f2f4f6"/>
   <text x="57" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="#191f28">▶ 들어보기</text>
@@ -129,11 +129,11 @@
   <rect x="156" y="148" width="30" height="24" rx="7" fill="#f2f4f6"/>
   <text x="171" y="164" text-anchor="middle" font-size="10" fill="#8b95a1">💬 2</text>
 
-  <!-- 카드 2 (목업 — 파생곡, 담김 상태 강조) -->
+  <!-- 카드 2 (목업: 파생곡, 담김 상태 강조) -->
   <rect x="12" y="188" width="176" height="104" rx="10" fill="#eef5ff" stroke="#3182f6" stroke-width="2"/>
   <circle cx="34" cy="212" r="15" fill="#8b5cf622"/>
   <text x="34" y="218" text-anchor="middle" font-size="17">🎸</text>
-  <text x="56" y="208" font-size="11" font-weight="700" fill="#191f28">합주 ver. <tspan font-weight="500" fill="#8b95a1">– 민혁</tspan></text>
+  <text x="56" y="208" font-size="11" font-weight="700" fill="#191f28">합주 ver. <tspan font-weight="500" fill="#8b95a1">· 민혁</tspan></text>
   <text x="56" y="224" font-size="9.5" fill="#8b95a1">트랙 5개 · ▶ 47 · 이어 1</text>
   <text x="56" y="239" font-size="9" fill="#8b5cf6">🎵 상혁의 여름밤 코드 위에 쌓음</text>
   <rect x="14" y="262" width="86" height="24" rx="7" fill="#ffffff" stroke="#dbe0e6" stroke-width="1"/>
@@ -147,7 +147,7 @@
   <rect x="12" y="300" width="176" height="66" rx="10" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
   <circle cx="34" cy="324" r="15" fill="#15c47e22"/>
   <text x="34" y="330" text-anchor="middle" font-size="17">🎵</text>
-  <text x="56" y="320" font-size="11" font-weight="700" fill="#191f28">로파이 비트 <tspan font-weight="500" fill="#8b95a1">– 록빈</tspan></text>
+  <text x="56" y="320" font-size="11" font-weight="700" fill="#191f28">로파이 비트 <tspan font-weight="500" fill="#8b95a1">· 록빈</tspan></text>
   <text x="56" y="336" font-size="9.5" fill="#8b95a1">트랙 2개 · ▶ 89 · 이어 0</text>
 
   <!-- 하단 가져오기 바(담은 항목 있을 때) -->

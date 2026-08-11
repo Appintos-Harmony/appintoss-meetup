@@ -50,7 +50,7 @@
     <line x1="276.4" y1="172" x2="276.4" y2="666"/>
   </g>
 
-  <!-- 레인 라벨 음이름 (C5 B A G F E D C — 위에서 아래) 12px #8b95a1 -->
+  <!-- 레인 라벨 음이름 (C5 B A G F E D C: 위에서 아래) 12px #8b95a1 -->
   <g font-size="12" fill="#8b95a1" text-anchor="middle">
     <text x="54" y="197">C5</text>
     <text x="54" y="238">B</text>

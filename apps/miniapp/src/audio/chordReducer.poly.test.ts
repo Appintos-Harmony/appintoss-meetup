@@ -9,7 +9,7 @@ const up = (s: ChordState, chord: string): ChordState =>
   chordReducer(s, { type: 'up', source: 'touch', tick: 0, nowMs: 0, chord, poly: true });
 
 describe('chordReducer 폴리포니(멀티터치 멜로디)', () => {
-  it('여러 음 동시 보유 — 각각 noteOn 가산', () => {
+  it('여러 음 동시 보유: 각각 noteOn 가산', () => {
     let s = initialChordState;
     s = down(s, 'C4');
     s = down(s, 'E4');

@@ -1,4 +1,4 @@
-// 제스처 코드 모드 — 기타/베이스 전용 오버레이.
+// 제스처 코드 모드: 기타/베이스 전용 오버레이.
 // 투명한 기타/베이스 실루엣 위에 프렛(세로선)으로 칸을 나눠 C | F | Am | G 식으로 코드 배치.
 // 해당 칸 코드가 울리면(active) 그 칸의 현(가로선)이 진동.
 import { chordColor, ROMAN } from './chords';
@@ -53,7 +53,7 @@ export function GestureFretboard({
                 transition: 'background .08s',
               }}
             >
-              {/* 현(가로선) — active면 진동 */}
+              {/* 현(가로선): active면 진동 */}
               {Array.from({ length: strings }).map((_, s) => (
                 <div
                   key={s}
@@ -72,7 +72,7 @@ export function GestureFretboard({
               {/* 코드 라벨 */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 14, color: '#fff' }}>
                 {label && ROMAN[label] && <span style={{ fontSize: 11, opacity: 0.75, fontWeight: 700 }}>{ROMAN[label]}</span>}
-                <span style={{ fontSize: camFull ? 32 : 23, fontWeight: 800, textShadow: '0 1px 5px rgba(0,0,0,.7)', transform: on ? 'scale(1.12)' : 'none', transition: 'transform .08s' }}>{label ?? '—'}</span>
+                <span style={{ fontSize: camFull ? 32: 23, fontWeight: 800, textShadow: '0 1px 5px rgba(0,0,0,.7)', transform: on ? 'scale(1.12)': 'none', transition: 'transform .08s' }}>{label ?? '-'}</span>
               </div>
             </div>
           );

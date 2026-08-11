@@ -23,7 +23,7 @@ export interface Session {
   originAuthor?: string | null;
 }
 
-// 백엔드 불가 시 데모용 프리로드(친구 트랙 — C·G·Am·F 4마디).
+// 백엔드 불가 시 데모용 프리로드(친구 트랙: C·G·Am·F 4마디).
 export const PRELOAD: Session = {
   code: 'DEMO01',
   name: '데모 합주',
@@ -118,7 +118,7 @@ export async function readClipboardCode(): Promise<string | null> {
   }
 }
 
-// ---- 커뮤니티 공유 보드 (음원 공유 + 합 쌓기 + 코멘트) — 기능명세서 v2 ----
+// ---- 커뮤니티 공유 보드 (음원 공유 + 합 쌓기 + 코멘트), 기능명세서 v2 ----
 export interface CommunityItem {
   code: string;
   name: string;
@@ -143,7 +143,7 @@ export interface Comment {
 
 /** 보드 목록(최근 공유물). me(anonKey)를 넘기면 항목별 내 좋아요 여부(liked)도 채워진다. 실패 시 예외. */
 export async function listCommunity(limit = 30, me?: string): Promise<CommunityItem[]> {
-  // me(anonKey)는 x-anon-key 헤더로 전송 — URL 쿼리·프록시 로그에 안정 식별자가 노출되지 않도록(Codex MED).
+  // me(anonKey)는 x-anon-key 헤더로 전송: URL 쿼리·프록시 로그에 안정 식별자가 노출되지 않도록(Codex MED).
   const r = (await req('/community?limit=' + limit, {
     headers: me ? { 'x-anon-key': me } : undefined,
   })) as { items?: CommunityItem[] };
@@ -170,7 +170,7 @@ export async function publishSession(s: {
   instrument?: Instrument;
   style?: string;
   originCode?: string;
-  trackCount?: number; // 전체 레이어 수(서버 중복방지 키 — 트랙 구성이 다르면 다른 곡으로 취급)
+  trackCount?: number; // 전체 레이어 수(서버 중복방지 키: 트랙 구성이 다르면 다른 곡으로 취급)
   idempotencyToken?: string;
 }): Promise<{ code: string; deduped: boolean }> {
   const body: Record<string, unknown> = {

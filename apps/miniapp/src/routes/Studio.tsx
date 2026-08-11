@@ -69,7 +69,7 @@ type TimeSig = '3/4' | '4/4' | '6/8';
 
 const SIG = ['#3182f6', '#ff6b6b', '#15c47e', '#8b5cf6', '#ff9f1c'];
 
-const GESTURE_MOVE_GATE = 1.6; // 정규화 단위/초 — 이보다 빠르면 '지나가는 중'(실기 튜닝값)
+const GESTURE_MOVE_GATE = 1.6; // 정규화 단위/초. 이보다 빠르면 '지나가는 중'(실기 튜닝값)
 const SPARKLE_MS = 650; // 효과 스파클 자동 소멸(ms)
 const TOAST_MS = 2000; // 토스트 표시 시간(ms)
 const SESSION_POLL_MS = 1500; // 공유 세션 폴링 주기(ms)
@@ -287,10 +287,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     currentSongRef.current = null; // 커뮤니티 포크는 새 파생곡 → 저장 시 새 곡으로
     clearMelody();
     // 받은 트랙은 sessionTracks 레이어로만 둔다. take는 비워 내 연주를 새로 녹음 → 얹기.
-    // (take에도 base를 넣으면 합주 듣기에서 base가 두 번 재생됨 — R34-001)
+    // (take에도 base를 넣으면 합주 듣기에서 base가 두 번 재생됨, R34-001)
     stateRef.current = { ...initialChordState };
     setHasTake(false);
-    // 커뮤니티에서 가져온 곡은 '로컬 파생 빌드'다 — sessionCode를 두지 않는다.
+    // 커뮤니티에서 가져온 곡은 '로컬 파생 빌드'다. sessionCode를 두지 않는다.
     // (출처는 publish 때 forked.code에서 따로 가져옴.) 그래야 레이어 삭제 가능 + 폴링이 로컬 레이어를 덮지 않음 + 원곡 서버 미오염.
     setSessionCode(null);
     setBaseOwner(base.owner);
@@ -471,7 +471,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       setHeldNotes(new Set(heldRef.current));
     }
   }
-  // 멜로디 제스처 오버레이 하이라이트(눌린 음/셀) — 변할 때만 setState.
+  // 멜로디 제스처 오버레이 하이라이트(눌린 음/셀): 변할 때만 setState.
   function updateMelodyActive(arr: { note: string; row: number; col: number }[]) {
     setGMelody((prev) => {
       const a = arr.map((x) => `${x.note}:${x.row}:${x.col}`).sort().join('|');
@@ -553,7 +553,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const inst = t.instrument ?? inferInstrument(t.events);
       return createVoice(inst, t.style ?? (inst === 'drum' ? 'analog' : 'grand'));
     });
-    const t0Audio = audioNow(); // 단일 오디오 앵커 — 모든 패스를 누적 절대시각으로 스케줄(audioNow 재읽기 금지 = 드리프트 방지, #3)
+    const t0Audio = audioNow(); // 단일 오디오 앵커: 모든 패스를 누적 절대시각으로 스케줄(audioNow 재읽기 금지 = 드리프트 방지, #3)
     scheduleMonitorPass(voices, t0Audio, t0Audio + durSec);
     const startPerf = performance.now();
     monitorRef.current = { voices, timers: [], raf: 0, loopTimer: 0, startPerf };
@@ -670,7 +670,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     const v = videoRef.current;
     if (v && v.readyState >= 2) {
       const mirror = facingRef.current === 'user';
-      const maxHands = 2; // 양손 기본 — 손 하나만 내밀면 자동 한손
+      const maxHands = 2; // 양손 기본: 손 하나만 내밀면 자동 한손
       const now = performance.now();
       const drumOn = drumModeRef.current;
       const zones = drumOn ? [] : selectedRef.current.slice(0, fullscreenRef.current ? GESTURE_ZONES_FULL : GESTURE_ZONES);
@@ -728,7 +728,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         for (let i = 0; i < 2; i++) {
           const f = frames[i];
           let hit: { note: string; row: number; col: number } | null = null;
-          // 손가락(finger) + isPointing(active)일 때만 — 손바닥 모드는 자연 비활성.
+          // 손가락(finger) + isPointing(active)일 때만: 손바닥 모드는 자연 비활성.
           if (i < maxHands && !fast[i] && f && f.active && f.pos && gestureModeRef.current === 'finger') {
             const x = mirror ? 1 - f.pos.x : f.pos.x;
             const y = f.pos.y;
@@ -786,7 +786,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       }
 
       // ---- 효과 발음/스파클 ----
-      // 2명+(양손): 연주와 겹쳐도 OK. 1명(한손): 안 겹치게 — 탬버린은 흔들 때(연주 이미 억제됨)만,
+      // 2명+(양손): 연주와 겹쳐도 OK. 1명(한손): 안 겹치게, 탬버린은 흔들 때(연주 이미 억제됨)만,
       // 헤드뱅잉은 코드 안 울릴 때만, 박수는 양손 전용이라 1명선 발생 안 함.
       if (fx) {
         const chordActive = stateRef.current.activeChord !== null;
@@ -828,7 +828,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     try {
       await ensureAudio();
       await initHandTracking();
-      void initFaceDetection(); // 헤드뱅잉용(베스트에포트 — 실패해도 손 효과·연주는 진행)
+      void initFaceDetection(); // 헤드뱅잉용(베스트에포트: 실패해도 손 효과·연주는 진행)
       const v = videoRef.current;
       if (!v) throw new Error('no video');
       streamRef.current = await startCamera(v, facing);
@@ -909,7 +909,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   function scheduleEvents(events: SessionTrack['events'], voices: { chord: Voice; melody: Voice; drum: Voice }, fromMs = 0): number {
     let maxMs = 0;
-    const t0 = audioNow(); // 오디오 클럭 기준 — 샘플정확(setTimeout 지터 제거 → 레이어 싱크 타이트)
+    const t0 = audioNow(); // 오디오 클럭 기준: 샘플정확(setTimeout 지터 제거 → 레이어 싱크 타이트)
     for (const ev of normalizeEvents(events)) {
       const ms = tickToMs(ev.tick);
       if (ms > maxMs) maxMs = ms;
@@ -1131,7 +1131,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       const ok = await copyText(code);
       flashToast(ok ? `공유 코드 복사됨 · ${code}` : `공유 코드 · ${code}`);
     } catch {
-      flashToast('공유 실패 — 네트워크 확인');
+      flashToast('공유 실패. 네트워크 확인');
     }
   }
 
@@ -1166,10 +1166,10 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           await addTrack(code, t.owner, t.events, t.instrument, t.style, key); // 공개 세션 소유자 검증용 키
         }
       }
-      flashToast(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : origin ? '커뮤니티에 올렸어요 — 원작자 소스가 함께 표시돼요' : '커뮤니티에 올렸어요');
+      flashToast(deduped ? '같은 곡이 이미 보드에 있어요. 새로 올리지 않았어요': origin ? '커뮤니티에 올렸어요. 원작자 소스가 함께 표시돼요': '커뮤니티에 올렸어요');
     } catch (e) {
       const m = e instanceof Error ? e.message : '';
-      flashToast(m.includes('400') ? '곡 이름에 연락처·링크는 넣을 수 없어요' : '올리기 실패 — 네트워크 확인');
+      flashToast(m.includes('400') ? '곡 이름에 연락처·링크는 넣을 수 없어요': '올리기 실패. 네트워크 확인');
     }
   }
 
@@ -1194,7 +1194,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     const base = pending.tracks[0];
     clearMelody();
     // 받은 트랙=레이어(sessionTracks)로만. take는 비움 → 내 악기로 새로 녹음해 얹는다(R34-001 이중재생 방지).
-    // 친구 세션으로 컨텍스트 전환이므로 곡 신원도 끊는다 — 저장 시 새 곡으로(이어하던 내 곡 id 덮어쓰기 방지, #1).
+    // 친구 세션으로 컨텍스트 전환이므로 곡 신원도 끊는다. 저장 시 새 곡으로(이어하던 내 곡 id 덮어쓰기 방지, #1).
     currentSongRef.current = null;
     stateRef.current = { ...initialChordState };
     setHasTake(false);
@@ -1204,7 +1204,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     setSessionTracks(pending.tracks);
     setShowReceive(false);
     setPending(null);
-    flashToast(`${base.owner}님 트랙 받았어요 — 내 악기로 녹음해 얹어보세요`);
+    flashToast(`${base.owner}님 트랙 받았어요. 내 악기로 녹음해 얹어보세요`);
   }
 
   // 레이어 추가(솔로/세션 공통): 현재 take를 트랙으로 쌓고 take를 비워 다음 악기 녹음 준비. 세션이면 백엔드에도 업로드.
@@ -1253,7 +1253,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
 
   // 전체화면 가로 회전(CSS 90°). iOS WebView에서 Fullscreen/Orientation API보다 안정적.
   const surfaceWrap = (children: ReactNode): ReactNode => (
-    // 회전은 기기 방향에 맡김 — 폰을 가로로 돌리면 넓게(CSS rotate 안 함 → 카메라와 동일하게 똑바로).
+    // 회전은 기기 방향에 맡김: 폰을 가로로 돌리면 넓게(CSS rotate 안 함 → 카메라와 동일하게 똑바로).
     <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'var(--bg)', padding: 'calc(12px + env(safe-area-inset-top)) 16px 16px', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
         <button className="chip" onClick={() => setFullscreen(false)}>‹ 나가기</button>
@@ -1298,7 +1298,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
     <div
       style={
         camFull
-          ? // 카메라는 CSS 회전 안 함(영상이 옆으로 눕는 문제) — 화면을 그대로 채우고 사용자가 폰을 가로로 돌려 사용.
+          ? // 카메라는 CSS 회전 안 함(영상이 옆으로 눕는 문제). 화면을 그대로 채우고 사용자가 폰을 가로로 돌려 사용.
             { position: 'fixed', inset: 0, zIndex: 70, background: '#0b0d10', overflow: 'hidden' }
           : showCamera
           ? // isolation: 인라인 카메라의 제스처 컨트롤(전체화면·더보기, z-index 75)을 이 블록 스택에 가둔다.
@@ -1364,7 +1364,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             return (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 16, borderRight: i < zoneN - 1 ? '1px solid rgba(255,255,255,.18)' : 'none', borderTop: isActive ? `4px solid ${col}` : '4px solid transparent', background: isActive ? `${col}99` : 'transparent', transition: 'background .08s', color: '#fff' }}>
                 {label && ROMAN[label] && <span style={{ fontSize: 11, opacity: 0.7, fontWeight: 700 }}>{ROMAN[label]}</span>}
-                <span style={{ fontSize: camFull ? 34 : 24, fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,.6)', transform: isActive ? 'scale(1.12)' : 'none', transition: 'transform .08s' }}>{label ?? '—'}</span>
+                <span style={{ fontSize: camFull ? 34: 24, fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,.6)', transform: isActive ? 'scale(1.12)': 'none', transition: 'transform .08s' }}>{label ?? '-'}</span>
               </div>
             );
           })}
@@ -1405,8 +1405,8 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
       </div>
 
       <div className="content" style={{ paddingBottom: 'calc(108px + env(safe-area-inset-bottom))' }}>
-        {/* 설정 요약 칩바 — 연주법·악기·음색·입력을 한 줄로(탭하면 바텀시트, 현재값 라벨 표시) */}
-        {/* 4칩을 항상 1줄로 — 줄바꿈(flexWrap)·…(ellipsis) 금지. 작은 폰트로 균등폭에 맞춘다. */}
+        {/* 설정 요약 칩바: 연주법·악기·음색·입력을 한 줄로(탭하면 바텀시트, 현재값 라벨 표시) */}
+        {/* 4칩을 항상 1줄로: 줄바꿈(flexWrap)·…(ellipsis) 금지. 작은 폰트로 균등폭에 맞춘다. */}
         <div style={{ display: 'flex', gap: 5, alignItems: 'stretch', marginTop: 4 }}>
           {!drumMode && (
             <button className="chip chip-ghost" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '8px 6px', fontSize: 12, whiteSpace: 'nowrap' }} onClick={() => setModeSheet(true)}>
@@ -1463,7 +1463,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           </>
         )}
 
-        {/* 메트로놈 시트 — 박자·템포 설정(녹음 중 자동 재생, 수동 on/off 없음) */}
+        {/* 메트로놈 시트: 박자·템포 설정(녹음 중 자동 재생, 수동 on/off 없음) */}
         {metroSheet && (
           <>
             <div className="backdrop" onClick={() => setMetroSheet(false)} />
@@ -1498,7 +1498,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         </div>
 
 
-        {/* 카메라(코드/드럼 제스처) — 본문 안, 전체화면 시 fixed로 덮음 */}
+        {/* 카메라(코드/드럼 제스처): 본문 안, 전체화면 시 fixed로 덮음 */}
         {cameraBlock}
 
         {/* 코드 매트릭스(코드 모드) */}
@@ -1539,7 +1539,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           )
         )}
 
-        {/* 멜로디 — 피아노 건반(인라인) */}
+        {/* 멜로디: 피아노 건반(인라인) */}
         {!drumMode && playMode === 'melody' && instrument === 'piano' && !melodyFull && input !== 'gesture' && (
           <div style={{ marginTop: 14 }}>
             <button className="chip chip-ghost" style={{ marginBottom: 10 }} onClick={() => setFullscreen(true)}>⛶ 전체화면</button>
@@ -1547,7 +1547,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
           </div>
         )}
 
-        {/* 멜로디 — 기타/베이스 패드(인라인) */}
+        {/* 멜로디: 기타/베이스 패드(인라인) */}
         {!drumMode && playMode === 'melody' && fretInstrument && !melodyFull && input !== 'gesture' && (
           <div style={{ marginTop: 14 }}>
             <button className="chip chip-ghost" style={{ marginBottom: 4 }} onClick={() => setFullscreen(true)}>⛶ 전체화면</button>
@@ -1618,7 +1618,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         {toast && <div style={{ marginTop: 14, textAlign: 'center', color: 'var(--blue)', fontWeight: 700, fontSize: 14 }}>{toast}</div>}
       </div>
 
-      {/* 하단 고정 트랜스포트 바 — 연주 중 항상 닿는 메트로놈·녹음·재생·더보기 */}
+      {/* 하단 고정 트랜스포트 바: 연주 중 항상 닿는 메트로놈·녹음·재생·더보기 */}
       {!melodyFull && !drumTouchFull && !camFull && !editing && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 480, margin: '0 auto', zIndex: 30, background: 'var(--surface)', boxShadow: '0 -3px 18px rgba(17,24,39,.10)', borderRadius: '18px 18px 0 0', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))' }}>
           {/* 재생바: 녹음한 take 재생 위치(빨간 헤드) + 탭/드래그 스크럽 */}
@@ -1641,7 +1641,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
               <span className="t-cap c-sub" style={{ minWidth: 30, fontVariantNumeric: 'tabular-nums' }}>{formatMmSs(takeMs)}</span>
             </div>
           )}
-          {/* 녹음 중 합주(모니터) 진행 바 — 기존 레이어가 어디까지 재생됐는지. 반복 시 🔁 */}
+          {/* 녹음 중 합주(모니터) 진행 바: 기존 레이어가 어디까지 재생됐는지. 반복 시 🔁 */}
           {phase === 'recording' && monDur > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
               <span className="t-cap" style={{ fontSize: 11, fontWeight: 800, color: 'var(--coral)' }}>합주</span>
@@ -1669,7 +1669,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
         </div>
       )}
 
-      {/* 더보기 시트 — 공유·저장·음편집·가져오기·구경가기 */}
+      {/* 더보기 시트: 공유·저장·음편집·가져오기·구경가기 */}
       {showMore && (
         <>
           <div className="backdrop" onClick={() => setShowMore(false)} />
@@ -1756,7 +1756,7 @@ export function Studio({ go, loaded, forked, devMode }: { go: (r: Route) => void
             {nameModal === 'save' ? (
               currentSongRef.current ? (
                 <>
-                  <div className="t-cap c-sub" style={{ marginTop: 8 }}>「{currentSongRef.current.name}」 이어 만드는 중 — 덮어쓰거나 새 곡으로 저장</div>
+                  <div className="t-cap c-sub" style={{ marginTop: 8 }}>「{currentSongRef.current.name}」 이어 만드는 중: 덮어쓰거나 새 곡으로 저장</div>
                   <button className="btn" style={{ marginTop: 8, background: 'var(--blue)', color: '#fff' }} onClick={() => doSave(false)}>덮어쓰기</button>
                   <button className="btn" style={{ marginTop: 8, background: 'var(--blue-weak)', color: 'var(--blue)' }} onClick={() => doSave(true)}>새 곡으로 저장</button>
                 </>

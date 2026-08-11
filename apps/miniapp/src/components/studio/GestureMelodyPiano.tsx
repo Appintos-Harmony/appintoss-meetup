@@ -1,4 +1,4 @@
-// 멜로디 제스처 — 피아노. 불투명 건반 오버레이; 손끝이 닿은 건반이 '눌리는' 모션.
+// 멜로디 제스처: 피아노. 불투명 건반 오버레이; 손끝이 닿은 건반이 '눌리는' 모션.
 // 손끝→건반 매핑은 Studio 루프가 하고, 여기선 pressed(현재 눌린 음 집합)만 받아 표시(손가락 모드 전용).
 interface White {
   note: string;
@@ -33,7 +33,7 @@ export function GestureMelodyPiano({
             style={{
               flex: 1,
               position: 'relative',
-              // 투명: 카메라(손)가 비치게 — 평소엔 옅고, 누르면 파랗게 + 눌림 모션.
+              // 투명: 카메라(손)가 비치게. 평소엔 옅고, 누르면 파랗게 + 눌림 모션.
               background: on ? 'rgba(120,170,255,0.55)' : 'rgba(255,255,255,0.13)',
               border: '1px solid rgba(255,255,255,0.55)',
               borderRadius: '0 0 7px 7px',
@@ -50,7 +50,7 @@ export function GestureMelodyPiano({
           </div>
         );
       })}
-      {/* 검은건반 — 경계 위치, 위쪽 62% */}
+      {/* 검은건반: 경계 위치, 위쪽 62% */}
       {blacks.map((b) => {
         const on = pressed.has(b.note);
         return (

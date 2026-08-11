@@ -1,4 +1,4 @@
-// 커뮤니티 좋아요(로컬). 백엔드 소셜 집계가 아니라 데모용 — 내가 누른 좋아요만 localStorage에 저장하고,
+// 커뮤니티 좋아요(로컬). 백엔드 소셜 집계가 아니라 데모용: 내가 누른 좋아요만 localStorage에 저장하고,
 // 표시 개수 = 결정적 기본값(아이디 해시) + 내가 누름(±1). 실제 networked 집계는 후속(apps/api).
 const LIKE_STORE = 'harmony.likes';
 

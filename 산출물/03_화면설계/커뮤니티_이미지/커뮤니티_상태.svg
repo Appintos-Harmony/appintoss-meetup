@@ -1,4 +1,4 @@
-<svg width="100%" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 커뮤니티 보드 3상태 — 스케치·와이어프레임·목업</title><desc>음원 공유 보드의 로딩(스켈레톤 카드 2개)·빈(첫 곡의 주인공이 되어보세요+스튜디오로)·실패(불러오지 못했어요+다시 시도) 화면을 스케치, 와이어프레임, 목업 3단계 충실도로 폰 프레임에 나란히 그린 발표용 명세.</desc>
+<svg width="100%" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 커뮤니티 보드 3상태: 스케치·와이어프레임·목업</title><desc>음원 공유 보드의 로딩(스켈레톤 카드 2개)·빈(첫 곡의 주인공이 되어보세요+스튜디오로)·실패(불러오지 못했어요+다시 시도) 화면을 스케치, 와이어프레임, 목업 3단계 충실도로 폰 프레임에 나란히 그린 발표용 명세.</desc>
 
 <rect x="0" y="0" width="680" height="480" fill="#ffffff"/>
 
@@ -11,7 +11,7 @@
 <text x="560" y="38" text-anchor="middle" font-size="11" fill="#8b95a1">실패</text>
 
 <!-- ============================================================= -->
-<!-- 패널 1 — 스케치 (펜슬 그레이) · 로딩 / 스켈레톤 카드 2개 -->
+<!-- 패널 1: 스케치 (펜슬 그레이) · 로딩 / 스켈레톤 카드 2개 -->
 <!-- ============================================================= -->
 <g transform="translate(20,40)">
   <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
@@ -54,7 +54,7 @@
 </g>
 
 <!-- ============================================================= -->
-<!-- 패널 2 — 와이어프레임 (회색 박스+보더+라벨) · 빈 상태 -->
+<!-- 패널 2: 와이어프레임 (회색 박스+보더+라벨) · 빈 상태 -->
 <!-- ============================================================= -->
 <g transform="translate(240,40)">
   <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
@@ -88,7 +88,7 @@
 </g>
 
 <!-- ============================================================= -->
-<!-- 패널 3 — 목업 (실제 색·이모지·실제 카피) · 실패 상태 -->
+<!-- 패널 3: 목업 (실제 색·이모지·실제 카피) · 실패 상태 -->
 <!-- ============================================================= -->
 <g transform="translate(460,40)">
   <rect x="0" y="0" width="200" height="420" rx="20" fill="#ffffff" stroke="#c9ced5" stroke-width="1.5"/>
@@ -116,9 +116,9 @@
   <rect x="64" y="266" width="72" height="30" rx="15" fill="#f2f4f6" stroke="#c9ced5" stroke-width="1"/>
   <text x="100" y="285" text-anchor="middle" font-size="12" font-weight="700" fill="#3182f6">다시 시도</text>
 
-  <!-- 토스트 (실제 카피 — flash) -->
+  <!-- 토스트 (실제 카피: flash) -->
   <rect x="38" y="372" width="124" height="26" rx="13" fill="#191f28" opacity="0.92"/>
-  <text x="100" y="389" text-anchor="middle" font-size="11" fill="#ffffff">가져오기 실패 — 잠시 후 다시</text>
+  <text x="100" y="389" text-anchor="middle" font-size="11" fill="#ffffff">가져오기 실패: 잠시 후 다시</text>
 </g>
 
 </svg>

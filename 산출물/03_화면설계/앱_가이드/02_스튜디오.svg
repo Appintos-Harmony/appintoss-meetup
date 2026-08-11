@@ -1,10 +1,10 @@
-<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>스튜디오 사용법 — 녹음하고 합주 쌓기</title><desc>스튜디오 화면(좌)에 번호 콜아웃을 달고, 우측에 6단계 사용법(녹음·메트로놈, 코드·멜로디·드럼 연주, 재생바 스크럽, 레이어 쌓기·빼기, 합주 듣기·반복 토글, 더보기 저장·공유·올리기)을 설명하는 발표/도움말용 한 장.</desc>
+<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>스튜디오 사용법: 녹음하고 합주 쌓기</title><desc>스튜디오 화면(좌)에 번호 콜아웃을 달고, 우측에 6단계 사용법(녹음·메트로놈, 코드·멜로디·드럼 연주, 재생바 스크럽, 레이어 쌓기·빼기, 합주 듣기·반복 토글, 더보기 저장·공유·올리기)을 설명하는 발표/도움말용 한 장.</desc>
 
   <!-- 배경 -->
   <rect x="0" y="0" width="760" height="560" rx="18" fill="#f7f9fb"/>
 
   <!-- 제목 -->
-  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">스튜디오 — 녹음하고 합주 쌓기</text>
+  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">스튜디오: 녹음하고 합주 쌓기</text>
   <text x="34" y="61" font-size="12.5" fill="#6b7684">연주하고 · 레이어로 합주 쌓고 · 이름 지어 저장하기</text>
 
   <!-- ===================== 좌: 폰 목업(콜아웃) ===================== -->

@@ -18,14 +18,14 @@ import { dirname, resolve, join } from 'node:path';
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const TASK_DIR = join(ROOT, '산출물/09_AI개발파이프라인/작업지시서');
 
-// 디렉터리 보호: 하위 전체 차단(어떤 접근도 불가) — 게이트 자기수정·헌장 보호.
+// 디렉터리 보호: 하위 전체 차단(어떤 접근도 불가). 게이트 자기수정·헌장 보호.
 export const PROTECTED_DIRS = [
   '.claude',          // settings·rules·commands·agents·skills 전체
   '.git',
   '.github',
   'tooling',          // git-hooks·scripts(게이트 자기수정 금지) 전체
 ];
-// 파일 보호: 그 파일을 실제로 건드리는 경우만 차단(같은 디렉터리의 다른 파일은 허용 — 레저 .md 등).
+// 파일 보호: 그 파일을 실제로 건드리는 경우만 차단(같은 디렉터리의 다른 파일은 허용: 레저 .md 등).
 export const PROTECTED_FILES = [
   '프로젝트_운영/00_팀공유/00_진행사항.md',
   '프로젝트_운영/00_팀공유/01_인수인계.md',
@@ -35,7 +35,7 @@ export const PROTECTED_FILES = [
   'AGENTS.md',
   'CHATGPT_PRO_운영지침.md',
 ];
-// 주의(Codex X7): 루프 상태 `_상태.json`은 PROTECTED_FILES에 넣지 않는다 —
+// 주의(Codex X7): 루프 상태 `_상태.json`은 PROTECTED_FILES에 넣지 않는다.
 // 넣으면 정당한 넓은 글롭(`평가증빙/**`)이 over-reject된다. 대신 ① .gitignore로 커밋 불가(영속 변조 차단)
 // ② iteration()이 매 호출 max를 ABS_MAX_ITER로 재클램프(예산 변조 무력화)로 보호한다.
 // 하위호환·표시용 평탄 목록.
@@ -99,7 +99,7 @@ export function pathSafety(task) {
   if (task && task.invalid) return { safe: false, violations: ['작업지시서 파싱 무효(게이팅 키 중복 등)'] };
   const allowed = (task && task.allowed_paths) || [];
   const violations = [];
-  if (allowed.length === 0) violations.push('allowed_paths가 비어 있음 — 자율 실행 범위 불명확');
+  if (allowed.length === 0) violations.push('allowed_paths가 비어 있음: 자율 실행 범위 불명확');
   for (const g of allowed) {
     // 절대경로·드라이브·앞슬래시·'..' traversal은 canonicalize가 접기 전에 거부(repo 탈출 차단, Codex A5·B8).
     const raw = String(g).normalize('NFC').replace(/\\/g, '/').trim();
@@ -238,7 +238,7 @@ function main() {
 
   if (json) { out(JSON.stringify({ count: tasks.length, tasks }, null, 2)); return; }
 
-  out('# 작업 인덱서 — Ready 큐');
+  out('# 작업 인덱서: Ready 큐');
   const ready = tasks.filter(isReady).sort((a, b) => a.id.localeCompare(b.id));
   out(`전체 ${tasks.length}건 · Ready ${ready.length}건\n`);
   for (const t of ready) {

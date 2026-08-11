@@ -1,10 +1,10 @@
-<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 홈 — 시작 화면 가이드</title><desc>홈 화면(좌)에 번호 콜아웃을 달고, 우측에 4단계 사용법(스튜디오로 새 곡 녹음·커뮤니티에서 남의 음원에 얹기·이어하기로 만들던 곡 이어서·설정에서 프로필 닉네임)을 설명하는 발표/도움말용 한 장.</desc>
+<svg width="100%" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" font-family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif" role="img"><title>하모니 홈: 시작 화면 가이드</title><desc>홈 화면(좌)에 번호 콜아웃을 달고, 우측에 4단계 사용법(스튜디오로 새 곡 녹음·커뮤니티에서 남의 음원에 얹기·이어하기로 만들던 곡 이어서·설정에서 프로필 닉네임)을 설명하는 발표/도움말용 한 장.</desc>
 
   <!-- 배경 -->
   <rect x="0" y="0" width="760" height="560" rx="18" fill="#f7f9fb"/>
 
   <!-- 제목 -->
-  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">하모니 홈 — 시작 화면</text>
+  <text x="34" y="40" font-size="20" font-weight="800" fill="#191f28">하모니 홈: 시작 화면</text>
   <text x="34" y="61" font-size="12.5" fill="#6b7684">새 곡은 스튜디오에서 · 둘러보고 얹기는 커뮤니티에서 · 만들던 곡은 이어하기로</text>
 
   <!-- ===================== 좌: 폰 목업(콜아웃) ===================== -->
@@ -41,7 +41,7 @@
     <rect x="14" y="306" width="272" height="92" rx="13" fill="#ffffff" stroke="#eef1f4" stroke-width="1"/>
     <circle cx="42" cy="338" r="16" fill="#15c47e22"/>
     <text x="42" y="344" text-anchor="middle" font-size="16">🎵</text>
-    <text x="66" y="334" font-size="12" font-weight="700" fill="#191f28">봄날의 멜로디 <tspan font-weight="500" fill="#8b95a1">– 작업 중</tspan></text>
+    <text x="66" y="334" font-size="12" font-weight="700" fill="#191f28">봄날의 멜로디 <tspan font-weight="500" fill="#8b95a1">· 작업 중</tspan></text>
     <text x="66" y="350" font-size="10" fill="#8b95a1">트랙 2개 · 마지막 저장 2시간 전</text>
     <!-- 코드 칩 C / Am / F / G -->
     <rect x="66" y="364" width="34" height="22" rx="7" fill="#eef5ff"/>
@@ -68,28 +68,28 @@
     <!-- step 1 -->
     <g transform="translate(0,0)">
       <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">1</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">스튜디오 — 새 곡 만들기</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">스튜디오: 새 곡 만들기</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">처음부터 트랙을 녹음해 새 곡을 만들어요. 빈 곡으로</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">시작해 한 겹씩 쌓는 게 기본 작업 공간이에요.</text>
     </g>
     <!-- step 2 -->
     <g transform="translate(0,72)">
       <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">2</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">커뮤니티 — 둘러보고 얹기</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">커뮤니티: 둘러보고 얹기</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">다른 사람의 음원을 둘러보고, 마음에 들면 담아서</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">내 스튜디오에 얹어요. 함께 만드는 합주의 시작.</text>
     </g>
     <!-- step 3 -->
     <g transform="translate(0,144)">
       <circle cx="14" cy="14" r="13" fill="#ff6b6b"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">3</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">이어하기 — 만들던 곡 이어서</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">이어하기: 만들던 곡 이어서</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">최근 곡 카드를 탭하면 그 곡이 스튜디오에 로드돼요.</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">코드 칩(C·Am·F·G)으로 어떤 곡인지 한눈에 확인.</text>
     </g>
     <!-- step 4 -->
     <g transform="translate(0,216)">
       <circle cx="14" cy="14" r="13" fill="#3182f6"/><text x="14" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="#ffffff">4</text>
-      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">⚙️ 설정 — 프로필</text>
+      <text x="38" y="13" font-size="13.5" font-weight="800" fill="#191f28">⚙️ 설정: 프로필</text>
       <text x="38" y="31" font-size="11" fill="#6b7684">우측 상단 설정에서 이모지 프로필과 닉네임을</text>
       <text x="38" y="46" font-size="11" fill="#6b7684">정해요. 커뮤니티에서 나를 보여 줄 얼굴이에요.</text>
     </g>

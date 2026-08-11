@@ -10,7 +10,7 @@ build/
 .turbo/
 coverage/
 
-# env / secrets (비밀값은 저장소에 넣지 않는다 — CLAUDE.md §13.1)
+# env / secrets (비밀값은 저장소에 넣지 않는다: CLAUDE.md §13.1)
 .env
 .env.*
 *.local
@@ -31,7 +31,7 @@ Thumbs.db
 # office 임시 잠금 파일
 ~$*
 
-# 루프엔지니어링 런타임 상태(반복 카운터 — 휘발성, 증거 아님). 로그 산출물은 추적한다.
+# 루프엔지니어링 런타임 상태(반복 카운터: 휘발성, 증거 아님). 로그 산출물은 추적한다.
 평가증빙/루프실행_로그/_상태.json
 
 # AI 도구 설정. 저장소에 올리지 않는다
@@ -40,3 +40,6 @@ Thumbs.db
 CLAUDE.md
 AGENTS.md
 CHATGPT_PRO_운영지침.md
+
+# 미니앱 빌드 산출물
+*.ait

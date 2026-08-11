@@ -128,7 +128,7 @@ function buildSystem() {
      '신뢰경계 4겹: 기기(untrusted) → nginx(443 TLS 종단·유일 public 면) → 127.0.0.1:8080 loopback API → SQLite 단일 파일']);
 
   // --- 상단 CI/배포 밴드 ---
-  s += cluster({ x: 48, y: 108, w: 1644, h: 104, title: 'CI · 배포 파이프라인 — 사람 게이트 (코드 파이프라인은 prod 자격증명 미접촉)', headFill: COL.gray, bodyFill: '#F9FAFB', stroke: COL.gray, dashed: true });
+  s += cluster({ x: 48, y: 108, w: 1644, h: 104, title: 'CI · 배포 파이프라인: 사람 게이트 (코드 파이프라인은 prod 자격증명 미접촉)', headFill: COL.gray, bodyFill: '#F9FAFB', stroke: COL.gray, dashed: true });
   s += card({ x: 70, y: 156, w: 360, h: 44, iconId: 'githubactions', title: 'GitHub Actions CI', subs: ['verify-docs(문서·비밀값) · verify-code(tsc+vitest)'], titleSize: 13.5 });
   s += arrow(436, 178, 486, 178, { kind: 'deploy' });
   s += card({ x: 492, y: 156, w: 330, h: 44, iconId: 'gnubash', title: 'deploy/deploy.sh (사람 전용)', subs: ['scp 복사 → systemctl enable --now'], titleSize: 13.5 });
@@ -143,7 +143,7 @@ function buildSystem() {
   s += card({ x: cx + 22, y: cy + 54, w: cw - 44, h: 58, iconId: 'user', title: '사용자 (토스 앱 이용자)', subs: ['로그인/회원가입 없음 · 익명 식별만'] });
   s += card({ x: cx + 22, y: cy + 122, w: cw - 44, h: 70, iconId: 'react', title: '미니앱 프론트 (Granite SPA)', subs: ['React 18.3 · TS · Vite 6 · TDS', 'VITE_API_BASE=<https> 주입'] });
   s += card({ x: cx + 22, y: cy + 200, w: cw - 44, h: 64, iconId: 'mediapipe', title: '입력 캡처 → chordReducer', subs: ['MediaPipe 4코드존 · 터치 폴백', 'tick 기록(벽시계 ms 금지)'] });
-  s += card({ x: cx + 22, y: cy + 272, w: cw - 44, h: 60, iconId: 'tonejs', title: '오디오 엔진 (Tone.js — 클라 완결)', subs: ['PolySynth 합성·메트로놈·트랙별 음색 동시재생'] });
+  s += card({ x: cx + 22, y: cy + 272, w: cw - 44, h: 60, iconId: 'tonejs', title: '오디오 엔진 (Tone.js · 클라 완결)', subs: ['PolySynth 합성·메트로놈·트랙별 음색 동시재생'] });
   s += card({ x: cx + 22, y: cy + 340, w: cw - 44, h: 58, iconId: 'webstorage', title: 'localStorage (내 곡)', subs: ['솔로 오프라인 완결 · 단일기기·무동기화'], accent: COL.cyan });
   // 제약 노트
   s += `<rect x="${cx + 22}" y="${cy + 410}" width="${cw - 44}" height="92" rx="12" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="1.5"/>`;
@@ -160,7 +160,7 @@ function buildSystem() {
   const gx = ex + 22, gy = ey + 54, gw = 332, gh = 540;
   s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="14" fill="#ECFDF5" stroke="${COL.green}" stroke-width="1.6"/>`;
   s += `<text x="${gx + 16}" y="${gy + 24}" font-size="13" font-weight="800" fill="#047857"${fitAttr('엣지 · TLS 종단 (유일 public 노출면)', 13, gw - 32)}>엣지 · TLS 종단 (유일 public 노출면)</text>`;
-  s += card({ x: gx + 14, y: gy + 38, w: gw - 28, h: 78, iconId: 'nginx', title: 'nginx — TLS 종단 · 프록시', subs: ['443 TLS 종단 · nip.io · 정적 SPA', '/sessions · /community → 8080 (+XFF)'] });
+  s += card({ x: gx + 14, y: gy + 38, w: gw - 28, h: 78, iconId: 'nginx', title: 'nginx: TLS 종단 · 프록시', subs: ['443 TLS 종단 · nip.io · 정적 SPA', '/sessions · /community → 8080 (+XFF)'] });
   s += card({ x: gx + 14, y: gy + 128, w: gw - 28, h: 58, iconId: 'letsencrypt', title: 'certbot / Let’s Encrypt', subs: ['certbot.timer 인증서 자동 갱신'] });
   s += card({ x: gx + 14, y: gy + 200, w: gw - 28, h: 70, iconId: 'cloudflare', title: 'cloudflared 터널 (대체·임시)', subs: ['harmony-tunnel.service · CDN 아님'] });
   s += card({ x: gx + 14, y: gy + 284, w: gw - 28, h: 58, iconId: 'pulse', title: 'GET /healthz (관측 단일 신호)', subs: ['메트릭·로그집계·대시보드 없음'], accent: COL.purple });
@@ -183,7 +183,7 @@ function buildSystem() {
   const sy = gy + gh + 14;
   s += `<rect x="${gx}" y="${sy}" width="${ax + aw - gx}" height="64" rx="13" fill="#F5F3FF" stroke="${COL.purple}" stroke-width="1.6"/>`;
   s += `<image x="${gx + 16}" y="${sy + 17}" width="30" height="30" href="${uri('systemd')}"/>`;
-  s += `<text x="${gx + 56}" y="${sy + 27}" font-size="13.5" font-weight="800" fill="#6D28D9">systemd — 감독 · 자동복구 · 권한격리</text>`;
+  s += `<text x="${gx + 56}" y="${sy + 27}" font-size="13.5" font-weight="800" fill="#6D28D9">systemd: 감독 · 자동복구 · 권한격리</text>`;
   s += `<text x="${gx + 56}" y="${sy + 46}" font-size="11.5" fill="#5B21B6"${fitAttr('Restart=on-failure · User=harmony · NoNewPrivileges · ProtectSystem=full · certbot.timer 자동갱신', 11.5, ax + aw - (gx + 56) - 14)}>Restart=on-failure · User=harmony · NoNewPrivileges · ProtectSystem=full · certbot.timer 자동갱신</text>`;
 
   // --- 엣지(화살표) ---
@@ -210,7 +210,7 @@ function buildSystem() {
     { c: 'purple', t: '감독·자동복구·인증서갱신' }, { c: 'gray', t: '배포·CI(사람 게이트)', dash: true }, { c: 'red', t: '데이터 손실 리스크' },
   ]);
   // 핵심 노트 3 pill
-  const notes = ['HTTPS 필수 — 잘못된 base = 전체 네트워크 마비', '인증 없음 = 데모 범위(코드=접근권한)', '무의존·단일 인스턴스 = 의도된 트레이드오프(공급망 최소·HA 없음)'];
+  const notes = ['HTTPS 필수: 잘못된 base = 전체 네트워크 마비', '인증 없음 = 데모 범위(코드=접근권한)', '무의존·단일 인스턴스 = 의도된 트레이드오프(공급망 최소·HA 없음)'];
   let nx = 56;
   notes.forEach((t) => { const wpx = t.length * 7.0 + 28; s += `<rect x="${nx}" y="${H - 64}" width="${wpx}" height="30" rx="15" fill="#F1F5F9" stroke="#E2E8F0"/><text x="${nx + 14}" y="${H - 44}" font-size="12" fill="#334155">${esc(t)}</text>`; nx += wpx + 14; });
 
@@ -260,7 +260,7 @@ function buildFlow() {
     b_poll: { cx: C.c5, cy: yB, icon: 'react', t: '⑫ 1.5초 폴링', s: ['실시간 아님·pull'] },
     b_ensemble: { cx: C.c6, cy: yB, icon: 'tonejs', t: '⑬ 합주 듣기(Tone.js)', s: ['트랙별 음색 동시재생'] },
   };
-  // 엣지 (스텝 간) — 먼저 그려서 카드가 위에 오게
+  // 엣지 (스텝 간): 먼저 그려서 카드가 위에 오게
   const P = (id) => steps[id];
   function sEdge(a, b, kind, label, opt = {}) {
     const A = P(a), B = P(b);
@@ -308,7 +308,7 @@ function buildFlow() {
     { c: 'cyan', t: '로컬(클라 완결)' }, { c: 'green', t: 'HTTPS API' }, { c: 'amber', t: 'DB 기록' },
     { c: 'gray', t: '앱 밖 코드 전달', dash: true }, { c: 'purple', t: '출처 파생 루프', dash: true },
   ]);
-  s += `<text x="${W - 48}" y="${H - 60}" font-size="11.5" fill="#94A3B8" text-anchor="end">서버 노드(⑤⑥⑦)는 A·B가 공유 — 화살표는 각 사용자가 동일 인프라를 호출함을 의미</text>`;
+  s += `<text x="${W - 48}" y="${H - 60}" font-size="11.5" fill="#94A3B8" text-anchor="end">서버 노드(⑤⑥⑦)는 A·B가 공유: 화살표는 각 사용자가 동일 인프라를 호출함을 의미</text>`;
 
   s += `</svg>`;
   return s;

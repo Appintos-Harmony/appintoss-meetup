@@ -6,7 +6,7 @@ const on = (tick: number, chord: string): ChordEvent => ({ tick, phase: 'on', ch
 const off = (tick: number, chord: string): ChordEvent => ({ tick, phase: 'off', chord, source: 'touch' });
 
 describe('loopEvents (구간 반복 타일링)', () => {
-  it('한 마디(16틱) 패턴을 4회로 이어붙임 — 틱이 16씩 오프셋', () => {
+  it('한 마디(16틱) 패턴을 4회로 이어붙임: 틱이 16씩 오프셋', () => {
     const base = [on(0, 'C'), off(8, 'C')];
     const out = loopEvents(base, 16, 4);
     expect(out).toHaveLength(8); // 2 이벤트 × 4

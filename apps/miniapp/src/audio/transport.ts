@@ -1,9 +1,9 @@
 // 음악 클럭 (Tone.Transport). 메트로놈·카운트인·녹음 tick 기준.
-// DL-019: BPM 100, 4/4. 벽시계 ms 금지 — Transport 초를 tick으로 환산.
+// DL-019: BPM 100, 4/4. 벽시계 ms 금지. Transport 초를 tick으로 환산.
 import * as Tone from 'tone';
 import { playClick } from './engine';
 
-// 템포·박자는 런타임 설정(메트로놈 시트). tick은 박(=4분음표) 기준 — BPM이 박 템포.
+// 템포·박자는 런타임 설정(메트로놈 시트). tick은 박(=4분음표) 기준: BPM이 박 템포.
 export let BPM = 100;
 export let BEATS_PER_BAR = 4; // 박자 분자(3/4→3, 4/4→4, 6/8→6). 클릭 수/바.
 export const TICKS_PER_BEAT = 4;

@@ -17,7 +17,7 @@ export function UiShell({ children }: { children: ReactNode }) {
         if (alive) setTossShell(() => m.TossShell);
       })
       .catch(() => {
-        // TDS 로드 실패 시에도 폴백(theme.css) 유지 — 화면이 깨지지 않게
+        // TDS 로드 실패 시에도 폴백(theme.css) 유지: 화면이 깨지지 않게
       });
     return () => {
       alive = false;

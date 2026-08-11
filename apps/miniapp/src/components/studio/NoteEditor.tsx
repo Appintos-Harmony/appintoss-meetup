@@ -20,7 +20,7 @@ const TPB = TICKS_PER_BEAT;
 const BAR = BEATS_PER_BAR * TPB;
 const LABEL_W = 54;
 
-// 편집 화면 전용 색(앱 전체보다 한 단계 진한 톤 — 대비↑, 음악앱 부드러움 유지).
+// 편집 화면 전용 색(앱 전체보다 한 단계 진한 톤: 대비↑, 음악앱 부드러움 유지).
 const C_BG = '#d7dde6'; // 화면 배경
 const C_PANEL = '#eceff4'; // 편집 영역
 const C_LABEL = '#dfe4ec'; // 레인 라벨 열
@@ -340,7 +340,7 @@ export function NoteEditor({ events, onApply, onClose }: { events: ChordEvent[];
                     </button>
                   );
                 })}
-                {/* 재생 위치선(빨강) — 전체 높이 그랩(드래그로 스크럽) */}
+                {/* 재생 위치선(빨강): 전체 높이 그랩(드래그로 스크럽) */}
                 <div
                   onPointerDown={onHeadDown}
                   onPointerMove={onHeadMove}

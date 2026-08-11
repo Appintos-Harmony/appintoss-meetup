@@ -35,7 +35,7 @@ const checks = strict
 if (codeGate) checks.push(['코드 게이트(tsc·vitest)', '코드검증.mjs', [], true]);
 
 const mode = strict ? '엄격(strict) 검증' : '하네스 기본 검증';
-out(`# 검증 전체 — ${mode}${codeGate ? ' + 코드 게이트' : ''}`);
+out(`# 검증 전체: ${mode}${codeGate ? ' + 코드 게이트': ''}`);
 
 let failed = 0;
 const summary = [];
@@ -57,5 +57,5 @@ for (const [label, file, args, hard] of checks) {
 
 out('\n===== 요약 =====');
 summary.forEach((s) => out(' ' + s));
-out(failed ? `\n전체 결과: FAIL — ${mode} (${failed}건)` : `\n전체 결과: PASS — ${mode}`);
+out(failed ? `\n전체 결과: FAIL · ${mode} (${failed}건)`: `\n전체 결과: PASS · ${mode}`);
 process.exit(failed ? 1 : 0);

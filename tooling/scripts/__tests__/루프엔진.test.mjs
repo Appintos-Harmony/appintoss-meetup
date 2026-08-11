@@ -1,5 +1,5 @@
-// 루프엔진 단위테스트 (TASK-010) — 독립검토(REVIEW-035) 반영 회귀 포함
-// node:test 내장 러너 — 외부 의존성·API 없음. 실행: node tooling/scripts/루프엔진_검증.mjs
+// 루프엔진 단위테스트 (TASK-010): 독립검토(REVIEW-035) 반영 회귀 포함
+// node:test 내장 러너: 외부 의존성·API 없음. 실행: node tooling/scripts/루프엔진_검증.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, rmSync, mkdirSync } from 'node:fs';
@@ -84,11 +84,11 @@ test('canonicalize: ADS 콜론 별칭 제거 (Codex X9)', () => {
 });
 
 test('보호 파일 정확매치: 자신만 차단, 같은폴더/상위 글롭 허용 (Codex X7 완화)', () => {
-  // CLAUDE.md(파일보호)는 자신은 차단하되 루트의 다른 파일은 허용 — dir/file 분리 이득.
+  // CLAUDE.md(파일보호)는 자신은 차단하되 루트의 다른 파일은 허용: dir/file 분리 이득.
   assert.ok(isUnderProtected('CLAUDE.md'));
   assert.ok(!pathSafety({ allowed_paths: ['CLAUDE.md'] }).safe);
   assert.ok(pathSafety({ allowed_paths: ['README.md'] }).safe);
-  // _상태.json은 pathSafety로 막지 않음(넓은 글롭 보존) — gitignore+캡클램프로 보호.
+  // _상태.json은 pathSafety로 막지 않음(넓은 글롭 보존): gitignore+캡클램프로 보호.
   assert.ok(pathSafety({ allowed_paths: ['평가증빙/**'] }).safe);
   assert.ok(pathSafety({ allowed_paths: ['평가증빙/루프실행_로그/*.md'] }).safe);
 });

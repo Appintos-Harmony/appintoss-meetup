@@ -27,7 +27,7 @@ for (const f of files) {
   const review = field(text, 'review_agent');
   const status = field(text, 'status');
   if (primary && review && primary === review) {
-    errors.push(`${f}: primary_agent와 review_agent가 동일(${primary}) — 독립 검토 위반`);
+    errors.push(`${f}: primary_agent와 review_agent가 동일(${primary}). 독립 검토 위반`);
   }
   if (/^done$/i.test(status)) {
     const hasEvidence = /REVIEW-\d|독립검토서|\]\([^)]+\)/.test(text);

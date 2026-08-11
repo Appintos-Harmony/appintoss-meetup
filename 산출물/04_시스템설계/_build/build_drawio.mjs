@@ -60,9 +60,9 @@ function build(diagramName, groups, nodes, edges, W, H) {
 
 /* ===== 시스템 ===== */
 const sysGroups = [
-  { x: 48, y: 108, w: 1644, h: 104, label: 'CI · 배포 파이프라인 — 사람 게이트 (코드 파이프라인은 prod 자격증명 미접촉)', fill: '#F9FAFB', stroke: '#6B7280', dash: 1 },
+  { x: 48, y: 108, w: 1644, h: 104, label: 'CI · 배포 파이프라인: 사람 게이트 (코드 파이프라인은 prod 자격증명 미접촉)', fill: '#F9FAFB', stroke: '#6B7280', dash: 1 },
   { x: 48, y: 244, w: 520, h: 812, label: '클라이언트 신뢰경계 · 토스 WebView (untrusted)', fill: '#EFF6FF', stroke: '#3B82F6' },
-  { x: 600, y: 244, w: 1092, h: 812, label: 'AWS EC2 · 단일 Ubuntu 인스턴스 — 전 스택 동거 (HA/오토스케일/LB 없음)', fill: '#FAF9FF', stroke: '#7C3AED' },
+  { x: 600, y: 244, w: 1092, h: 812, label: 'AWS EC2 · 단일 Ubuntu 인스턴스: 전 스택 동거 (HA/오토스케일/LB 없음)', fill: '#FAF9FF', stroke: '#7C3AED' },
   { x: 622, y: 298, w: 332, h: 540, label: '엣지 · TLS 종단 (유일 public 면)', fill: '#ECFDF5', stroke: '#10B981', small: 1 },
   { x: 976, y: 298, w: 326, h: 300, label: '애플리케이션 · loopback 전용', fill: '#FFFBEB', stroke: '#F59E0B', small: 1 },
   { x: 976, y: 616, w: 326, h: 222, label: '데이터 · SQLite 단일 파일', fill: '#FEF2F2', stroke: '#EF4444', small: 1 },
@@ -77,7 +77,7 @@ const sysNodes = [
   { id: 'audio', x: 70, y: 508, w: 476, h: 54, iconId: 'tonejs', title: '오디오 엔진 (Tone.js · 클라 완결)', subs: ['PolySynth 합성 · 트랙별 음색 동시재생'] },
   { id: 'store', x: 70, y: 574, w: 476, h: 50, iconId: 'webstorage', title: 'localStorage (내 곡)', subs: ['솔로 오프라인 완결 · 무동기화'] },
   { id: 'note', x: 70, y: 640, w: 476, h: 96, title: 'WebView 호스트 제약 (신뢰경계 밖)', subs: ['HTTPS 강제 · 핀치줌 비활성 · 자체 뒤로가기 금지', '익명키=식별일 뿐 신원 보증 아님', '솔로 연주 = 클라 완결(서버 호출 0)'], fill: '#FFFFFF', stroke: '#DBEAFE' },
-  { id: 'nginx', x: 638, y: 342, w: 300, h: 72, iconId: 'nginx', title: 'nginx — TLS 종단 + 프록시', subs: ['443 · 3.39.167.74.nip.io · try_files', '/sessions·/community·/healthz → 8080 (+XFF)'] },
+  { id: 'nginx', x: 638, y: 342, w: 300, h: 72, iconId: 'nginx', title: 'nginx: TLS 종단 + 프록시', subs: ['443 · 3.39.167.74.nip.io · try_files', '/sessions·/community·/healthz → 8080 (+XFF)'] },
   { id: 'certbot', x: 638, y: 426, w: 300, h: 50, iconId: 'letsencrypt', title: 'certbot / Let’s Encrypt', subs: ['certbot.timer 인증서 자동 갱신'] },
   { id: 'cloudflared', x: 638, y: 488, w: 300, h: 58, iconId: 'cloudflare', title: 'cloudflared quick tunnel (대체)', subs: ['즉시 https URL · CDN 아님'] },
   { id: 'healthz', x: 638, y: 560, w: 300, h: 50, iconId: 'pulse', title: 'GET /healthz (관측 단일 신호)', subs: ['메트릭·로그집계·대시보드 없음'] },
@@ -85,7 +85,7 @@ const sysNodes = [
   { id: 'security', x: 992, y: 434, w: 294, h: 92, iconId: 'shield', title: '인프로세스 보안 (외부 미들웨어 0)', subs: ['IP 레이트리밋 · 검증 · 멱등', '신고 자동숨김 · 코드=접근권한'] },
   { id: 'sqlite', x: 992, y: 656, w: 294, h: 70, iconId: 'sqlite', title: 'SQLite (harmony.db)', subs: ['node:sqlite · 단일 라이터 · 5개 테이블'] },
   { id: 'backup', x: 992, y: 738, w: 294, h: 64, iconId: 'warning', title: '백업 공백 (미존재 · 명시)', subs: ['파일 손실 = 전손 · 1순위 보강'], fill: '#FFFFFF', stroke: '#FECACA' },
-  { id: 'systemd', x: 638, y: 862, w: 648, h: 58, iconId: 'systemd', title: 'systemd — 감독 · 자동복구 · 권한격리', subs: ['Restart=on-failure · NoNewPrivileges · ProtectSystem=full · certbot.timer'] },
+  { id: 'systemd', x: 638, y: 862, w: 648, h: 58, iconId: 'systemd', title: 'systemd: 감독 · 자동복구 · 권한격리', subs: ['Restart=on-failure · NoNewPrivileges · ProtectSystem=full · certbot.timer'] },
 ];
 const sysEdges = [
   { s: 'ci', t: 'deploy', kind: 'deploy' }, { s: 'deploy', t: 'htop', kind: 'deploy' },
@@ -144,10 +144,10 @@ const awsGroups = [
 const awsNodes = [
   { id: 'user', x: 40, y: 556, w: 158, h: 96, iconId: 'user', title: '인터넷 사용자', subs: ['토스 앱 WebView · 익명'] },
   { id: 'certbot', x: 524, y: 490, w: 250, h: 40, iconId: 'letsencrypt', title: 'certbot / Let’s Encrypt', subs: [] },
-  { id: 'nginx', x: 524, y: 540, w: 286, h: 80, iconId: 'nginx', title: 'nginx — TLS 종단·프록시', subs: ['443 → 127.0.0.1:8080 · 정적 SPA'] },
+  { id: 'nginx', x: 524, y: 540, w: 286, h: 80, iconId: 'nginx', title: 'nginx: TLS 종단·프록시', subs: ['443 → 127.0.0.1:8080 · 정적 SPA'] },
   { id: 'node', x: 826, y: 540, w: 210, h: 80, iconId: 'nodedotjs', title: 'harmony-api', subs: ['node:http + node:sqlite · 의존성 0'] },
   { id: 'sqlite', x: 1052, y: 540, w: 208, h: 80, iconId: 'sqlite', title: 'SQLite · harmony.db', subs: ['단일 파일 · 5 테이블 · ⚠ 백업 없음'], fill: '#FFFFFF', stroke: '#FECACA' },
-  { id: 'systemd', x: 524, y: 648, w: 736, h: 30, iconId: 'systemd', title: 'systemd — 감독·권한격리(NoNewPrivileges·ProtectSystem) · certbot.timer', subs: [] },
+  { id: 'systemd', x: 524, y: 648, w: 736, h: 30, iconId: 'systemd', title: 'systemd: 감독·권한격리(NoNewPrivileges·ProtectSystem) · certbot.timer', subs: [] },
 ];
 const awsEdges = [
   { s: 'user', t: 'nginx', kind: 'https', label: 'HTTPS 443 · TLS' },
@@ -162,9 +162,9 @@ fs.writeFileSync(path.join(OUTDIR, '하모니_AWS_배포_아키텍처.drawio'), 
 
 /* ===== 배포·서비스 구성도 (Apps-in-Toss 프로덕션) ===== */
 const depGroups = [
-  { x: 52, y: 140, w: 1736, h: 196, label: 'CI · 배포 — GitHub Actions 검증 후 두 갈래 (프론트=Apps-in-Toss / 백엔드=AWS)', fill: '#EFF6FF', stroke: '#93C5FD' },
-  { x: 300, y: 410, w: 700, h: 470, label: 'Apps-in-Toss · 토스 슈퍼앱 (미니앱 런타임 · 유통 · 익명식별 — 자체 서버 아님)', fill: '#EFF5FF', stroke: '#3182F6' },
-  { x: 1140, y: 410, w: 648, h: 470, label: 'AWS EC2 (Ubuntu) — 합주·공유 API (systemd · 무의존)', fill: '#FFF7ED', stroke: '#F59E0B' },
+  { x: 52, y: 140, w: 1736, h: 196, label: 'CI · 배포: GitHub Actions 검증 후 두 갈래 (프론트=Apps-in-Toss / 백엔드=AWS)', fill: '#EFF6FF', stroke: '#93C5FD' },
+  { x: 300, y: 410, w: 700, h: 470, label: 'Apps-in-Toss · 토스 슈퍼앱 (미니앱 런타임 · 유통 · 익명식별, 자체 서버는 아님)', fill: '#EFF5FF', stroke: '#3182F6' },
+  { x: 1140, y: 410, w: 648, h: 470, label: 'AWS EC2 (Ubuntu): 합주·공유 API (systemd · 무의존)', fill: '#FFF7ED', stroke: '#F59E0B' },
 ];
 const depNodes = [
   { id: 'gh', x: 84, y: 210, w: 196, h: 64, iconId: 'github', title: '① GitHub', subs: ['소스'] },
@@ -172,13 +172,13 @@ const depNodes = [
   { id: 'front', x: 700, y: 168, w: 430, h: 64, iconId: 'vite', title: '③a 프론트: ait build → ait deploy', subs: ['토스 개발자 콘솔 → 심사 → 유통'] },
   { id: 'back', x: 700, y: 256, w: 430, h: 64, iconId: 'terminal', title: '③b 백엔드: deploy.sh (사람)', subs: ['scp + systemctl → AWS'] },
   { id: 'user', x: 52, y: 590, w: 196, h: 150, iconId: 'user', title: '사용자', subs: ['실제 토스 앱 이용자(폰)', '토스 앱에서 하모니 실행', '익명 · 로그인 없음'] },
-  { id: 'miniapp', x: 336, y: 490, w: 628, h: 92, iconId: 'react', title: '하모니 미니앱 (WebView 정적 번들)', subs: ['React 18 · Granite · TDS — 토스가 유통·로딩', 'appName=harmony 콘솔 등록(현 meetup-lite 임시)'] },
+  { id: 'miniapp', x: 336, y: 490, w: 628, h: 92, iconId: 'react', title: '하모니 미니앱 (WebView 정적 번들)', subs: ['React 18 · Granite · TDS (토스가 유통·로딩)', 'appName=harmony 콘솔 등록(현 meetup-lite 임시)'] },
   { id: 'anonkey', x: 336, y: 602, w: 628, h: 84, iconId: 'toss', title: 'getAnonymousKey (익명 식별 SDK)', subs: ['로그인 없음 · 닉네임 · ⚠ 실연동 출시 전(현재 mock)'] },
   { id: 'audio', x: 336, y: 706, w: 628, h: 92, iconId: 'tonejs', title: 'Tone.js 오디오 · 카메라 제스처(MediaPipe)', subs: ['솔로 연주 = WebView 완결(서버 0) · localStorage'] },
-  { id: 'nginx', x: 1176, y: 490, w: 576, h: 84, iconId: 'nginx', title: 'nginx — HTTPS 443 (Let’s Encrypt)', subs: ['3.39.167.74.nip.io · 프록시 · 인증서 자동갱신'] },
+  { id: 'nginx', x: 1176, y: 490, w: 576, h: 84, iconId: 'nginx', title: 'nginx: HTTPS 443 (Let’s Encrypt)', subs: ['3.39.167.74.nip.io · 프록시 · 인증서 자동갱신'] },
   { id: 'api', x: 1176, y: 588, w: 576, h: 84, iconId: 'nodedotjs', title: 'harmony-api (Node 단일 프로세스)', subs: ['node:http + node:sqlite · 의존성 0 · 127.0.0.1:8080'] },
   { id: 'sqlite', x: 1176, y: 686, w: 576, h: 80, iconId: 'sqlite', title: 'SQLite · harmony.db', subs: ['단일 파일 · 5 테이블 · ⚠ 백업 없음'], fill: '#FFFFFF', stroke: '#FECACA' },
-  { id: 'systemd', x: 1176, y: 780, w: 576, h: 40, iconId: 'systemd', title: 'systemd — 감독·권한격리 · certbot.timer', subs: [] },
+  { id: 'systemd', x: 1176, y: 780, w: 576, h: 40, iconId: 'systemd', title: 'systemd: 감독·권한격리 · certbot.timer', subs: [] },
 ];
 const depEdges = [
   { s: 'gh', t: 'gha', kind: 'deploy' }, { s: 'gha', t: 'front', kind: 'deploy' }, { s: 'gha', t: 'back', kind: 'deploy' },
@@ -197,7 +197,7 @@ const erdNodes = [
   { id: 'reactions', x: 1050, y: 200, w: 360, h: 124, title: 'reactions (좋아요)', subs: ['code → sessions  〔FK〕', 'anon_key · created_at', 'UNIQUE(code, anon_key)  〔U〕'], stroke: '#DB2777' },
   { id: 'comments', x: 600, y: 560, w: 390, h: 150, title: 'comments  〔PK id〕', subs: ['code → sessions  〔FK〕', 'author · author_key · text(≤200)', 'reports · hidden', 'created_at'], stroke: '#0D9488' },
   { id: 'creports', x: 1050, y: 560, w: 360, h: 124, title: 'comment_reports (신고)', subs: ['comment_id → comments  〔FK〕', 'reporter_key · created_at', 'UNIQUE(comment_id, reporter_key)  〔U〕'], stroke: '#D97706' },
-  { id: 'missing', x: 96, y: 560, w: 360, h: 110, title: '⌀ users / auth — 없음', subs: ['익명키만(author_key·anon_key·reporter_key)', '= 인증 없음(의도된 데모 범위)'], fill: '#FFF7ED', stroke: '#FB923C' },
+  { id: 'missing', x: 96, y: 560, w: 360, h: 110, title: '⌀ users / auth: 없음', subs: ['익명키만(author_key·anon_key·reporter_key)', '= 인증 없음(의도된 데모 범위)'], fill: '#FFF7ED', stroke: '#FB923C' },
 ];
 const erdEdges = [
   { s: 'tracks', t: 'sessions', kind: 'deploy', label: 'N : 1 (code)' },

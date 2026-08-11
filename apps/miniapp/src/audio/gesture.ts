@@ -11,7 +11,7 @@ const FACE_MODEL =
 
 let landmarker: HandLandmarker | null = null;
 let faceDetector: FaceDetector | null = null;
-let faceTried = false; // 한 번만 로드 시도 — 실패해도 손 효과는 유지(헤드뱅잉만 비활성)
+let faceTried = false; // 한 번만 로드 시도: 실패해도 손 효과는 유지(헤드뱅잉만 비활성)
 
 export async function initHandTracking(): Promise<void> {
   if (landmarker) return;
@@ -34,7 +34,7 @@ export async function initFaceDetection(): Promise<void> {
       runningMode: 'VIDEO',
     });
   } catch {
-    faceDetector = null; // 모델/CSP 차단 등 — 조용히 헤드뱅잉 비활성
+    faceDetector = null; // 모델/CSP 차단 등: 조용히 헤드뱅잉 비활성
   }
 }
 

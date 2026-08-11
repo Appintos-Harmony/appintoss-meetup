@@ -1,4 +1,4 @@
-// 드럼 4분할 터치 패드(SCR-ST-05). 원샷 hit(kick·snare·hat·crash) — onPointerDown 1회.
+// 드럼 4분할 터치 패드(SCR-ST-05). 원샷 hit(kick·snare·hat·crash): onPointerDown 1회.
 // 재생/기록은 부모(triggerHit + chordReducer 'hit'). 제스처 드럼킷은 게이트(후속).
 import type { CSSProperties } from 'react';
 import { DRUM_PIECES } from './chords';

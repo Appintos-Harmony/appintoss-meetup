@@ -1,4 +1,4 @@
-// 개발자 모드 오버레이 — FPS·백엔드 핑·네트워크 정보. 손 스켈레톤(점)은 Studio 카메라 위에 직접 그린다.
+// 개발자 모드 오버레이: FPS·백엔드 핑·네트워크 정보. 손 스켈레톤(점)은 Studio 카메라 위에 직접 그린다.
 // 밝기 = 이 오버레이 창 자체의 불투명도('밝기 ▼'로 펼침). '접기'로 한 줄 칩으로 최소화(개발자 모드는 설정에서 끈다).
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
@@ -68,11 +68,11 @@ export function DevOverlay({
   return (
     <div style={{ ...wrap, padding: '8px 11px', minWidth: 138, pointerEvents: 'none' }}>
       <div style={{ color: '#fff', fontWeight: 800, marginBottom: 4, letterSpacing: 1 }}>DEV</div>
-      {row('FPS', fps ? String(fps) : '—')}
-      {row('PING', latency === null ? '—' : `${latency}ms`)}
-      {row('NET', net?.effectiveType ?? '—')}
-      {row('DOWN', net?.downlink ? `${net.downlink}Mb` : '—')}
-      {row('RTT', net?.rtt !== undefined ? `${net.rtt}ms` : '—')}
+      {row('FPS', fps ? String(fps): '-')}
+      {row('PING', latency === null ? '-': `${latency}ms`)}
+      {row('NET', net?.effectiveType ?? '-')}
+      {row('DOWN', net?.downlink ? `${net.downlink}Mb`: '-')}
+      {row('RTT', net?.rtt !== undefined ? `${net.rtt}ms`: '-')}
 
       {openBright && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,.12)', pointerEvents: 'auto' }}>

@@ -86,7 +86,7 @@ function build() {
   // 응답
   s += flow(1064, 462, 838, 478, '보드·트랙 응답', 'flow', true);
 
-  // 잔여 위험(빨강) — nginx 아래 별도 주석으로 분리(capability 라벨과 겹침 방지)
+  // 잔여 위험(빨강): nginx 아래 별도 주석으로 분리(capability 라벨과 겹침 방지)
   s += `<rect x="632" y="556" width="256" height="44" rx="9" fill="#FEF2F2" stroke="${C.risk}"/>`;
   s += `<text x="760" y="575" font-size="11" font-weight="800" fill="${C.risk}" text-anchor="middle">잔여위험 (Known Limitation)</text>`;
   s += `<text x="760" y="591" font-size="10.5" fill="${C.risk}" text-anchor="middle">code 추측·열거 · reporter_key 회전 신고위조</text>`;
@@ -95,12 +95,12 @@ function build() {
   // 주석 박스
   const ax = 60, ay = 786, aw = 1530, ah = 120;
   s += `<rect x="${ax}" y="${ay}" width="${aw}" height="${ah}" rx="14" fill="#F8FAFC" stroke="#E2E8F0"/>`;
-  s += `<text x="${ax + 20}" y="${ay + 28}" font-size="14" font-weight="800" fill="${C.ink}">읽는 법 — "작아서 안전하다"는 의도</text>`;
+  s += `<text x="${ax + 20}" y="${ay + 28}" font-size="14" font-weight="800" fill="${C.ink}">읽는 법: "작아서 안전하다"는 의도</text>`;
   const notes = [
     ['#0D9488', '솔로(연주·내 곡)는 신뢰경계 ①을 절대 안 넘는다 → 서버에 의도적으로 "없는 것"을 그린 표기.'],
     ['#7C3AED', '익명키(author_key·anon_key·reporter_key)와 공유코드(origin_code)가 사실상 capability 토큰. 서버는 origin 실재만 검증.'],
     ['#F59E0B', '인증 미도입 = 버그 아님 = 데모 범위 결정. 레이트리밋(IP 버킷)+신고 자동숨김(3건)이 유일한 남용 통제.'],
-    ['#EF4444', 'Known Limitation: code 열거·익명키 회전으로 distinct 신고자 위조 가능 — 공개배포 전 보강 대상(정책준수표).'],
+    ['#EF4444', 'Known Limitation: code 열거·익명키 회전으로 distinct 신고자 위조 가능 · 공개배포 전 보강 대상(정책준수표).'],
   ];
   notes.forEach((n, i) => { const col = i % 2, row = Math.floor(i / 2); const nx = ax + 20 + col * 760, ny = ay + 54 + row * 28; s += `<circle cx="${nx + 4}" cy="${ny - 4}" r="4.5" fill="${n[0]}"/><text x="${nx + 16}" y="${ny}" font-size="12" fill="#334155">${esc(n[1])}</text>`; });
 

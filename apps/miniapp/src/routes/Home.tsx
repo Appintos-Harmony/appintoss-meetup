@@ -16,7 +16,7 @@ export function Home({
 }: {
   nickname: string;
   go: (r: Route) => void;
-  onNew: () => void; // 스튜디오 '새 곡 만들기' — loaded/forked 비우고 빈 세션으로 진입
+  onNew: () => void; // 스튜디오 '새 곡 만들기': loaded/forked 비우고 빈 세션으로 진입
   onOpen: (s: Song) => void;
 }) {
   const [songs] = useState<Song[]>(() => listSongs());

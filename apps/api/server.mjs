@@ -1,8 +1,8 @@
-// 하모니 공유 백엔드 (비동기 합주 "얹기" + 커뮤니티 공유 보드). Node 내장 모듈만 — node:http + node:sqlite (무의존성).
+// 하모니 공유 백엔드 (비동기 합주 "얹기" + 커뮤니티 공유 보드). Node 내장 모듈만: node:http + node:sqlite (무의존성).
 // 친구공유(code=접근) + 커뮤니티 보드(published 공개 목록 + 출처 강제 파생 + 코멘트).
 // 엔드포인트: GET /healthz · GET /community · POST /sessions · GET /sessions/:code · POST /sessions/:code/tracks
 //             · GET|POST /sessions/:code/comments · POST /sessions/:code/comments/:id/report · POST /sessions/:code/hide
-// 인증 없음(code=접근, author_key=클라 자기신고 약한 소유권 — 데모 한정). 식별=클라 getAnonymousKey/닉네임. 실시간 아님(1.5s polling).
+// 인증 없음(code=접근, author_key=클라 자기신고 약한 소유권: 데모 한정). 식별=클라 getAnonymousKey/닉네임. 실시간 아님(1.5s polling).
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomInt } from 'node:crypto';
@@ -28,7 +28,7 @@ const MIGRATIONS = [
   'ALTER TABLE sessions ADD COLUMN play_count INTEGER DEFAULT 0',
   'ALTER TABLE sessions ADD COLUMN hidden INTEGER DEFAULT 0',
   'ALTER TABLE sessions ADD COLUMN content_hash TEXT', // 콘텐츠 중복방지(첫 트랙 해시). origin 없는 원곡 publish에만 사용.
-  'ALTER TABLE sessions ADD COLUMN track_count INTEGER', // 중복방지 키 보강 — 트랙 수가 다르면 다른 곡(멀티트랙 collapse 방지).
+  'ALTER TABLE sessions ADD COLUMN track_count INTEGER', // 중복방지 키 보강: 트랙 수가 다르면 다른 곡(멀티트랙 collapse 방지).
 ];
 for (const m of MIGRATIONS) {
   try { db.exec(m); } catch { /* 이미 존재 */ }
@@ -37,7 +37,7 @@ try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_board ON sessions(publish
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_dedup ON sessions(author_key, content_hash, published, hidden)'); } catch { /* noop */ }
 
 // 혼동 문자(0/O/1/I) 제외한 코드.
-// 비공개 세션은 code가 유일한 접근 자격이므로 암호학적 RNG(crypto.randomInt)로 생성한다 — 비암호학적 Math.random은
+// 비공개 세션은 code가 유일한 접근 자격이므로 암호학적 RNG(crypto.randomInt)로 생성한다. 비암호학적 Math.random은
 // 내부 상태가 관측·복원될 수 있어 다음 code 추측이 이론상 가능하다(보안 위험 高-2). charset·길이는 그대로 유지.
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function genCode() {
@@ -46,7 +46,7 @@ function genCode() {
   return c;
 }
 
-// 입력 검증(데모는 무인증 — code=접근권한. 최소 방어로 오염 payload 차단).
+// 입력 검증(데모는 무인증: code=접근권한. 최소 방어로 오염 payload 차단).
 const VALID_INSTRUMENTS = new Set(['piano', 'guitar', 'bass', 'drum']);
 const MAX_TRACKS = 16;
 // 서로 다른 신고자 N명 누적 시 댓글 자동 숨김. 변경은 신규 신고부터 적용(기존 누적 소급 없음).
@@ -90,7 +90,7 @@ function cleanText(s, max) {
   return { ok: true, text: t };
 }
 
-// 클라이언트 IP(레이트리밋 버킷). 기본은 소켓 주소만 사용 — 클라가 X-Forwarded-For를 위조해도
+// 클라이언트 IP(레이트리밋 버킷). 기본은 소켓 주소만 사용. 클라가 X-Forwarded-For를 위조해도
 // 레이트리밋을 우회할 수 없다(Codex P0). 신뢰 프록시(TRUST_PROXY=1, 로컬 nginx 뒤) 환경에서만
 // 프록시가 세팅한 X-Real-IP / nginx가 remote_addr로 덮어쓴 단일 XFF의 마지막 값을 신뢰한다.
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
@@ -138,7 +138,7 @@ setInterval(() => {
 function send(res, status, body) {
   res.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
-    'access-control-allow-origin': '*', // 데모 한정 — production은 오리진 allowlist(사람 게이트)
+    'access-control-allow-origin': '*', // 데모 한정. production은 오리진 allowlist(사람 게이트)
     'access-control-allow-methods': 'GET,POST,OPTIONS',
     'access-control-allow-headers': 'content-type, x-anon-key',
   });
@@ -369,7 +369,7 @@ const server = createServer(async (req, res) => {
       const { owner, events, instrument, style, author_key } = await readBody(req);
       const key = resolveKey(author_key, ip);
       if (!rateOk('trk:' + ip, RATE_LIMIT_TRACK)) return send(res, 429, { error: 'rate limited' });
-      // 공개(published) 세션은 소유자만 트랙 추가 가능 — 공개 code로 타인 곡을 오염시키지 못한다(Codex P0).
+      // 공개(published) 세션은 소유자만 트랙 추가 가능. 공개 code로 타인 곡을 오염시키지 못한다(Codex P0).
       // 파생은 새 POST /sessions + origin_code로. 비공개(친구공유 code=접근)는 '얹기' 협업 유지.
       if (sess.published && (sess.author_key === 'seed' || !sess.author_key || sess.author_key !== key)) {
         return send(res, 403, { error: 'published sessions: only owner can add tracks; fork via origin_code' });
@@ -444,7 +444,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-// 기본 바인드는 127.0.0.1 — 같은 호스트의 nginx 리버스프록시만 접근 가능(8080 외부 직접 노출·X-Real-IP spoof 차단, Codex R039 조건).
+// 기본 바인드는 127.0.0.1. 같은 호스트의 nginx 리버스프록시만 접근 가능(8080 외부 직접 노출·X-Real-IP spoof 차단, Codex R039 조건).
 // 다른 토폴로지가 필요하면 HOST로 명시(예: HOST=0.0.0.0). production은 127.0.0.1 유지 권장.
 const HOST = process.env.HOST || '127.0.0.1';
 server.listen(PORT, HOST, () => console.log(`harmony-api listening on ${HOST}:${PORT}`));

@@ -1,4 +1,4 @@
-// 커뮤니티 = 음원 공유 보드(서버 listCommunity 기반 — 진짜 타인의 공유물) + 곽소정 UI(이모지 아바타·카드·들어보기·담기 다중·좋아요) 보존.
+// 커뮤니티 = 음원 공유 보드(서버 listCommunity 기반: 진짜 타인의 공유물) + 곽소정 UI(이모지 아바타·카드·들어보기·담기 다중·좋아요) 보존.
 // 베이스 = 곽소정 her_Community.tsx(이모지/좋아요/담기/들어보기 UI 그대로). 데이터 소스만 로컬(PRELOAD+listSongs) → 서버 listCommunity()로 전환,
 //   트랙(events)이 필요한 지점(들어보기·담기)은 getSession(code)로 lazy 확보해 동일 동작 재배선.
 // 비파괴 추가(내 서버 기능): 댓글(작성/신고) · 출처 크레딧 · 3상태(로딩/빈/실패) · 내 곡 올리기(publishSession) · toast/busy 피드백.
@@ -24,7 +24,7 @@ function hashIdx(s: string, n: number): number {
   return Math.abs(h) % n;
 }
 
-// 곽소정 이모지 아바타(보존) — 서버 항목엔 mine/id가 없으므로 키를 item.code로, 내 곡 여부는 author===닉네임으로 근사.
+// 곽소정 이모지 아바타(보존): 서버 항목엔 mine/id가 없으므로 키를 item.code로, 내 곡 여부는 author===닉네임으로 근사.
 function ownerEmoji(item: CommunityItem): string {
   const nick = getNickname();
   if (nick && item.author === nick) return getEmoji();
@@ -72,7 +72,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
   }, []);
 
   // C3: 페이지당 개수를 화면 크기에서 동적으로 산출(개수 하드코딩 금지). 리사이즈·회전 시 재계산.
-  // 240·116·200은 '개수'가 아니라 레이아웃 메트릭(상단 크롬/카드 높이/댓글 1페이지 높이) — 뷰포트가 클수록 더 많이 노출된다.
+  // 240·116·200은 '개수'가 아니라 레이아웃 메트릭(상단 크롬/카드 높이/댓글 1페이지 높이). 뷰포트가 클수록 더 많이 노출된다.
   useEffect(() => {
     function recalc() {
       const h = window.innerHeight;
@@ -178,7 +178,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     rafRef.current = requestAnimationFrame(tickFn);
   }
 
-  // "들어보기" — 활성 아니면 로드(lazy 캐시) 후 처음부터, 이미 활성이면 play/pause 토글.
+  // "들어보기": 활성 아니면 로드(lazy 캐시) 후 처음부터, 이미 활성이면 play/pause 토글.
   async function selectCard(code: string) {
     if (active === code) { await togglePlay(); return; }
     stopPreview();
@@ -245,7 +245,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
     });
   }
 
-  // 담기(다중) — 곽소정 합본 의도(여러 곡의 트랙을 하나의 로컬 합본 세션으로 스튜디오에 적재) 그대로.
+  // 담기(다중): 곽소정 합본 의도(여러 곡의 트랙을 하나의 로컬 합본 세션으로 스튜디오에 적재) 그대로.
   //   서버 항목엔 tracks가 없으므로 선택한 각 code를 getSession으로 확보(Promise.all) 후 트랙을 합쳐 onFork.
   async function importPicks() {
     if (picks.size === 0 || importing) return;
@@ -265,13 +265,13 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         onFork({ code: 'LOCAL-import', name: `가져온 음원 ${sessions.length}개`, bpm, tracks });
       }
     } catch {
-      flash('가져오기 실패 — 잠시 후 다시');
+      flash('가져오기 실패. 잠시 후 다시');
     } finally {
       setImporting(false);
     }
   }
 
-  // 좋아요(서버 reactions 토글) — 낙관적 갱신 후 서버 응답으로 보정, 실패 시 되돌림.
+  // 좋아요(서버 reactions 토글): 낙관적 갱신 후 서버 응답으로 보정, 실패 시 되돌림.
   async function like(code: string) {
     const prev = likes[code] ?? { liked: false, count: 0 };
     setLikes((m) => ({ ...m, [code]: { liked: !prev.liked, count: prev.count + (prev.liked ? -1 : 1) } }));
@@ -281,7 +281,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       setLikes((m) => ({ ...m, [code]: { liked: r.liked, count: r.count } }));
     } catch {
       setLikes((m) => ({ ...m, [code]: prev }));
-      flash('좋아요 실패 — 잠시 후 다시');
+      flash('좋아요 실패. 잠시 후 다시');
     }
   }
 
@@ -342,10 +342,10 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
       // 같은 곡이 이미 있으면(deduped) 추가 트랙 적재를 건너뛴다(기존 세션 오염 방지).
       if (!deduped) for (const t of tracks.slice(1)) await addTrack(code, nick, t.events, t.instrument, t.style, key); // 공개 세션 소유자 검증용 키
       setPublishOpen(false);
-      flash(deduped ? '같은 곡이 이미 보드에 있어요 — 새로 올리지 않았어요' : '보드에 올라갔어요');
+      flash(deduped ? '같은 곡이 이미 보드에 있어요. 새로 올리지 않았어요': '보드에 올라갔어요');
       await load();
     } catch {
-      flash('공유 실패 — 네트워크 확인');
+      flash('공유 실패. 네트워크 확인');
     } finally {
       setPublishing(null);
     }
@@ -381,7 +381,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         {publishOpen && (
           <div className="card" style={{ marginBottom: 12, padding: 14 }}>
             <div className="t-body" style={{ fontWeight: 700, marginBottom: 8 }}>내 곡 올리기</div>
-            {mySongs.length === 0 && <div className="t-cap c-sub">아직 녹음한 곡이 없어요 — 스튜디오에서 먼저 녹음하세요.</div>}
+            {mySongs.length === 0 && <div className="t-cap c-sub">아직 녹음한 곡이 없어요. 스튜디오에서 먼저 녹음하세요.</div>}
             {mySongs.map((s) => (
               <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
                 <div className="t-body" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
@@ -401,12 +401,12 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         )}
         {items !== null && !error && items.length === 0 && (
           <div className="t-cap c-sub" style={{ textAlign: 'center', padding: 24 }}>
-            아직 음원이 없어요 — 첫 곡의 주인공이 되어보세요.
+            아직 음원이 없어요. 첫 곡의 주인공이 되어보세요.
             <div style={{ marginTop: 10 }}><button className="chip" onClick={() => go('studio')}>스튜디오로</button></div>
           </div>
         )}
 
-        {/* C2: 정렬 토글 — 최신순 / 인기순(하트 수). 목록 즉시 반영. */}
+        {/* C2: 정렬 토글. 최신순 / 인기순(하트 수). 목록 즉시 반영. */}
         {items !== null && !error && items.length > 0 && (
           <div className="segment" style={{ marginBottom: 12 }}>
             <button className="seg" data-on={sort === 'recent'} onClick={() => { stopPreview(); setSort('recent'); setPage(0); }}>최신순</button>
@@ -430,7 +430,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="t-body" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.name} <span className="c-sub" style={{ fontWeight: 500 }}>– {item.author}</span>
+                    {item.name} <span className="c-sub" style={{ fontWeight: 500 }}>· {item.author}</span>
                   </div>
                   <div className="t-cap c-sub" style={{ marginTop: 2 }}>
                     트랙 {item.trackCount}개 · ▶ {item.playCount} · 이어 {item.forkCount}
@@ -458,7 +458,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
                   className="chip"
                   aria-label={picked ? '담기 취소' : '담기'}
                   aria-pressed={picked}
-                  title={picked ? '담음 — 다시 누르면 제외' : '담기(내 스튜디오에 얹기)'}
+                  title={picked ? '담음. 다시 누르면 제외': '담기(내 스튜디오에 얹기)'}
                   style={{ minWidth: 46, background: picked ? 'var(--blue)' : undefined, color: picked ? '#fff' : undefined }}
                   onClick={() => togglePick(item.code)}
                 >
@@ -534,7 +534,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
           );
         })}
 
-        {/* C3: 음원 목록 페이저 — 페이지당 개수는 화면 크기로 동적, 리사이즈 시 현재 페이지 자동 보정 */}
+        {/* C3: 음원 목록 페이저. 페이지당 개수는 화면 크기로 동적, 리사이즈 시 현재 페이지 자동 보정 */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '8px 0 2px' }}>
             <button className="chip chip-ghost" disabled={safePage <= 0} aria-label="이전 페이지" onClick={() => { stopPreview(); setPage(safePage - 1); }}>‹ 이전</button>
@@ -544,7 +544,7 @@ export function Community({ go, onFork }: { go: (r: Route) => void; onFork: (s: 
         )}
       </div>
 
-      {/* 다중 가져오기 바(곽소정) — getSession 합본 직렬화 중엔 비활성/표시 */}
+      {/* 다중 가져오기 바(곽소정): getSession 합본 직렬화 중엔 비활성/표시 */}
       {picks.size > 0 && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, maxWidth: 480, margin: '0 auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', boxShadow: '0 -6px 20px rgba(17,24,39,.10)' }}>
           <button className="btn" style={{ background: 'var(--blue)', color: '#fff', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} disabled={importing} aria-label={`선택한 ${picks.size}개를 내 스튜디오에 얹기`} onClick={() => void importPicks()}>

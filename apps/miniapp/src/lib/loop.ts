@@ -1,4 +1,4 @@
-// 구간 반복(루프) — 녹음 앞 loopTicks 구간을 잘라 count회 이어붙인다.
+// 구간 반복(루프): 녹음 앞 loopTicks 구간을 잘라 count회 이어붙인다.
 // 이벤트 복제 방식이라 저장/공유/재생 결과가 동일하게 일관된다.
 import type { ChordEvent } from '../audio/chordReducer';
 import { isDrumKey } from '../audio/events';

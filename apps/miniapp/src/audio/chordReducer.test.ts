@@ -72,7 +72,7 @@ describe('chordReducer', () => {
   });
 });
 
-describe('chordReducer — 폴리포니(멜로디)', () => {
+describe('chordReducer: 폴리포니(멜로디)', () => {
   it('두 음 동시 down(poly): on 2개, 이전 off 없음, activeNotes 2개', () => {
     const s = run([
       { type: 'down', chord: 'C4', source: 'touch', tick: 0, nowMs: 0, poly: true },
@@ -111,7 +111,7 @@ describe('chordReducer — 폴리포니(멜로디)', () => {
     expect(s.events.filter((e) => e.phase === 'off')).toHaveLength(0);
   });
 
-  it('코드 모드(poly 없음)는 단음 동작 보존 — 전환 시 이전 off', () => {
+  it('코드 모드(poly 없음)는 단음 동작 보존: 전환 시 이전 off', () => {
     const s = run([
       { type: 'down', chord: 'C', source: 'touch', tick: 0, nowMs: 0 },
       { type: 'down', chord: 'G', source: 'touch', tick: 8, nowMs: 80 },
@@ -121,7 +121,7 @@ describe('chordReducer — 폴리포니(멜로디)', () => {
   });
 });
 
-describe('chordReducer — 드럼(hit)', () => {
+describe('chordReducer: 드럼(hit)', () => {
   it('hit은 off 없이 on 1개만 적재, activeChord/activeNotes 불변', () => {
     const s = run([{ type: 'hit', chord: 'drum:kick', source: 'touch', tick: 0 }]);
     expect(s.events).toEqual([{ tick: 0, phase: 'on', chord: 'drum:kick', source: 'touch' }]);

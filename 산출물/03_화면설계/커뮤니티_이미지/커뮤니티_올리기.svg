@@ -153,7 +153,7 @@
   <rect x="12" y="222" width="176" height="118" rx="12" fill="#ffffff"/>
   <circle cx="34" cy="244" r="15" fill="#8b5cf622"/>
   <text x="34" y="250" text-anchor="middle" font-size="17">🎸</text>
-  <text x="56" y="240" font-size="12" font-weight="700" fill="#191f28">여름밤 코드 <tspan fill="#8b95a1" font-weight="400">– A</tspan></text>
+  <text x="56" y="240" font-size="12" font-weight="700" fill="#191f28">여름밤 코드 <tspan fill="#8b95a1" font-weight="400">· A</tspan></text>
   <text x="56" y="254" font-size="11" fill="#8b95a1">트랙 3개 · ▶ 12 · 이어 1</text>
   <text x="56" y="268" font-size="11" fill="#8b5cf6">🎵 A님의 여름밤 코드 위에 쌓음</text>
 

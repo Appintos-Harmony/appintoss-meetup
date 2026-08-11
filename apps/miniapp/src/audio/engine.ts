@@ -1,7 +1,7 @@
 // 오디오 엔진 v2 (Tone.js). 음정(음이름→주파수)은 tuning.ts(평균율 A4=440, 순수함수)를 단일 진실원으로 따른다.
 // v1(고정 4코드·setTimbre·chordOn) export를 전부 보존(무파괴)하고, 그 위에 v2를 추가한다(TASK-030 §3-B):
 //   28코드 buildChord / 악기4×스타일 setVoice(화면동일·소리만) / downChord·upChord·downNote·upNote /
-//   드럼 triggerHit / 합주 createVoice(instrument,style). 음정값은 tuning.ts(김민혁) — import만, 수정 금지.
+//   드럼 triggerHit / 합주 createVoice(instrument,style). 음정값은 tuning.ts(김민혁): import만, 수정 금지.
 import * as Tone from 'tone';
 import { noteToFreq, midiToFreq, isChordName } from './tuning';
 import { buildChordName, type Root, type Quality } from '../components/studio/chords';
@@ -186,7 +186,7 @@ export async function unlockAudio(): Promise<void> {
   // lookAhead·updateInterval 동반 축소(0.02 ≈20ms)로 즉답. (제스처는 카메라/추론 지연이 별도로 존재.)
   const ctx = Tone.getContext();
   ctx.lookAhead = 0.02;
-  (ctx as unknown as { updateInterval: number }).updateInterval = 0.02; // Tone 타입 누락 — 런타임 존재(클럭 갱신 주기)
+  (ctx as unknown as { updateInterval: number }).updateInterval = 0.02; // Tone 타입 누락: 런타임 존재(클럭 갱신 주기)
   synth = makeSynthFor(instrument, style);
   unlocked = true;
   ensureSampler(`${instrument}:${style}`);
@@ -267,7 +267,7 @@ function voiceFreqs(v: string, inst: Instrument): number[] {
 // ---- 발음 (샘플 로드됐으면 샘플, 아니면 합성). 코드는 통일 옥타브. ----
 function attack(v: string): void {
   const freqs = voiceFreqs(v, instrument);
-  // 코드 모드 베이스는 작게(멜로디 베이스는 키우되 코드는 과음/째짐 방지) — velocity로 분리.
+  // 코드 모드 베이스는 작게(멜로디 베이스는 키우되 코드는 과음/째짐 방지): velocity로 분리.
   const vel = instrument === 'bass' && isChordName(v) ? 0.4 : 1;
   const sp = curSampler();
   if (sp) {
@@ -298,7 +298,7 @@ export function allOff(): void {
   curSampler()?.releaseAll();
 }
 
-// v2 명시 API(코드/멜로디 분리 — source는 reducer용, 엔진은 무시).
+// v2 명시 API(코드/멜로디 분리: source는 reducer용, 엔진은 무시).
 export function downChord(chord: string, _source?: string): void {
   attack(chord);
 }

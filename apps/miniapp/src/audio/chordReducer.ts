@@ -7,7 +7,7 @@ export type Source = 'gesture' | 'touch';
 export type Phase = 'on' | 'off';
 
 export interface ChordEvent {
-  /** 세션 공통 tick (벽시계 ms 금지 — 기기 간 정렬). */
+  /** 세션 공통 tick (벽시계 ms 금지: 기기 간 정렬). */
   tick: number;
   phase: Phase;
   chord: string;
@@ -50,7 +50,7 @@ export function chordReducer(state: ChordState, action: ChordAction): ChordState
     };
   }
   if (action.type === 'down') {
-    // 폴리포니(멜로디): 음별 독립 noteOn — 이전 음을 끄지 않고 가산. 같은 음 재입력은 무시.
+    // 폴리포니(멜로디): 음별 독립 noteOn, 이전 음을 끄지 않고 가산. 같은 음 재입력은 무시.
     if (action.poly) {
       if (action.chord in state.activeNotes) return state;
       const events = state.events.concat({ tick: action.tick, phase: 'on', chord: action.chord, source: action.source });

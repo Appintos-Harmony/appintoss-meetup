@@ -1,9 +1,9 @@
-// 노트 편집 로직 검증 — 파싱↔직렬화 왕복, 드럼 포인트, 퀀타이즈. TASK-030 음 편집 페이지.
+// 노트 편집 로직 검증: 파싱↔직렬화 왕복, 드럼 포인트, 퀀타이즈. TASK-030 음 편집 페이지.
 import { describe, it, expect } from 'vitest';
 import { parseNotes, notesToEvents, quantizeTick, quantizeNotes } from './noteEdit';
 import type { ChordEvent } from '../audio/events';
 
-describe('noteEdit — 파싱', () => {
+describe('noteEdit: 파싱', () => {
   it('코드 on/off를 노트(시작·길이)로 페어링', () => {
     const ev: ChordEvent[] = [
       { tick: 0, phase: 'on', chord: 'C', source: 'touch' },
@@ -29,7 +29,7 @@ describe('noteEdit — 파싱', () => {
   });
 });
 
-describe('noteEdit — 왕복(parse→serialize)', () => {
+describe('noteEdit: 왕복(parse→serialize)', () => {
   it('코드 시퀀스 왕복 보존', () => {
     const ev: ChordEvent[] = [
       { tick: 0, phase: 'on', chord: 'C', source: 'touch' },
@@ -49,7 +49,7 @@ describe('noteEdit — 왕복(parse→serialize)', () => {
   });
 });
 
-describe('noteEdit — 퀀타이즈', () => {
+describe('noteEdit: 퀀타이즈', () => {
   it('가장 가까운 grid로 스냅', () => {
     expect(quantizeTick(5, 2)).toBe(6); // 5→6 (1/8=2)
     expect(quantizeTick(3, 4)).toBe(4); // 3→4 (1박=4)

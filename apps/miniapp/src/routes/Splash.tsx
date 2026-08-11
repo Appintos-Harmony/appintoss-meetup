@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-// 매 구동 시 짧은 라이트 브랜드 리빌(하모니 로고+이름). 게임풍 인트로 아님 —
+// 매 구동 시 짧은 라이트 브랜드 리빌(하모니 로고+이름). 게임풍 인트로 아님:
 // 페이드/스케일 ~1.3초·사운드 없음·라이트(비게임 심사 가드). 끝나면 시작화면으로 자동 전환.
 export function Splash({ onDone }: { onDone: () => void }) {
   useEffect(() => {

@@ -1,4 +1,4 @@
-// 음정 정확도 검증 — 코드가 요구하는 음이 평균율(A4=440) 기준 정확한 주파수로 나오는지.
+// 음정 정확도 검증: 코드가 요구하는 음이 평균율(A4=440) 기준 정확한 주파수로 나오는지.
 // 순수 모듈이라 Web Audio 없이 vitest에서 실행된다. TASK-20260622-029.
 import { describe, it, expect } from 'vitest';
 import { A4_HZ, noteToMidi, noteToFreq, notesFor, chordToFreqs, chordVoicing } from './tuning';
@@ -11,7 +11,7 @@ function expectInTune(note: string, refHz: number, maxCents = 1): void {
   expect(Math.abs(cents(noteToFreq(note), refHz))).toBeLessThan(maxCents);
 }
 
-describe('tuning — 음이름 → MIDI', () => {
+describe('tuning: 음이름 → MIDI', () => {
   it('가온다 C4 = 60, A4 = 69, 옥타브 경계', () => {
     expect(noteToMidi('C4')).toBe(60);
     expect(noteToMidi('A4')).toBe(69);
@@ -30,7 +30,7 @@ describe('tuning — 음이름 → MIDI', () => {
   });
 });
 
-describe('tuning — 음이름 → 주파수 (평균율 A4=440)', () => {
+describe('tuning: 음이름 → 주파수 (평균율 A4=440)', () => {
   it('기준 A4 = 정확히 440 Hz', () => {
     expect(noteToFreq('A4')).toBe(A4_HZ);
     expect(noteToFreq('A4')).toBe(440);
@@ -52,7 +52,7 @@ describe('tuning — 음이름 → 주파수 (평균율 A4=440)', () => {
   });
 });
 
-describe('tuning — 코드가 요구하는 음을 정확히 낸다', () => {
+describe('tuning: 코드가 요구하는 음을 정확히 낸다', () => {
   it('라이브 4코드(C·Am·F·G) 구성음', () => {
     expect(notesFor('C')).toEqual(['C4', 'E4', 'G4']);
     expect(notesFor('Am')).toEqual(['A3', 'C4', 'E4']);
@@ -72,7 +72,7 @@ describe('tuning — 코드가 요구하는 음을 정확히 낸다', () => {
   });
 });
 
-describe('tuning — 코드 보이싱(근음 중심)', () => {
+describe('tuning: 코드 보이싱(근음 중심)', () => {
   it('C 코드: 베이스 근음(C3) 보강 + 근음 게인 > 최상단 게인', () => {
     const v = chordVoicing('C');
     // 베이스로 C3(근음 한 옥타브 아래) 포함

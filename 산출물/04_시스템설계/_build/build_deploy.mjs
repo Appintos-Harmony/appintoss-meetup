@@ -59,12 +59,12 @@ function build() {
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}">`;
   s += `<defs><filter id="sh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.4" flood-color="#0F172A" flood-opacity="0.10"/></filter>${markers()}</defs>`;
   s += `<rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
-  s += `<text x="52" y="54" font-size="28" font-weight="800" fill="${COL.ink}">하모니 — 배포 · 서비스 구성도 (Apps-in-Toss 프로덕션)</text>`;
+  s += `<text x="52" y="54" font-size="28" font-weight="800" fill="${COL.ink}">하모니: 배포 · 서비스 구성도 (Apps-in-Toss 프로덕션)</text>`;
   s += `<text x="52" y="84" font-size="14" fill="${COL.sub}">프론트(미니앱)는 Apps-in-Toss로 유통 → 토스 슈퍼앱 WebView에서 실행 · 백엔드 API는 AWS(HTTPS) · 무의존·단일 인스턴스</text>`;
-  s += `<text x="52" y="106" font-size="14" fill="${COL.sub}">사용자는 토스 앱 안에서 하모니를 연다 — 자체 도메인·앱 없음(토스가 런타임·유통·익명식별을 제공)</text>`;
+  s += `<text x="52" y="106" font-size="14" fill="${COL.sub}">사용자는 토스 앱 안에서 하모니를 연다 · 자체 도메인·앱 없음(토스가 런타임·유통·익명식별을 제공)</text>`;
 
   // ===== CI · 배포 밴드 (두 갈래) =====
-  s += container({ x: 52, y: 140, w: 1736, h: 196, label: 'CI · 배포 — GitHub Actions 검증 후 두 갈래(프론트=Apps-in-Toss / 백엔드=AWS)', stroke: '#93C5FD', fill: '#EFF6FF', labelColor: '#1D4ED8' });
+  s += container({ x: 52, y: 140, w: 1736, h: 196, label: 'CI · 배포: GitHub Actions 검증 후 두 갈래(프론트=Apps-in-Toss / 백엔드=AWS)', stroke: '#93C5FD', fill: '#EFF6FF', labelColor: '#1D4ED8' });
   s += card({ x: 84, y: 210, w: 196, h: 64, iconId: 'github', title: '① GitHub', subs: ['소스'], titleSize: 14 });
   s += arrow(280, 242, 326, 242, { kind: 'deploy', width: 2.4 });
   s += card({ x: 332, y: 210, w: 250, h: 64, iconId: 'ghactions', title: '② GitHub Actions', subs: ['검증 tsc·vitest·비밀값'], titleSize: 14 });
@@ -84,19 +84,19 @@ function build() {
   // ===== Apps-in-Toss 플랫폼 (프론트 런타임·유통) =====
   const px = 300, py = 410, pw = 700, ph = 470;
   s += container({ x: px, y: py, w: pw, h: ph, label: 'Apps-in-Toss · 토스 슈퍼앱', sublabel: '미니앱 런타임 · 유통 · 익명식별 제공 (자체 서버 아님)', stroke: COL.toss, fill: '#EFF5FF', iconId: 'toss', labelColor: '#1D4ED8' });
-  s += card({ x: px + 36, y: py + 80, w: pw - 72, h: 92, iconId: 'react', title: '하모니 미니앱 (WebView 정적 번들)', subs: ['React 18 · Granite · TDS — 토스가 유통·로딩', 'appName=harmony 콘솔 등록(현재 meetup-lite 임시)'] });
+  s += card({ x: px + 36, y: py + 80, w: pw - 72, h: 92, iconId: 'react', title: '하모니 미니앱 (WebView 정적 번들)', subs: ['React 18 · Granite · TDS (토스가 유통·로딩)', 'appName=harmony 콘솔 등록(현재 meetup-lite 임시)'] });
   s += card({ x: px + 36, y: py + 192, w: pw - 72, h: 84, iconId: 'toss', title: 'getAnonymousKey (익명 식별 SDK)', subs: ['로그인 없음 · 닉네임 · ⚠ 실연동은 출시 전(현재 mock)'], accent: COL.amber });
   s += card({ x: px + 36, y: py + 296, w: pw - 72, h: 92, iconId: 'tonejs', title: 'Tone.js 오디오 · 카메라 제스처(MediaPipe)', subs: ['솔로 연주 = WebView에서 완결(서버 호출 0)', 'localStorage에 내 곡 저장'] });
 
   // ===== AWS 프로덕션 서버 (백엔드 API) =====
   const ax = 1140, ay = 410, aw = 648, ah = 470;
-  s += container({ x: ax, y: ay, w: aw, h: ah, label: 'AWS EC2 (Ubuntu) — 합주·공유 API', sublabel: 'systemd 24/7 · 무의존(node:http + node:sqlite)', stroke: COL.amber, fill: '#FFF7ED', iconId: 'ec2', labelColor: '#B45309' });
-  s += card({ x: ax + 36, y: ay + 80, w: aw - 72, h: 84, iconId: 'nginx', title: 'nginx — HTTPS 443 (Let’s Encrypt)', subs: ['3.39.167.74.nip.io · 리버스 프록시 · 인증서 자동갱신'] });
+  s += container({ x: ax, y: ay, w: aw, h: ah, label: 'AWS EC2 (Ubuntu): 합주·공유 API', sublabel: 'systemd 24/7 · 무의존(node:http + node:sqlite)', stroke: COL.amber, fill: '#FFF7ED', iconId: 'ec2', labelColor: '#B45309' });
+  s += card({ x: ax + 36, y: ay + 80, w: aw - 72, h: 84, iconId: 'nginx', title: 'nginx: HTTPS 443 (Let’s Encrypt)', subs: ['3.39.167.74.nip.io · 리버스 프록시 · 인증서 자동갱신'] });
   s += card({ x: ax + 36, y: ay + 178, w: aw - 72, h: 84, iconId: 'nodedotjs', title: 'harmony-api (Node 단일 프로세스)', subs: ['node:http + node:sqlite · 의존성 0 · 127.0.0.1:8080'] });
   s += card({ x: ax + 36, y: ay + 276, w: aw - 72, h: 80, iconId: 'sqlite', title: 'SQLite · harmony.db', subs: ['단일 파일 · 5 테이블 · ⚠ 백업 없음(1순위 보강)'], accent: COL.red });
   s += `<rect x="${ax + 36}" y="${ay + 370}" width="${aw - 72}" height="44" rx="11" fill="#F5F3FF" stroke="${COL.purple}" stroke-width="1.4"/>`;
   s += `<image x="${ax + 48}" y="${ay + 379}" width="26" height="26" href="${uri('systemd')}"/>`;
-  s += `<text x="${ax + 82}" y="${ay + 397}" font-size="12.5" font-weight="700" fill="#6D28D9">systemd — 감독·자동복구·권한격리 · certbot.timer</text>`;
+  s += `<text x="${ax + 82}" y="${ay + 397}" font-size="12.5" font-weight="700" fill="#6D28D9">systemd: 감독·자동복구·권한격리 · certbot.timer</text>`;
 
   // ===== 흐름 =====
   // 사용자 → Apps-in-Toss
@@ -114,7 +114,7 @@ function build() {
   const leg = [['toss', '토스 앱/유통', false], ['https', 'HTTPS API(합주/공유)', false], ['ink', '내부 호출', false], ['gray', '배포(점선)', true]];
   let lx = 72; const lyy = ly2 + 38;
   for (const [c, t, d] of leg) { s += `<line x1="${lx}" y1="${lyy}" x2="${lx + 28}" y2="${lyy}" stroke="${MK[c]}" stroke-width="3.2"${d ? ' stroke-dasharray="5 4"' : ''} marker-end="url(#ah-${c})"/><text x="${lx + 36}" y="${lyy + 4}" font-size="11.5" fill="#475569">${esc(t)}</text>`; lx += 36 + t.length * 7.4 + 30; }
-  s += `<text x="52" y="${H - 34}" font-size="12" font-style="italic" fill="#94A3B8">* 프로덕션(인앱토스 서비스) 기준. 로컬 개발은 granite dev(localhost:5173) + mock 익명키 — 본 도면과 별개. 현재 테스트는 AWS nginx가 정적앱도 함께 서빙(nip.io).</text>`;
+  s += `<text x="52" y="${H - 34}" font-size="12" font-style="italic" fill="#94A3B8">* 프로덕션(인앱토스 서비스) 기준. 로컬 개발은 granite dev(localhost:5173) + mock 익명키 · 본 도면과 별개. 현재 테스트는 AWS nginx가 정적앱도 함께 서빙(nip.io).</text>`;
   s += `<text x="52" y="${H - 14}" font-size="12" font-style="italic" fill="#94A3B8">* 출시 전 차단: harmony appName 콘솔 등록 · getAnonymousKey 실연동(현재 mock) · 실기기 검수. · cloudflared 터널은 nip.io 장애용 백업(현재 비활성).</text>`;
 
   return s + `</svg>`;

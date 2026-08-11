@@ -1,5 +1,5 @@
 // 음정 단일 진실원(single source of truth). 평균율(12-TET), 기준 A4 = 440 Hz.
-// 순수 함수 — 오디오 런타임(Tone/Web Audio) 비의존이라 vitest로 직접 검증 가능하다.
+// 순수 함수: 오디오 런타임(Tone/Web Audio) 비의존이라 vitest로 직접 검증 가능하다.
 // engine.ts(재생)와 tuning.test.ts(검증)가 이 표를 함께 쓴다. DL-019 / TASK-20260622-029.
 
 /** 기준 피치. A4 = 440 Hz (평균율). */
@@ -84,7 +84,7 @@ export interface VoicedNote {
 }
 
 // 코드 재생 보이싱(근음 중심). 같은 음량으로 쌓으면 사람은 최상단 음을 멜로디로 듣는다
-// (high-voice superiority effect — 입증된 심리음향). 그래서 근음을 한 옥타브 아래 베이스로
+// (high-voice superiority effect: 입증된 심리음향). 그래서 근음을 한 옥타브 아래 베이스로
 // 보강하고, 위로 갈수록 게인을 낮춰 근음을 중심에 둔다. 게인 값은 청취 튜닝 대상(모바일 실기 확인).
 export function chordVoicing(v: string): VoicedNote[] {
   const notes = notesFor(v);

@@ -10,7 +10,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const strict = process.argv.includes('--strict');
 const has = (p) => existsSync(join(ROOT, p));
 
-// [id, 이름, 경로] — 경로가 .md면 파일, 아니면 디렉터리로 본다.
+// [id, 이름, 경로]: 경로가 .md면 파일, 아니면 디렉터리로 본다.
 const items = [
   ['M01', 'WBS', '산출물/00_프로젝트관리/작업분해구조_WBS.md'],
   ['M02', '회의록(폴더)', '산출물/00_프로젝트관리/회의록'],
