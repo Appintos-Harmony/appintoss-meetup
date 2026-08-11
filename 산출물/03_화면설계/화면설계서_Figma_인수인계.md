@@ -13,7 +13,7 @@ related: [TDS, 하모니]
 - **파일명:** `하모니 화면설계서 (TDS)`
 - **fileKey:** `AeH33UjgzpSj4FDl98pFoT`
 - **URL:** https://www.figma.com/design/AeH33UjgzpSj4FDl98pFoT
-- **연결 계정:** 곽소정 (クァクソジョン, mukae1975@gmail.com) · Pro 팀 `team::1649712301444276818`
+- **연결 계정:** 곽소정 · Pro 팀 `team::1649712301444276818`
   - 주의: 이상혁 계정 아님. 편집하려면 곽소정 계정 로그인 또는 공유 권한 필요.
 
 ## 2. 페이지 구조 (Page 1, node `0:1`) · 위→아래
